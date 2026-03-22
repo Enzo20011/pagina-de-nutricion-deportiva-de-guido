@@ -1,0 +1,4 @@
+﻿app/(admin)/admin/page.tsx(215,24): error TS2304: Cannot find name 'FileText'.
+app/(admin)/admin/page.tsx(217,40): error TS2304: Cannot find name 'clsx'.
+app/(admin)/admin/page.tsx(223,57): error TS2304: Cannot find name 'Play'.
+components/BasePacientes.tsx(16,8): error TS2440: Import declaration conflicts with local declaration of 'clsx'.

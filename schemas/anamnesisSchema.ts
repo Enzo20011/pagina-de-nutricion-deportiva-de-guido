@@ -1,0 +1,23 @@
+import { z } from 'zod';
+
+export const anamnesisSchema = z.object({
+  pacienteId: z.string().min(1, 'El ID del paciente es requerido'),
+  motivoConsulta: z.string().min(3, 'El motivo de consulta es requerido'),
+  ocupacion: z.string().optional(),
+  horariosTrabajo: z.string().optional(),
+  patologias: z.string().optional(),
+  alergiasIntolerancias: z.string().min(1, 'Debes especificar alergias o intolerancias (o colocar "Ninguna")'),
+  medicacionActual: z.string().optional(),
+  nivelActividad: z.enum(['Sedentario', 'Ligero', 'Moderado', 'Intenso', 'Atleta']),
+  horasSueno: z.number().min(0).max(24),
+  nivelEstres: z.number().min(1).max(10),
+  aversionesAlimentarias: z.string().optional(),
+  ritmoIntestinal: z.enum(['Estreñimiento', 'Normal', 'Diarrea', 'Irregular']).optional(),
+  isDraft: z.boolean().optional(),
+});
+
+export const draftAnamnesisSchema = anamnesisSchema.partial().extend({
+  pacienteId: z.string().min(1)
+});
+
+export type AnamnesisInput = z.infer<typeof anamnesisSchema>;
