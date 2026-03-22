@@ -21,13 +21,23 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import Loader from '@/components/Loader';
 
+import { useConsultaStore } from '@/store/useConsultaStore';
+
 export default function ConsultaPage({ params }: { params: { id: string } }) {
   const [activeTab, setActiveTab] = useState<'anamnesis' | 'antropometria' | 'dieta' | 'evolucion'>('anamnesis');
-  const [consultaData, setConsultaData] = useState({
-    anamnesis: null,
-    antropometria: null,
-    dieta: null
-  });
+  const [isExporting, setIsExporting] = useState(false);
+  
+  const { 
+    anamnesis, 
+    antropometria, 
+    dieta, 
+    setAnamnesis, 
+    setAntropometria, 
+    setDieta 
+  } = useConsultaStore();
+
+  // Unified data for PDF
+  const consultaData = { anamnesis, antropometria, dieta };
 
   const { data: paciente, isLoading } = useQuery({
     queryKey: ['paciente', params.id],
@@ -80,14 +90,31 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
                 <p className="text-[11px] text-slate-500 font-bold uppercase tracking-[0.4em] flex items-center gap-3">
                    <Calendar className="w-4 h-4 text-accentBlue/50" /> {new Date(paciente.createdAt || Date.now()).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase()} • PROTOCOLO {paciente.status?.toUpperCase() || 'ACTIVO'}
                 </p>
-                <button 
+                 <button 
                   onClick={async () => {
-                    const { exportarConsultaLazy } = await import('@/utils/exportPdfAction');
-                    await exportarConsultaLazy(paciente, consultaData);
+                    if (isExporting) return;
+                    setIsExporting(true);
+                    try {
+                      const { exportarConsultaLazy } = await import('@/utils/exportPdfAction');
+                      await exportarConsultaLazy(paciente, consultaData);
+                    } catch (err) {
+                      console.error(err);
+                    } finally {
+                      setIsExporting(false);
+                    }
                   }}
-                  className="bg-accentBlue border border-accentBlue/50 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-500 hover:scale-105 transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                  disabled={isExporting}
+                  className={clsx(
+                    "bg-accentBlue border border-accentBlue/50 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]",
+                    isExporting ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-500 hover:scale-105"
+                  )}
                 >
-                  <FileText className="w-4 h-4" /> Exportar Sesión PDF
+                  {isExporting ? (
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <FileText className="w-4 h-4" />
+                  )}
+                  {isExporting ? "Generando Expediente..." : "Exportar Sesión PDF"}
                 </button>
               </div>
             </div>
@@ -128,13 +155,13 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
         <div className="bg-cardDark/40 rounded-[4rem] border border-white/5 p-6 shadow-3xl backdrop-blur-3xl overflow-hidden min-h-[700px]">
            <div className="bg-darkNavy/40 rounded-[3.5rem] p-12 lg:p-16 min-h-[600px] shadow-inner border border-white/5">
              <div className={activeTab === 'anamnesis' ? 'block' : 'hidden'}>
-               <PanelClinico pacienteId={params.id} onSync={(d) => setConsultaData(prev => ({...prev, anamnesis: d as any}))} />
+               <PanelClinico pacienteId={params.id} onSync={setAnamnesis} />
              </div>
              <div className={activeTab === 'antropometria' ? 'block' : 'hidden'}>
-               <PanelAntropometria pacienteId={params.id} onSync={(d) => setConsultaData(prev => ({...prev, antropometria: d as any}))} />
+               <PanelAntropometria pacienteId={params.id} onSync={setAntropometria} />
              </div>
              <div className={activeTab === 'dieta' ? 'block' : 'hidden'}>
-               <PlanAlimentario pacienteId={params.id} onSync={(d) => setConsultaData(prev => ({...prev, dieta: d as any}))} />
+               <PlanAlimentario pacienteId={params.id} onSync={setDieta} />
              </div>
              <div className={activeTab === 'evolucion' ? 'block' : 'hidden'}>
                <DashboardEvolucion pacienteId={params.id} />

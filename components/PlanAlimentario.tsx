@@ -220,6 +220,19 @@ export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: st
   return (
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 text-bone">
       
+      {/* MOBILE ADVISORY */}
+      <div className="xl:col-span-12">
+        <div className="bg-blue-500/10 border border-blue-500/20 p-6 rounded-3xl flex items-center gap-6 group">
+          <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400">
+            <Info className="w-6 h-6" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-black text-white uppercase tracking-wider italic">Protocolo de Escritorio</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Se recomienda PC o Tablet para el armado de dietas complejas. Mobile optimizado para seguimiento.</p>
+          </div>
+        </div>
+      </div>
+
       {/* LEFT SECTION: SEARCH & MEALS */}
       <div className="xl:col-span-8 space-y-10">
         
@@ -374,15 +387,15 @@ export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: st
                    </div>
                 </div>
 
-                <div className="p-8 space-y-4 min-h-[250px]">
+                <div className="p-8 space-y-4">
                    {meal.items.map(item => (
-                     <div key={item.id} className="flex items-center justify-between p-6 bg-darkNavy/80 rounded-[2.5rem] border border-white/5 group/item transition-all hover:bg-darkNavy">
-                        <div className="flex flex-1 items-center gap-5">
-                           <div className="w-8 h-8 bg-white/5 rounded-xl flex items-center justify-center border border-white/5">
+                     <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 bg-darkNavy/80 rounded-[2.5rem] border border-white/5 group/item transition-all hover:bg-darkNavy gap-6 sm:gap-4">
+                        <div className="flex flex-1 items-center gap-5 w-full">
+                           <div className="w-8 h-8 bg-white/5 rounded-xl flex items-center justify-center border border-white/5 flex-shrink-0">
                               <CheckCircle2 className="w-4 h-4 text-accentBlue" />
                            </div>
-                           <div className="flex-1">
-                              <p className="font-black text-white uppercase italic text-xs tracking-tight truncate max-w-[120px]">{item.nombre}</p>
+                           <div className="flex-1 min-w-0">
+                              <p className="font-black text-white uppercase italic text-xs tracking-tight truncate">{item.nombre}</p>
                               <div className="flex items-center gap-3 mt-1.5">
                                  <input 
                                    type="number" 
@@ -391,22 +404,22 @@ export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: st
                                       const newGrams = +e.target.value;
                                       setMeals(meals.map(m => m.id === meal.id ? { ...m, items: m.items.map(i => i.id === item.id ? { ...i, gramos: newGrams } : i) } : m));
                                    }}
-                                   className="w-12 bg-transparent border-b border-white/10 text-xs font-black text-accentBlue outline-none focus:border-accentBlue text-center"
+                                   className="w-16 bg-white/5 border-b border-white/10 text-xs font-black text-accentBlue outline-none focus:border-accentBlue p-1.5 rounded-lg text-center"
                                  />
                                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">G</span>
                               </div>
                            </div>
                         </div>
-                        <div className="flex items-center gap-6">
-                           <div className="text-right hidden sm:block">
+                        <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-4 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                           <div className="text-left sm:text-right">
                               <p className="text-base font-black text-white tracking-tighter italic leading-none">{Math.round((item.kcal * item.gramos) / 100)}</p>
                               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">KCAL</p>
                            </div>
                            <button 
                              onClick={(e) => { e.stopPropagation(); removeFood(meal.id, item.id); }}
-                             className="p-3 bg-darkNavy text-slate-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all border border-white/5"
+                             className="p-4 bg-white/5 text-slate-500 hover:bg-rose-500 hover:text-white rounded-2xl transition-all border border-white/5"
                            >
-                             <Trash2 className="w-4 h-4" />
+                             <Trash2 className="w-5 h-5" />
                            </button>
                         </div>
                      </div>
