@@ -15,7 +15,6 @@ import {
   Minus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { exportarPlanPDF } from '@/utils/exportadorPDF';
 
 interface FoodItem {
   id: string;
@@ -438,7 +437,10 @@ export default function PlanAlimentario({ pacienteId, objetivoCalorico = 2000, o
                 <motion.button 
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => exportarPlanPDF('Paciente_Elite', meals, totals)}
+                  onClick={async () => {
+                    const { exportarDietaLazy } = await import('@/utils/exportPdfAction');
+                    await exportarDietaLazy({ nombre: 'Paciente_Elite', edad: 25 }, totals, meals);
+                  }}
                   className="w-full mt-12 py-8 bg-white text-darkNavy hover:bg-accentBlue hover:text-white rounded-3xl font-black uppercase text-xs tracking-widest shadow-[0_30px_60px_rgba(0,0,0,0.5)] transition-all flex items-center justify-center gap-4 group"
                 >
                    Exportar Protocolo PDF <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

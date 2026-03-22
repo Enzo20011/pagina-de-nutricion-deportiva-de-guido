@@ -20,7 +20,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import Loader from '@/components/Loader';
-import { exportarConsultaCompletaPDF } from '@/utils/exportadorPDF';
 
 export default function ConsultaPage({ params }: { params: { id: string } }) {
   const [activeTab, setActiveTab] = useState<'anamnesis' | 'antropometria' | 'dieta' | 'evolucion'>('anamnesis');
@@ -82,7 +81,10 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
                    <Calendar className="w-4 h-4 text-accentBlue/50" /> {new Date(paciente.createdAt || Date.now()).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase()} • PROTOCOLO {paciente.status?.toUpperCase() || 'ACTIVO'}
                 </p>
                 <button 
-                  onClick={() => exportarConsultaCompletaPDF(paciente, consultaData)}
+                  onClick={async () => {
+                    const { exportarConsultaLazy } = await import('@/utils/exportPdfAction');
+                    await exportarConsultaLazy(paciente, consultaData);
+                  }}
                   className="bg-accentBlue border border-accentBlue/50 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-500 hover:scale-105 transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
                 >
                   <FileText className="w-4 h-4" /> Exportar Sesión PDF
