@@ -30,7 +30,14 @@ const ReservaSchema: Schema = new Schema(
 );
 
 // Indexes for scheduling and search
-ReservaSchema.index({ fecha: 1, hora: 1 });
+// CRITICAL: Partial unique index to prevent double-booking of slots
+ReservaSchema.index(
+  { fecha: 1, hora: 1 }, 
+  { 
+    unique: true, 
+    partialFilterExpression: { status: 'confirmada', isDeleted: false } 
+  }
+);
 ReservaSchema.index({ email: 1 });
 ReservaSchema.index({ isDeleted: 1 });
 

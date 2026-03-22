@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
     await dbConnect();
 
-    // 1. Check if there's a confirmed appointment
+    // 1. Check if there's a confirmed appointment (Final state check)
     const confirmedReserva = await (Reserva as any).findOne({ 
       fecha, 
       hora, 
@@ -46,40 +46,59 @@ export async function POST(req: Request) {
     });
 
     if (confirmedReserva) {
-      return NextResponse.json({ error: 'El turno ya ha sido reservado por otro paciente.' }, { status: 409 });
+      return NextResponse.json({ error: 'El turno ya ha sido reservado.' }, { status: 409 });
     }
 
-    // 2. Check if there's an active lock (and it's not by the SAME sessionId)
-    const activeLock = await (SlotLock as any).findOne({ 
-      fecha, 
-      hora, 
-      expiresAt: { $gt: new Date() } 
-    });
-
-    if (activeLock && activeLock.sessionId !== sessionId) {
-      return NextResponse.json({ error: 'Alguien está completando la reserva para este turno. Intenta en 5 minutos.' }, { status: 409 });
-    }
-
-    // 3. Create or Update the Lock
+    // 2. ATOMIC LOCK ATTEMPT
+    // We use findOneAndUpdate with a query that ONLY matches if:
+    // a) The slot is expired (expiresAt <= now)
+    // b) The slot is already held by the SAME sessionId (renewal)
+    // c) The slot doesn't exist (handled by upsert)
+    
+    const now = new Date();
     const expiration = new Date();
-    expiration.setMinutes(expiration.getMinutes() + 5); // 5 minutes lock
+    expiration.setMinutes(expiration.getMinutes() + 5);
 
-    await (SlotLock as any).findOneAndUpdate(
-      { fecha, hora }, 
-      { 
-        fecha, 
-        hora, 
-        sessionId, 
-        expiresAt: expiration 
-      }, 
-      { upsert: true, new: true }
-    );
+    try {
+      const lock = await (SlotLock as any).findOneAndUpdate(
+        { 
+          fecha, 
+          hora, 
+          $or: [
+            { expiresAt: { $lte: now } }, 
+            { sessionId: sessionId }
+          ] 
+        }, 
+        { 
+          $set: { 
+            sessionId, 
+            expiresAt: expiration 
+          } 
+        }, 
+        { 
+          upsert: true, 
+          new: true,
+          setDefaultsOnInsert: true
+        }
+      );
 
-    return NextResponse.json({ 
-      message: 'Turno bloqueado temporalmente', 
-      expiresAt: expiration,
-      rateLimitRemaining: remaining,
-    });
+      return NextResponse.json({ 
+        message: 'Turno bloqueado temporalmente', 
+        expiresAt: expiration,
+        rateLimitRemaining: remaining,
+      });
+
+    } catch (innerError: any) {
+      // 11000 = Duplicate Key error. 
+      // If the upsert fails because {fecha, hora} exists, it means 
+      // the filter (expired OR same session) DID NOT match.
+      if (innerError.code === 11000) {
+        return NextResponse.json({ 
+          error: 'Este turno está siendo procesado por otro usuario. Intenta en 5 minutos.' 
+        }, { status: 409 });
+      }
+      throw innerError; // Re-throw for outer catch
+    }
   } catch (error: any) {
     if (error.code === 11000) {
        // Duplicate key error on compound index (fecha+hora) means someone else just locked it.
