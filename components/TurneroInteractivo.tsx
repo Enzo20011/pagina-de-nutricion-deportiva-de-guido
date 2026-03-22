@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { 
   Calendar as CalendarIcon, 
@@ -30,7 +30,7 @@ export default function TurneroInteractivo() {
   const [sessionId] = useState(() => Math.random().toString(36).substring(7));
   const [formData, setFormData] = useState({ nombre: '', email: '', whatsapp: '' });
 
-  const fetchAvailability = async (date: string) => {
+  const fetchAvailability = useCallback(async (date: string) => {
     try {
       const resp = await fetch(`/api/appointments/availability?fecha=${date}`);
       const data = await resp.json();
@@ -38,15 +38,17 @@ export default function TurneroInteractivo() {
     } catch (err) {
       console.error('Error fetching availability:', err);
     }
-  };
+  }, []);
 
-  const dates = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i + 1);
-    return d.toISOString().split('T')[0];
-  });
+  const dates = useMemo(() => {
+    return Array.from({ length: 14 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() + i + 1);
+      return d.toISOString().split('T')[0];
+    });
+  }, []);
 
-  const handleNextStep = async () => {
+  const handleNextStep = useCallback(async () => {
     if (!selectedDate || !selectedTime) return;
     
     setLoading(true);
@@ -77,9 +79,9 @@ export default function TurneroInteractivo() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate, selectedTime, sessionId, fetchAvailability]);
 
-  const handleBooking = async (e: React.FormEvent) => {
+  const handleBooking = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
@@ -102,7 +104,7 @@ export default function TurneroInteractivo() {
       console.error(err);
       setLoading(false);
     }
-  };
+  }, [selectedDate, selectedTime, formData, sessionId]);
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col">

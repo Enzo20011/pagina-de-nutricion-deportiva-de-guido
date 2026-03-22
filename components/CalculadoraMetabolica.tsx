@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   ArrowDown, 
   ArrowUp, 
@@ -48,37 +48,30 @@ export default function CalculadoraMetabolica() {
     actividad: 'ligero' as FactorActividad
   });
 
-  const [resultados, setResultados] = useState(calcularGastoEnergetico(data.peso, data.altura, data.edad, data.sexo, data.actividad));
-
-  const handleFieldChange = (field: string, value: any) => {
-    const rawData = { ...data, [field]: value };
-    setData(rawData);
-  };
-
-  useEffect(() => {
+  const resultados = useMemo(() => {
     const sanitizedPeso = Math.max(1, Math.min(600, data.peso));
     const sanitizedAltura = Math.max(1, Math.min(300, data.altura));
     const sanitizedEdad = Math.max(1, Math.min(120, data.edad));
-    
-    const res = calcularGastoEnergetico(sanitizedPeso, sanitizedAltura, sanitizedEdad, data.sexo, data.actividad);
-    if (res.tmb !== resultados.tmb || res.get !== resultados.get) {
-      setResultados(res);
-    }
-  }, [data]);
+    return calcularGastoEnergetico(sanitizedPeso, sanitizedAltura, sanitizedEdad, data.sexo, data.actividad);
+  }, [data.peso, data.altura, data.edad, data.sexo, data.actividad]);
+
+  const handleFieldChange = useCallback((field: string, value: any) => {
+    setData(prev => ({ ...prev, [field]: value }));
+  }, []);
 
   // Derived goals
-  const deficit = Math.round(resultados.get - 500);
-  const mantenimiento = Math.round(resultados.get);
-  const superavit = Math.round(resultados.get + 500);
+  const deficit = useMemo(() => Math.round(resultados.get - 500), [resultados.get]);
+  const mantenimiento = useMemo(() => Math.round(resultados.get), [resultados.get]);
+  const superavit = useMemo(() => Math.round(resultados.get + 500), [resultados.get]);
 
   // Chart scaling
-  const maxCal = Math.max(3000, superavit + 200);
+  const maxCal = useMemo(() => Math.max(3000, superavit + 200), [superavit]);
   // Custom colors purely for the chart as requested
   const COLOR_PERDER = "#E06C75"; // Rose/Coral
   const COLOR_MANTENER = "#4285F4"; // Google Blue matches the image
   const COLOR_GANAR = "#54B47B"; // Emerald Green matches the image
 
-  const activityIndex = ACT_LEVELS.indexOf(data.actividad);
+  const activityIndex = useMemo(() => ACT_LEVELS.indexOf(data.actividad), [data.actividad]);
 
   return (
     <div className="w-full max-w-6xl mx-auto text-white selection:bg-accentBlue/20">
