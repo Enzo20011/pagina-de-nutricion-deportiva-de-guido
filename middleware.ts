@@ -42,14 +42,15 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // Paths que NO requieren autenticación
-        if (
-          req.nextUrl.pathname === '/' ||
-          req.nextUrl.pathname === '/login' ||
-          req.nextUrl.pathname.startsWith('/api/checkout')
-        ) return true;
-        // Paths privadas
-        return !!token;
+        const { pathname } = req.nextUrl;
+        
+        // Rutas que SIEMPRE requieren autenticación
+        if (pathname.startsWith('/admin')) {
+          return !!token;
+        }
+
+        // Por defecto, permitir (las rutas públicas no están en el matcher o se filtran aquí)
+        return true;
       },
     },
     pages: {
