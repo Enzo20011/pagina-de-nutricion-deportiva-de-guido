@@ -1,34 +1,36 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit, getClientIP } from '@/lib/rateLimit';
+import { checkoutSchema } from '@/lib/validations/checkout';
 
 export async function POST(req: Request) {
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🔒 RATE LIMIT: max 3 checkout initiations per IP per 5 minutes
-  // Prevents payment spam and fake checkout initiations
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 🔒 RATE LIMIT check (already implemented)
   const ip = getClientIP(req);
   const { ok, resetAt } = checkRateLimit(`checkout:${ip}`, {
     limit: 3,
-    windowMs: 5 * 60_000, // 5 minute window
+    windowMs: 5 * 60_000,
   });
 
   if (!ok) {
     const retryAfterSeconds = Math.ceil((resetAt.getTime() - Date.now()) / 1000);
     return NextResponse.json(
       { error: `Demasiados intentos de pago. Por favor, esperá ${retryAfterSeconds} segundos.` },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': retryAfterSeconds.toString(),
-          'X-RateLimit-Remaining': '0',
-        },
-      }
+      { status: 429 }
     );
   }
 
   try {
     const body = await req.json();
-    const { name, email, date } = body;
+
+    // SERVER-SIDE ZOD VALIDATION
+    const validation = checkoutSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Datos de checkout inválidos', details: validation.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
+    const { name, email, date } = validation.data;
 
     // Simulate backend processing
     console.log('Initiating checkout for:', { name, email, date });

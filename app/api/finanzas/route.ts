@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { manualPaymentSchema } from '@/lib/validations/finance';
 
 export async function GET() {
-  // En el futuro, esto consultará el modelo Ingreso
+  // ... (GET logic) ...
   return NextResponse.json({
     totalMes: 342500,
     mpTotal: 128000,
@@ -16,7 +17,17 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    return NextResponse.json({ success: true, message: "Ingreso registrado" });
+    
+    // SERVER-SIDE ZOD VALIDATION
+    const validation = manualPaymentSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Datos de finanzas inválidos', details: validation.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ success: true, message: "Ingreso registrado (Simulado)", data: validation.data });
   } catch (error) {
     return NextResponse.json({ error: "Error registrando ingreso" }, { status: 500 });
   }

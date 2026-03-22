@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import PlanAlimentario from '@/models/PlanAlimentario';
+import { dietaSchema } from '@/lib/validations/dieta';
 
 export async function GET(request: Request) {
   await dbConnect();
@@ -20,11 +21,21 @@ export async function POST(request: Request) {
   await dbConnect();
   try {
     const body = await request.json();
-    const { pacienteId, objetivoCalorico, comidas, macrosObjetivo } = body;
+
+    // SERVER-SIDE ZOD VALIDATION
+    const validation = dietaSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Datos del plan alimentario inválidos', details: validation.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
+    const { pacienteId, ...data } = validation.data;
     
     const plan = await PlanAlimentario.findOneAndUpdate(
       { pacienteId },
-      { pacienteId, objetivoCalorico, comidas, macrosObjetivo, updatedAt: new Date() },
+      { pacienteId, ...data, updatedAt: new Date() },
       { upsert: true, new: true }
     );
     return NextResponse.json({ data: plan });
