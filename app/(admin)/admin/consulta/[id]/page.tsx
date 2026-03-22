@@ -134,7 +134,7 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
                <PanelAntropometria pacienteId={params.id} onSync={(d) => setConsultaData(prev => ({...prev, antropometria: d as any}))} />
              </div>
              <div className={activeTab === 'dieta' ? 'block' : 'hidden'}>
-               <PlanAlimentario pacienteId={params.id} objetivoCalorico={2450} hideExport={true} onSync={(d) => setConsultaData(prev => ({...prev, dieta: d as any}))} />
+               <PlanAlimentario pacienteId={params.id} onSync={(d) => setConsultaData(prev => ({...prev, dieta: d as any}))} />
              </div>
              <div className={activeTab === 'evolucion' ? 'block' : 'hidden'}>
                <DashboardEvolucion pacienteId={params.id} />

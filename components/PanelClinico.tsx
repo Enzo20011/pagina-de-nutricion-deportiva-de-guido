@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Calculator, 
   ClipboardList, 
@@ -28,9 +29,21 @@ import {
 } from '@/utils/calculosNutricionales';
 
 export default function PanelClinico({ pacienteId, onSync }: { pacienteId: string, onSync?: (data: any) => void }) {
+  const queryClient = useQueryClient();
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
+
+  // 1. Fetch data from server
+  const { data: serverData, isLoading } = useQuery({
+    queryKey: ['anamnesis', pacienteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/anamnesis?pacienteId=${pacienteId}`);
+      if (!res.ok) throw new Error('Error al cargar anamnesis');
+      return res.json();
+    },
+    enabled: !!pacienteId
+  });
 
   const [calcData, setCalcData] = useState({
     peso: 70,
@@ -64,7 +77,8 @@ export default function PanelClinico({ pacienteId, onSync }: { pacienteId: strin
     register, 
     handleSubmit, 
     watch,
-    formState: { errors, isSubmitting },
+    reset,
+    formState: { errors, isValid },
   } = useForm<AnamnesisInput>({
     resolver: zodResolver(anamnesisSchema),
     defaultValues: {
@@ -76,12 +90,45 @@ export default function PanelClinico({ pacienteId, onSync }: { pacienteId: strin
     }
   });
 
-  const watchedFields = watch();
-  // Bypass RHF Proxy Optimization: Force subscription to ALL fields 
-  // so that the exact moment the user types in any text area, the sync hook triggers.
-  const _forceDeepSubscription = JSON.stringify(watchedFields);
+  // Sync server data to form when available
+  React.useEffect(() => {
+    if (serverData?.data) {
+      reset({
+        ...serverData.data,
+        pacienteId: pacienteId // ensure ID is correct
+      });
+    }
+  }, [serverData, reset, pacienteId]);
 
-  // Autoguardado silencioso (Debounce de 2 segundos de inactividad)
+  const watchedFields = watch();
+
+  // 2. Mutation for saving
+  const saveMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch('/api/anamnesis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Error al guardar');
+      return res.json();
+    },
+    onSuccess: (res) => {
+      if (!res.data.isDraft) {
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+      }
+      const now = new Date();
+      setLastSaved(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      queryClient.setQueryData(['anamnesis', pacienteId], res);
+    },
+    onError: (err: any) => {
+       setError(err.message);
+       setTimeout(() => setError(null), 5000);
+    }
+  });
+
+  // Sync state to parent for PDF/Preview
   React.useEffect(() => {
     if (onSync) {
       onSync({
@@ -91,48 +138,21 @@ export default function PanelClinico({ pacienteId, onSync }: { pacienteId: strin
         objetivos: { deficit, mantenimiento, superavit }
       });
     }
+  }, [watchedFields, resultados, macros, onSync, deficit, mantenimiento, superavit]);
 
+  // Autoguardado silencioso
+  React.useEffect(() => {
     const timer = setTimeout(() => {
-      if (watchedFields.pacienteId) {
-        const autoSave = async () => {
-          try {
-            await fetch('/api/anamnesis', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...watchedFields, isDraft: true }),
-            });
-            const now = new Date();
-            setLastSaved(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-          } catch (e) {
-            console.error('Error en autoguardado:', e);
-          }
-        };
-        autoSave();
+      if (isValid && watchedFields.pacienteId) {
+        saveMutation.mutate({ ...watchedFields, isDraft: true });
       }
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [watchedFields, resultados, macros]);
+  }, [watchedFields, isValid]);
 
   const onSubmit = async (data: AnamnesisInput) => {
-    setSuccess(false);
-    setError(null);
-    try {
-      const response = await fetch('/api/anamnesis', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const details = errorData.errors ? Object.values(errorData.errors).flat().join(', ') : (errorData.message || errorData.error);
-        throw new Error(details || 'Error interno al guardar los datos clínicos.');
-      }
-      setSuccess(true);
-    } catch (err: any) {
-      setError(err.message);
-    }
+    saveMutation.mutate({ ...data, isDraft: false });
   };
 
   const inputStyles = "w-full p-8 bg-navy/20 backdrop-blur-md border border-white/5 focus:border-accentBlue/30 rounded-[2rem] outline-none transition-all font-bold text-bone placeholder:text-white/10 shadow-inner";
@@ -253,11 +273,11 @@ export default function PanelClinico({ pacienteId, onSync }: { pacienteId: strin
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               type="submit" 
-              disabled={isSubmitting}
+              disabled={saveMutation.isPending}
               className="w-full sm:w-auto bg-white text-navy px-12 py-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-4 group"
             >
               <Save className="w-5 h-5 text-accentBlue group-hover:rotate-12 transition-transform" />
-              {isSubmitting ? 'Sincronizando...' : 'Finalizar Bloque'}
+              {saveMutation.isPending ? 'Sincronizando...' : 'Finalizar Bloque'}
             </motion.button>
           </div>
         </form>

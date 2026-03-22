@@ -17,9 +17,11 @@ import {
   clasificarIMC 
 } from '@/utils/calculosAntropometricos';
 import { motion } from 'framer-motion';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function PanelAntropometria({ pacienteId, onSync }: { pacienteId: string, onSync?: (data: any) => void }) {
-  const { register, watch, reset } = useForm({
+  const queryClient = useQueryClient();
+  const { register, watch, reset, formState: { isValid } } = useForm({
     defaultValues: {
       peso: 70,
       altura: 170,
@@ -29,6 +31,32 @@ export default function PanelAntropometria({ pacienteId, onSync }: { pacienteId:
       abdominal: 18,
     }
   });
+
+  // 1. Fetch History
+  const { data: serverData } = useQuery({
+    queryKey: ['antropometria', pacienteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/antropometria?pacienteId=${pacienteId}`);
+      if (!res.ok) throw new Error('Error al cargar antropometría');
+      return res.json();
+    },
+    enabled: !!pacienteId
+  });
+
+  // Sync latest record to form
+  React.useEffect(() => {
+    if (serverData?.data && serverData.data.length > 0) {
+      const latest = serverData.data[serverData.data.length - 1];
+      reset({ 
+        peso: latest.peso || 70, 
+        altura: latest.altura || 170, 
+        triceps: latest.pliegues?.triceps || 10,
+        subescapular: latest.pliegues?.subescapular || 12,
+        suprailiaco: latest.pliegues?.suprailiaco || 15,
+        abdominal: latest.pliegues?.abdominal || 18,
+      });
+    }
+  }, [serverData, reset]);
 
   const values = watch();
   
@@ -40,26 +68,22 @@ export default function PanelAntropometria({ pacienteId, onSync }: { pacienteId:
     values.abdominal
   );
   const comp = calcularComposicionCorporal(values.peso, grasaPct);
-
-  React.useEffect(() => {
-    if (pacienteId) {
-      fetch(`/api/antropometria?pacienteId=${pacienteId}`)
-        .then(res => res.json())
-        .then(res => {
-          if (res.data && res.data.length > 0) {
-            const today = res.data[res.data.length - 1];
-            reset({ 
-              peso: today.peso || 70, 
-              altura: today.altura || 170, 
-              triceps: today.pliegues?.triceps || 10,
-              subescapular: today.pliegues?.subescapular || 12,
-              suprailiaco: today.pliegues?.suprailiaco || 15,
-              abdominal: today.pliegues?.abdominal || 18,
-            });
-          }
-        });
+  
+  const saveMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch('/api/antropometria', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Error al guardar');
+      return res.json();
+    },
+    onSuccess: (res) => {
+      // Optimizacion: invalidate queries to show history update if needed
+      // queryClient.invalidateQueries({ queryKey: ['antropometria', pacienteId] });
     }
-  }, [pacienteId, reset]);
+  });
 
   React.useEffect(() => {
     if (onSync) {
@@ -73,20 +97,18 @@ export default function PanelAntropometria({ pacienteId, onSync }: { pacienteId:
       });
     }
     const timer = setTimeout(() => {
-      fetch('/api/antropometria', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      if (isValid && pacienteId) {
+        saveMutation.mutate({ 
           pacienteId, 
           peso: values.peso, 
           altura: values.altura, 
           pliegues: { triceps: values.triceps, subescapular: values.subescapular, suprailiaco: values.suprailiaco, abdominal: values.abdominal },
           resultados: { porcentajeGrasa: grasaPct, imc, masaGordaKg: comp.masaGordaKg, masaMagraKg: comp.masaMagraKg }
-        })
-      }).catch(() => {});
+        });
+      }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [values, imc, grasaPct, comp]);
+  }, [values, imc, grasaPct, comp, isValid, pacienteId, onSync]);
 
   const inputStyles = "w-full p-6 bg-navy border border-white/5 rounded-2xl outline-none text-2xl font-black text-white shadow-inner focus:border-accentBlue/40 transition-all placeholder:text-white/5";
 

@@ -12,9 +12,18 @@ import {
   Database,
   CheckCircle2,
   ArrowRight,
-  Minus
+  Minus,
+  Dna, 
+  Flame, 
+  Scale, 
+  Save, 
+  Download, 
+  Info,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { exportarDietaLazy } from '@/utils/exportPdfAction';
 
 interface FoodItem {
   id: string;
@@ -31,6 +40,10 @@ interface Meal {
   id: string;
   nombre: string;
   items: FoodItem[];
+  totalKcal: number;
+  totalProteins: number;
+  totalCarbs: number;
+  totalFats: number;
   objetivoSugerido?: { p: number, c: number, g: number };
 }
 
@@ -43,18 +56,56 @@ const FOOD_DATABASE: Omit<FoodItem, 'gramos' | 'id'>[] = [
   { nombre: 'Queso Casancrem Light', kcal: 120, proteinas: 9, carbos: 4.8, grasas: 6.8, origen: 'Nutrinfo' },
 ];
 
-export default function PlanAlimentario({ pacienteId, objetivoCalorico = 2000, onSync, hideExport = false }: { pacienteId?: string, objetivoCalorico?: number, onSync?: (data: any) => void, hideExport?: boolean }) {
+export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: string, onSync?: (data: any) => void }) {
+  const queryClient = useQueryClient();
   const [meals, setMeals] = useState<Meal[]>([
-    { id: '1', nombre: 'Desayuno', items: [] },
-    { id: '2', nombre: 'Almuerzo', items: [] },
-    { id: '3', nombre: 'Merienda', items: [] },
-    { id: '4', nombre: 'Cena', items: [] },
+    { id: '1', nombre: 'Desayuno', items: [], totalKcal: 0, totalProteins: 0, totalCarbs: 0, totalFats: 0 },
+    { id: '2', nombre: 'Almuerzo', items: [], totalKcal: 0, totalProteins: 0, totalCarbs: 0, totalFats: 0 },
+    { id: '3', nombre: 'Merienda', items: [], totalKcal: 0, totalProteins: 0, totalCarbs: 0, totalFats: 0 },
+    { id: '4', nombre: 'Cena', items: [], totalKcal: 0, totalProteins: 0, totalCarbs: 0, totalFats: 0 },
   ]);
+  const [targetKcal, setTargetKcal] = useState(2000);
+  const [targetMacros, setTargetMacros] = useState({ p: 30, c: 40, f: 30 });
+  const [isExporting, setIsExporting] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeMealId, setActiveMealId] = useState<string | null>(null);
   const [filterSource, setFilterSource] = useState<'ALL' | 'USDA' | 'Nutrinfo'>('ALL');
   const [numComidas, setNumComidas] = useState<number>(4);
+
+  // 1. Fetch initial data
+  const { data: serverData } = useQuery({
+    queryKey: ['dieta', pacienteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/dieta?pacienteId=${pacienteId}`);
+      if (!res.ok) throw new Error('Error al cargar dieta');
+      return res.json();
+    },
+    enabled: !!pacienteId
+  });
+
+  // Sync server data to local state once
+  React.useEffect(() => {
+    if (serverData?.data) {
+       const { comidas, objetivoCalorico, macrosObjetivo } = serverData.data;
+       if (comidas && comidas.length > 0) {
+         // Fix totals if they are not present or differ
+         const fixedMeals = comidas.map((m: any, i: number) => ({
+           ...m,
+           id: m.id || m._id || (i + 1).toString(),
+           items: m.items.map((it: any) => ({ ...it, id: it.id || it._id || Math.random().toString() })),
+           totalKcal: m.totalKcal || 0,
+           totalProteins: m.totalProteins || 0,
+           totalCarbs: m.totalCarbs || 0,
+           totalFats: m.totalFats || 0,
+         }));
+         setMeals(fixedMeals);
+         setNumComidas(fixedMeals.length);
+       }
+       if (objetivoCalorico) setTargetKcal(objetivoCalorico);
+       if (macrosObjetivo) setTargetMacros(macrosObjetivo);
+    }
+  }, [serverData]);
 
   // Dynamic meals handler
   const getMealNames = (num: number) => {
@@ -81,7 +132,11 @@ export default function PlanAlimentario({ pacienteId, objetivoCalorico = 2000, o
         return {
           id: (i + 1).toString(),
           nombre: names[i],
-          items: existingMeal ? existingMeal.items : []
+          items: existingMeal ? existingMeal.items : [],
+          totalKcal: existingMeal ? existingMeal.totalKcal : 0,
+          totalProteins: existingMeal ? existingMeal.totalProteins : 0,
+          totalCarbs: existingMeal ? existingMeal.totalCarbs : 0,
+          totalFats: existingMeal ? existingMeal.totalFats : 0,
         };
       });
     });
@@ -99,45 +154,47 @@ export default function PlanAlimentario({ pacienteId, objetivoCalorico = 2000, o
     }, { kcal: 0, p: 0, c: 0, g: 0 });
   }, [meals]);
 
-  React.useEffect(() => {
-    if (pacienteId) {
-      fetch(`/api/dieta?pacienteId=${pacienteId}`)
-        .then(res => res.json())
-        .then(res => {
-          if (res.data && res.data.comidas && res.data.comidas.length > 0) {
-            const fixedMeals = res.data.comidas.map((m: any, i: number) => ({
-               ...m,
-               id: m.id || m._id || (i + 1).toString(),
-               items: m.items.map((it: any) => ({ ...it, id: it.id || it._id || Math.random().toString() }))
-            }));
-            setMeals(fixedMeals);
-            setNumComidas(fixedMeals.length);
-          }
-        })
-        .catch(console.error);
+  const saveMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch('/api/dieta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Error al guardar dieta');
+      return res.json();
+    },
+    onSuccess: (res) => {
+      queryClient.setQueryData(['dieta', pacienteId], res);
     }
-  }, [pacienteId]);
+  });
 
+  // Auto-sync with parent (PDF/Summary)
   React.useEffect(() => {
-    if (onSync) onSync({ meals, totals });
-    if (pacienteId && meals.some(m => m.items.length > 0)) {
-      const timer = setTimeout(async () => {
-        try {
-          await fetch('/api/dieta', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-               pacienteId, 
-               objetivoCalorico, 
-               comidas: meals, 
-               macrosObjetivo: { proteinasPct: 20, grasasPct: 30, carbosPct: 50 } 
-            })
-          });
-        } catch(e) {}
-      }, 2000);
-      return () => clearTimeout(timer);
+    if (onSync) {
+      onSync({
+        meals,
+        totals,
+        targets: { targetKcal, targetMacros }
+      });
     }
-  }, [meals, totals]);
+  }, [meals, totals, targetKcal, targetMacros, onSync]);
+
+  // Autoguardado debounced
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (pacienteId) {
+        saveMutation.mutate({
+          pacienteId,
+          objetivoCalorico: targetKcal,
+          comidas: meals,
+          macrosObjetivo: targetMacros
+        });
+      }
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [meals, targetKcal, targetMacros]);
 
   const searchResults = useMemo(() => {
     return FOOD_DATABASE.filter(f => 
@@ -311,8 +368,8 @@ export default function PlanAlimentario({ pacienteId, objetivoCalorico = 2000, o
                           activeMealId === meal.id ? 'text-accentBlue' : 'text-slate-500'
                         )}>{meal.items.length} ELM</span>
                       </div>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                        Target: <span className="text-white ml-0.5">{Math.round(objetivoCalorico / numComidas)}</span> <span className="text-[8px] opacity-50">KCAL</span>
+                       <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                        Target: <span className="text-white ml-0.5">{Math.round(targetKcal / numComidas)}</span> <span className="text-[8px] opacity-50">KCAL</span>
                       </p>
                    </div>
                 </div>
@@ -385,12 +442,12 @@ export default function PlanAlimentario({ pacienteId, objetivoCalorico = 2000, o
                     <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-500 leading-none">Energía Indexada</p>
                     <div className="flex items-baseline justify-center gap-3">
                        <h4 className="text-7xl font-black text-white italic tracking-tighter drop-shadow-2xl">{Math.round(totals.kcal)}</h4>
-                       <span className="text-xl font-black text-accentBlue/30 italic">/{objetivoCalorico}</span>
+                       <span className="text-xl font-black text-accentBlue/30 italic">/{targetKcal}</span>
                     </div>
                     <div className="w-full h-1.5 bg-darkNavy rounded-full overflow-hidden shadow-inner">
                        <motion.div 
                          initial={{ width: 0 }}
-                         animate={{ width: `${Math.min((totals.kcal / objetivoCalorico) * 100, 100)}%` }}
+                         animate={{ width: `${Math.min((totals.kcal / targetKcal) * 100, 100)}%` }}
                          className="h-full bg-accentBlue shadow-[0_0_20px_rgba(59,130,246,0.4)] rounded-full"
                        />
                     </div>
@@ -427,14 +484,13 @@ export default function PlanAlimentario({ pacienteId, objetivoCalorico = 2000, o
                     <p className="text-xs font-black text-white uppercase tracking-widest">IA de Cuadre Clínico</p>
                  </div>
                  <p className="text-[11px] text-slate-500 font-bold leading-relaxed italic">
-                    {totals.kcal < objetivoCalorico 
-                      ? `Precisión requerida: faltan ${Math.round(objetivoCalorico - totals.kcal)} KCAL. Ajuste las ingestas para optimizar el balance.`
+                    {totals.kcal < targetKcal 
+                      ? `Precisión requerida: faltan ${Math.round(targetKcal - totals.kcal)} KCAL. Ajuste las ingestas para optimizar el balance.`
                       : 'Equilibrio metabólico alcanzado. Sincronización completa.'}
                  </p>
               </div>
 
-              {!hideExport && (
-                <motion.button 
+              <motion.button 
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={async () => {
@@ -445,7 +501,6 @@ export default function PlanAlimentario({ pacienteId, objetivoCalorico = 2000, o
                 >
                    Exportar Protocolo PDF <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </motion.button>
-              )}
            </div>
         </div>
       </div>
