@@ -21,11 +21,20 @@ export async function GET(req: Request) {
     const query: any = includeDeleted ? {} : { isDeleted: false };
     
     if (search) {
-      query.$or = [
-        { nombre: { $regex: search, $options: 'i' } },
-        { apellido: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
-      ];
+      // If search is numeric, prioritize DNI match
+      if (/^\d+$/.test(search)) {
+        query.$or = [
+          { dni: { $regex: search, $options: 'i' } },
+          { nombre: { $regex: search, $options: 'i' } },
+          { apellido: { $regex: search, $options: 'i' } }
+        ];
+      } else {
+        query.$or = [
+          { nombre: { $regex: search, $options: 'i' } },
+          { apellido: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } }
+        ];
+      }
     }
 
     const skip = (page - 1) * limit;

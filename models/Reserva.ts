@@ -39,6 +39,7 @@ ReservaSchema.index(
   }
 );
 ReservaSchema.index({ email: 1 });
+ReservaSchema.index({ fecha: 1 });
 ReservaSchema.index({ isDeleted: 1 });
 
 export default mongoose.models.Reserva || mongoose.model<IReserva>('Reserva', ReservaSchema);
