@@ -1,0 +1,12 @@
+[
+  { "nombre": "Asado Vacuno (100g)", "calorias": 250, "proteinas": 19, "carbohidratos": 0, "grasas": 19, "origen": "LOCAL", "idExterno": "ARG-001" },
+  { "nombre": "Empanadas de Carne (Unidad)", "calorias": 220, "proteinas": 8, "carbohidratos": 24, "grasas": 10, "origen": "LOCAL", "idExterno": "ARG-002" },
+  { "nombre": "Dulce de Leche Repostero", "calorias": 315, "proteinas": 7, "carbohidratos": 55, "grasas": 6, "origen": "LOCAL", "idExterno": "ARG-003" },
+  { "nombre": "Alfajor de Chocolate", "calorias": 450, "proteinas": 5, "carbohidratos": 60, "grasas": 21, "origen": "LOCAL", "idExterno": "ARG-004" },
+  { "nombre": "Factura - Medialuna de Manteca", "calorias": 350, "proteinas": 6, "carbohidratos": 45, "grasas": 16, "origen": "LOCAL", "idExterno": "ARG-005" },
+  { "nombre": "Yerba Mate (Infusión)", "calorias": 30, "proteinas": 1, "carbohidratos": 6, "grasas": 0, "origen": "LOCAL", "idExterno": "ARG-006" },
+  { "nombre": "Polenta Cocida con Sal", "calorias": 85, "proteinas": 2, "carbohidratos": 18, "grasas": 0.5, "origen": "LOCAL", "idExterno": "ARG-007" },
+  { "nombre": "Tapa de Nalga (Cocida)", "calorias": 210, "proteinas": 28, "carbohidratos": 0, "grasas": 10, "origen": "LOCAL", "idExterno": "ARG-008" },
+  { "nombre": "Vino Tinto Malbec (100ml)", "calorias": 85, "proteinas": 0, "carbohidratos": 2.5, "grasas": 0, "origen": "LOCAL", "idExterno": "ARG-009" },
+  { "nombre": "Queso Reggianito (30g)", "calorias": 130, "proteinas": 9, "carbohidratos": 1, "grasas": 10, "origen": "LOCAL", "idExterno": "ARG-010" }
+]

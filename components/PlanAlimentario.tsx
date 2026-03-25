@@ -166,11 +166,17 @@ export default function PlanAlimentario({
 
   const totals = useMemo(() => {
     return meals.reduce((acc, meal) => {
-      meal.items.forEach(item => {
-        acc.kcal += (item.calorias * item.gramos) / 100;
-        acc.p += (item.proteinas * item.gramos) / 100;
-        acc.c += (item.carbohidratos * item.gramos) / 100;
-        acc.g += (item.grasas * item.gramos) / 100;
+      (meal.items || []).forEach(item => {
+        const cal = item.calorias ?? (item as any).kcal ?? 0;
+        const p = item.proteinas ?? 0;
+        const c = item.carbohidratos ?? (item as any).carbos ?? 0;
+        const g = item.grasas ?? 0;
+        const gr = item.gramos ?? 100;
+
+        acc.kcal += (cal * gr) / 100;
+        acc.p += (p * gr) / 100;
+        acc.c += (c * gr) / 100;
+        acc.g += (g * gr) / 100;
       });
       return acc;
     }, { kcal: 0, p: 0, c: 0, g: 0 });
@@ -253,8 +259,10 @@ export default function PlanAlimentario({
       ...baseFood,
       id: Math.random().toString(),
       gramos: 100,
-      calorias: baseFood.calorias || 0,
-      carbohidratos: baseFood.carbohidratos || 0,
+      calorias: baseFood.calorias || baseFood.kcal || 0,
+      carbohidratos: baseFood.carbohidratos || baseFood.carbos || 0,
+      proteinas: baseFood.proteinas || 0,
+      grasas: baseFood.grasas || 0,
     };
     setMeals(meals.map(m => m.id === mealId ? { ...m, items: [...m.items, newFood] } : m));
     setSearchQuery('');

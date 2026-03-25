@@ -38,17 +38,25 @@ export async function GET(req: Request) {
 
     const localAlimentos = await (Alimento as any).find(query).limit(30).lean();
     const formattedLocal = localAlimentos.map((a: any) => ({
-      ...a,
-      origen: a.origen || 'LOCAL'
+      _id: a._id,
+      nombre: a.nombre,
+      calorias: a.calorias,
+      proteinas: a.proteinas,
+      carbohidratos: a.carbohidratos,
+      grasas: a.grasas,
+      origen: a.origen || 'LOCAL',
+      idExterno: a.idExterno
     }));
 
     // Combinación Híbrida Inteligente (Prioridad Local)
     let finalResults = formattedLocal;
     
-    if (categoria === 'ALL' || finalResults.length < 10) {
+    if (categoria === 'ALL' || finalResults.length < 5) {
        // Agregar resultados de USDA evitando duplicados de nombre exacto si existen
        const existingNames = new Set(finalResults.map(r => r.nombre.toLowerCase()));
-       const filteredUSDA = usdaResults.filter(r => !existingNames.has(r.nombre.toLowerCase()));
+       const filteredUSDA = usdaResults
+         .filter(r => !existingNames.has(r.nombre.toLowerCase()))
+         .map(r => ({ ...r, _id: r.idExterno })); // Usar idExterno como _id temporal
        
        finalResults = [...finalResults, ...filteredUSDA].slice(0, 50);
     }

@@ -24,11 +24,11 @@ Este documento registra la evolución, arquitectura y funcionalidades del portal
 - [x] Crear Guía de Implementación: Motor de Búsqueda Híbrido (ARGENFOODS + USDA)
 - [x] Paso 1: Configuración de variables de entorno y API Keys
 - [x] Paso 2: Instalación de motor de traducción y optimización de modelos (MongoDB Text Index)
-- [/] Paso 3: Refactorización de lógica de búsqueda híbrida y traducción en tiempo real
-- [ ] Paso 4: Carga de base de datos ARGENFOODS y pruebas finales
-- **Backend Inteligente:** El buscador prioriza automáticamente ARGENFOODS y Nutrinfo sobre la USDA, eliminando duplicados de forma transparente.
-- **Interfaz Mejorada:** Se han añadido filtros visuales específicos y badges de origen para cada resultado de búsqueda.
-- **Arquitectura de Datos:** El modelo `Alimento` ha sido enriquecido con el campo `fuente`, permitiendo una categorización precisa por procedencia nutricional.
+- **Motor de Búsqueda Híbrido:**
+  - **Backend:** Refactorización de `/api/alimentos` para búsqueda en capas (Local -> USDA).
+  - **Traducción:** Integración de librería `translate` con motor Google para consultas bidireccionales ES-EN.
+  - **Database:** Esquema `Alimento` oficializado con campos `calorias`, `origen` (Enum) e `idExterno`. Índice de texto activo.
+  - **Frontend:** Interfaz `PlanAlimentario.tsx` adaptada para cálculos y visualización bajo el nuevo esquema.
 
 El sistema se encuentra **completamente funcional** y listo para su uso clínico intensivo.
 - **Estabilidad:** Verificación completa de todas las rutas administrativas (`/admin/*`).

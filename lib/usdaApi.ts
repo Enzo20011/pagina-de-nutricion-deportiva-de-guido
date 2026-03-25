@@ -44,12 +44,12 @@ export async function searchUSDA(query: string) {
       }
 
       return {
-        idExterno: `usda-${f.fdcId}`,
-        nombre: nombreEsp,
-        calorias: getNutrient(1008) || getNutrient('Energy'),
-        proteinas: getNutrient(1003) || getNutrient('Protein'),
-        grasas: getNutrient(1004) || getNutrient('Total lipid'),
-        carbohidratos: getNutrient(1005) || getNutrient('Carbohydrate'),
+        idExterno: f.fdcId.toString(),
+        nombre: nombreEsp.charAt(0).toUpperCase() + nombreEsp.slice(1).toLowerCase(),
+        calorias: getNutrient(1008),
+        proteinas: getNutrient(1003),
+        carbohidratos: getNutrient(1005),
+        grasas: getNutrient(1004),
         origen: 'USDA' as const
       };
     }));
