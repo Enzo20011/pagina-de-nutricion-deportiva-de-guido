@@ -8,6 +8,7 @@ export interface IAlimento extends Document {
   grasas: number;
   carbohidratos: number;
   porcionBaseGramos: number;
+  fuente?: string;
 }
 
 const AlimentoSchema: Schema = new Schema({
@@ -18,6 +19,7 @@ const AlimentoSchema: Schema = new Schema({
   grasas: { type: Number, required: true },
   carbohidratos: { type: Number, required: true },
   porcionBaseGramos: { type: Number, default: 100 },
+  fuente: { type: String, default: 'Nutrinfo', index: true },
 });
 
 export default mongoose.models.Alimento || mongoose.model<IAlimento>('Alimento', AlimentoSchema);

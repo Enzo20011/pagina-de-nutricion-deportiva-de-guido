@@ -20,32 +20,40 @@ export async function GET(req: Request) {
       query.nombre = { $regex: search, $options: 'i' };
     }
     
-    // Si la categoría es USDA, solo buscamos en USDA
+    // Si la categoría es USDA o ALL, buscamos en USDA de forma secundaria
+    let usdaResults: any[] = [];
+    if (categoria === 'USDA' || categoria === 'ALL') {
+       usdaResults = await searchUSDA(search);
+    }
+
     if (categoria === 'USDA') {
-      const usdaResults = await searchUSDA(search);
       return NextResponse.json({ data: usdaResults });
     }
 
-    if (categoria && categoria !== 'ALL' && categoria !== 'Nutrinfo') {
-      query.categoria = categoria;
+    // Buscamos en local (MongoDB)
+    // Filtramos por fuente específica si no es 'ALL' ni 'USDA'
+    if (categoria && categoria !== 'ALL' && categoria !== 'USDA') {
+      query.fuente = categoria;
     }
 
-    // Buscamos en local (Nutrinfo)
-    const localAlimentos = await (Alimento as any).find(query).limit(20).lean();
+    const localAlimentos = await (Alimento as any).find(query).limit(30).lean();
     const formattedLocal = localAlimentos.map((a: any) => ({
       ...a,
-      origen: 'Nutrinfo'
+      origen: a.fuente || 'Nutrinfo'
     }));
 
-    // Si la categoría es ALL o Nutrinfo, podemos complementar con USDA si la búsqueda es genérica
-    let results = formattedLocal;
-    if (categoria === 'ALL' || results.length < 5) {
-       const usdaResults = await searchUSDA(search);
-       // Combinar y evitar duplicados básicos por nombre si es necesario
-       results = [...results, ...usdaResults].slice(0, 30);
+    // Combinación Híbrida Inteligente (Prioridad Local)
+    let finalResults = formattedLocal;
+    
+    if (categoria === 'ALL' || finalResults.length < 10) {
+       // Agregar resultados de USDA evitando duplicados de nombre exacto si existen
+       const existingNames = new Set(finalResults.map(r => r.nombre.toLowerCase()));
+       const filteredUSDA = usdaResults.filter(r => !existingNames.has(r.nombre.toLowerCase()));
+       
+       finalResults = [...finalResults, ...filteredUSDA].slice(0, 50);
     }
 
-    return NextResponse.json({ data: results });
+    return NextResponse.json({ data: finalResults });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

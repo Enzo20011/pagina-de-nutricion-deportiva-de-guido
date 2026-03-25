@@ -87,7 +87,7 @@ export default function PlanAlimentario({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeMealId, setActiveMealId] = useState<string | null>(null);
-  const [filterSource, setFilterSource] = useState<'ALL' | 'USDA' | 'Nutrinfo'>('ALL');
+  const [filterSource, setFilterSource] = useState<'ALL' | 'USDA' | 'Nutrinfo' | 'ARGENFOODS'>('ALL');
   const [numComidas, setNumComidas] = useState<number>(4);
 
   // 1. Fetch initial data
@@ -300,7 +300,7 @@ export default function PlanAlimentario({
                />
             </div>
             <div className="flex gap-2 bg-[#0a0f14] p-2 rounded-sm border border-white/5 shadow-xl">
-               {['ALL', 'USDA', 'Nutrinfo'].map(s => (
+               {['ALL', 'ARGENFOODS', 'Nutrinfo', 'USDA'].map(s => (
                  <button 
                    key={s}
                    onClick={() => setFilterSource(s as any)}
@@ -370,9 +370,19 @@ export default function PlanAlimentario({
                     )}
                   >
                      <div className="flex justify-between items-start mb-6 w-full">
-                        <span className="px-3 py-1 bg-white/5 rounded-sm text-[8px] font-bold uppercase tracking-widest text-[#3b82f6]">
-                          {food.categoria || 'ALIMENTO'}
-                        </span>
+                        <div className="flex gap-2">
+                           <span className="px-3 py-1 bg-white/5 rounded-sm text-[8px] font-bold uppercase tracking-widest text-[#3b82f6]">
+                             {food.categoria || 'ALIMENTO'}
+                           </span>
+                           <span className={clsx(
+                             "px-3 py-1 rounded-sm text-[8px] font-bold uppercase tracking-widest",
+                             food.origen === 'USDA' ? 'bg-orange-500/10 text-orange-400' : 
+                             food.origen === 'ARGENFOODS' ? 'bg-emerald-500/10 text-emerald-400' : 
+                             'bg-white/5 text-white/30'
+                           )}>
+                             {food.origen}
+                           </span>
+                        </div>
                         <span className="text-[10px] font-bold text-white/20 group-hover:text-white transition-all duration-700">{food.kcal} <span className="text-[8px] opacity-40">KCAL</span></span>
                      </div>
                      <p className="text-white font-bold uppercase tracking-tight text-[12px] mb-6 group-hover:text-[#3b82f6] transition-all duration-700 truncate w-full">{food.nombre}</p>
