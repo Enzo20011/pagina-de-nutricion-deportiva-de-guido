@@ -12,6 +12,10 @@ export interface IAnamnesis extends Document {
   nivelEstres: number;
   aversionesAlimentarias?: string;
   ritmoIntestinal: string;
+  peso?: number;
+  altura?: number;
+  edad?: number;
+  sexo?: 'masculino' | 'femenino';
   isDraft: boolean;
   isDeleted: boolean;
   createdAt: Date;
@@ -53,6 +57,10 @@ const AnamnesisSchema: Schema = new Schema(
       enum: ['Estreñimiento', 'Normal', 'Diarrea', 'Irregular'],
       required: function(this: any) { return !this.isDraft; } 
     },
+    peso: { type: Number },
+    altura: { type: Number },
+    edad: { type: Number },
+    sexo: { type: String, enum: ['masculino', 'femenino'] },
     isDraft: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
   },

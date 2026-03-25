@@ -14,6 +14,16 @@
   100% { background-position: 200% 0; }
 }
 
+@keyframes gradient-slow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-slow {
+  background-size: 200% auto;
+  animation: gradient-slow 8s ease infinite;
+}
+
 /* ELITE LUXURY UTILITIES */
 .noise-overlay {
   position: fixed;
@@ -175,6 +185,14 @@
     scroll-behavior: smooth;
   }
 
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
   /* ── Focus ring standard ── */
   :focus-visible {
     outline: 2px solid rgba(59,130,246,0.8);
@@ -189,18 +207,37 @@
 
 @layer base {
   body {
-    @apply bg-darkNavy text-bone antialiased selection:bg-accentBlue/30 selection:text-white;
+    @apply bg-[#0a0f14] text-[#eaeef6] antialiased;
+    font-family: var(--font-space-grotesk), var(--font-inter), sans-serif;
+    selection-color-transparent: rgba(170,255,220,0.2);
   }
 }
 
 :root {
-  --background: #070C14;
-  --foreground: #F8FAFC;
-  --muted: #0F1A2A;
-  --primary: #1B365D;
-  --primary-foreground: #FFFFFF;
-  --foreground-rgb: 248, 250, 252;
-  --background-rgb: 7, 12, 20;
+  --background: #0a0f14;
+  --foreground: #eaeef6;
+  --muted: #1a2027;
+  --primary: #3b82f6;
+  --primary-container: #2563eb;
+  --primary-foreground: #ffffff;
+  --navy-deep: #0a0f14;
+  --navy-professional: #0e1419;
+  --accent-blue: #60a5fa;
+  --steel: #a7abb2;
+  --foreground-rgb: 234, 238, 246;
+  --background-rgb: 10, 15, 20;
+  /* Stitch Kinetic Lab Dark - BLUE EDITION */
+  --kl-bg: #0a0f14;
+  --kl-surface-low: #0e1419;
+  --kl-surface-med: #141a20;
+  --kl-surface-hi: #1a2027;
+  --kl-surface-top: #1f262e;
+  --kl-primary: #3b82f6;
+  --kl-primary-c: #60a5fa;
+  --kl-text: #eaeef6;
+  --kl-text-dim: #a7abb2;
+  --kl-outline: #71767c;
+  --kl-outline-var: #43484e;
 }
 
 @layer components {
@@ -214,6 +251,55 @@
 
   .soft-shadow {
     box-shadow: 0 10px 40px -15px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ── UNIFIED TYPOGRAPHY SYSTEM ───────────────────────────── */
+  /* XL: Hero & Page Main Titles */
+  .heading-xl {
+    @apply font-black uppercase italic tracking-tighter leading-[0.85] text-white;
+    font-size: clamp(2.2rem, 6vw, 4.5rem);
+  }
+
+  /* LG: Section Titles */
+  .heading-lg {
+    @apply font-black uppercase italic tracking-tighter leading-tight text-white;
+    font-size: clamp(1.6rem, 4vw, 2.5rem);
+  }
+
+  /* MD: Subtitles / Secondary Section headers */
+  .heading-md {
+    @apply font-black uppercase italic tracking-tighter leading-tight text-white;
+    font-size: clamp(1.2rem, 3vw, 1.6rem);
+  }
+
+  /* SM: Card titles */
+  .heading-sm {
+    @apply font-black uppercase italic tracking-tighter leading-none text-white;
+    font-size: clamp(1rem, 2vw, 1.25rem);
+  }
+
+  /* Eyebrow: Tech labels above titles */
+  .eyebrow {
+    @apply font-black uppercase tracking-[0.4em] text-[#3b82f6] italic;
+    font-size: clamp(8px, 0.8vw, 11px);
+  }
+
+  /* Body text */
+  .body-text {
+    @apply font-medium leading-relaxed text-[#a7abb2];
+    font-size: clamp(0.9rem, 1.2vw, 1.1rem);
+  }
+
+  /* Small Supporting text */
+  .body-sm {
+    @apply font-medium leading-relaxed text-[#a7abb2]/70;
+    font-size: clamp(0.75rem, 1vw, 0.9rem);
+  }
+
+  /* KPI / Stats Numbers */
+  .stat-val {
+    @apply font-black italic tracking-tighter text-white leading-none;
+    font-size: clamp(1.8rem, 3.5vw, 2.5rem);
   }
 }
 
@@ -258,6 +344,7 @@ body {
   }
 
   /* Reset de contenedores para impresión */
+  .max-w-\[1200px\],
   .max-w-\[1400px\] {
     max-width: 100% !important;
     width: 100% !important;

@@ -89,10 +89,9 @@ export default function LandingPage({
                  <div className="w-12 h-12 relative flex items-center justify-center">
                     <Image src="/logo.png" alt="Logo" fill className="object-contain" />
                  </div>
-                 <h2 className="text-4xl lg:text-5xl font-black text-white uppercase tracking-tighter leading-none italic mb-3">
-                   Protocolo de <span className="text-accentBlue not-italic">Turnos.</span>
-                 </h2>
-                 <p className="text-white/20 font-black uppercase text-[8px] tracking-[0.5em]">G-SYSTEM | SINCRONIZACIÓN PROFESIONAL</p>
+                  <h2 className="text-4xl lg:text-5xl font-black text-white uppercase tracking-tighter leading-none italic mb-3">
+                    Agendar <span className="text-accentBlue not-italic">Turno</span>
+                  </h2>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
                  <TurneroInteractivo />

@@ -31,102 +31,156 @@ const styles = StyleSheet.create({
 });
 
 export const GeneradorConsultaPDF = ({ paciente, data }: any) => {
-  const an = data?.anamnesis?.anamnesis || {};
-  const antro = data?.antropometria?.mediciones || {};
-  const comp = data?.antropometria || {};
-  const meals = data?.dieta?.meals || [];
-  const macros = data?.dieta?.totals || { kcal: 0, p: 0, c: 0, g: 0 };
+  // Estructura sincronizada desde PanelClinico.tsx (syncObj)
+  const syncAn = data?.anamnesis || {};
+  const an = syncAn.anamnesis || {}; // Campos del formulario
+  const resMetabolico = syncAn.resultados || {};
+  
+  // Estructura sincronizada desde PanelAntropometria.tsx (syncObj)
+  const syncAntro = data?.antropometria || {};
+  const mediciones = syncAntro.mediciones || {};
+  const resultadosAntro = syncAntro.resultados || {};
+  
+  // Estructura sincronizada desde PlanAlimentario.tsx (syncObj)
+  const syncDieta = data?.dieta || {};
+  const meals = syncDieta.meals || [];
+  const macrosTotales = syncDieta.totals || { kcal: 0, p: 0, c: 0, g: 0 };
+  
   const pacienteNombre = `${paciente?.nombre || ''} ${paciente?.apellido || ''}`;
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
+        {/* ENCABEZADO PROFESIONAL */}
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>Guido Nutrición</Text>
-            <Text style={styles.subtitle}>Historia Clínica Integral</Text>
+            <Text style={styles.subtitle}>PROTOCOLO DE INTERVENCIÓN CLÍNICA</Text>
           </View>
           <View style={styles.patientInfo}>
-            <Text style={styles.patientName}>Paciente: {pacienteNombre}</Text>
-            <Text style={styles.date}>Fecha: {new Date().toLocaleDateString('es-AR')}</Text>
+            <Text style={styles.patientName}>PACIENTE: {pacienteNombre}</Text>
+            <Text style={styles.date}>FECHA DE CONSULTA: {new Date().toLocaleDateString('es-AR')}</Text>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>1. Cuadro Clínico General</Text>
+        {/* 1. EVALUACIÓN DE ESTADO INICIAL */}
+        <Text style={styles.sectionTitle}>1. Evaluación Inicial y Contexto</Text>
         <View style={styles.table}>
           <View style={styles.tableRow}>
-            <Text style={styles.colLabel}>Motivo Consulta</Text>
-            <Text style={styles.colValue}>{an.motivoConsulta || 'No especificado'}</Text>
+            <Text style={styles.colLabel}>Motivo de Consulta</Text>
+            <Text style={styles.colValue}>{an.motivoConsulta || 'Control y planificación'}</Text>
           </View>
           <View style={styles.tableRow}>
-            <Text style={styles.colLabel}>Patologías / Alergias</Text>
-            <Text style={styles.colValue}>{an.patologias || 'Ninguna'} / {an.alergiasIntolerancias || 'Sin alergias'}</Text>
+             <Text style={styles.colLabel}>Perfil y Ocupación</Text>
+             <Text style={styles.colValue}>{an.ocupacion || '-'} • Medicación: {an.medicacionActual || 'Ninguna'}</Text>
           </View>
           <View style={styles.tableRow}>
-            <Text style={styles.colLabel}>Nivel Actividad</Text>
-            <Text style={styles.colValue}>{an.nivelActividad || 'Sedentario'} • Sueño: {an.horasSueno || '-'}</Text>
+             <Text style={styles.colLabel}>Antecedentes / Alergias</Text>
+             <Text style={styles.colValue}>
+               {an.patologias || 'Sin patologías'} • {an.alergiasIntolerancias || 'Sin alergias reportadas'}
+             </Text>
+          </View>
+          <View style={styles.tableRow}>
+            <Text style={styles.colLabel}>Datos Físicos Actuales</Text>
+            <Text style={styles.colValue}>
+              EDAD: {an.edad || '-'} años • PESO: {mediciones.weight || mediciones.peso || an.weight || an.peso || '-'} KG • ALTURA: {mediciones.height || mediciones.altura || an.height || an.altura || '-'} CM
+            </Text>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>2. Composición Corporal</Text>
+        {/* 2. HÁBITOS Y ESTILO DE VIDA */}
+        <Text style={styles.sectionTitle}>2. Hábitos y Biología del Estilo de Vida</Text>
         <View style={styles.box}>
           <View style={styles.boxItem}>
-            <Text style={styles.boxLabel}>Peso Base</Text>
-            <Text style={styles.boxValue}>{antro.peso || '-'} kg</Text>
+            <Text style={styles.boxLabel}>Actividad</Text>
+            <Text style={styles.boxValue}>{an.nivelActividad || '-'}</Text>
           </View>
           <View style={styles.boxItem}>
-            <Text style={styles.boxLabel}>Densidad Grasa</Text>
-            <Text style={styles.boxValue}>{comp.grasaPct || '-'} %</Text>
+            <Text style={styles.boxLabel}>Descanso (h)</Text>
+            <Text style={styles.boxValue}>{an.horasSueno || '-'} H</Text>
           </View>
           <View style={styles.boxItem}>
-            <Text style={styles.boxLabel}>Masa Magra</Text>
-            <Text style={styles.boxValue}>{comp.masaMagraKg || '-'} kg</Text>
+            <Text style={styles.boxLabel}>Estrés /10</Text>
+            <Text style={styles.boxValue}>{an.nivelEstres || '-'}</Text>
+          </View>
+          <View style={styles.boxItem}>
+            <Text style={styles.boxLabel}>Digestión</Text>
+            <Text style={styles.boxValue}>{an.ritmoIntestinal || '-'}</Text>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>3. Arquitectura Dietética</Text>
+        {/* 3. PARÁMETROS ANTROPOMÉTRICOS (Si hay mediciones) */}
+        {(resultadosAntro.porcentajeGrasa || resultadosAntro.masaMagraKg) && (
+          <>
+            <Text style={styles.sectionTitle}>3. Composición Corporal (Bio-Análisis)</Text>
+            <View style={styles.table}>
+              <View style={styles.tableRow}>
+                <Text style={styles.colLabel}>Porcentaje de Grasa</Text>
+                <Text style={styles.colValue}>{resultadosAntro.porcentajeGrasa ? resultadosAntro.porcentajeGrasa.toFixed(1) : '-'} %</Text>
+              </View>
+              <View style={styles.tableRow}>
+                <Text style={styles.colLabel}>Masa Libre de Grasa</Text>
+                <Text style={styles.colValue}>{resultadosAntro.masaMagraKg ? resultadosAntro.masaMagraKg.toFixed(1) : '-'} KG</Text>
+              </View>
+              <View style={styles.tableRow}>
+                <Text style={styles.colLabel}>Índice de Masa Corporal</Text>
+                <Text style={styles.colValue}>{resultadosAntro.imc || '-'}</Text>
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* 4. ARQUITECTURA METABÓLICA Y MACROS */}
+        <Text style={styles.sectionTitle}>4. Estrategia y Objetivos Energéticos</Text>
         <View style={styles.box}>
           <View style={styles.boxItem}>
-            <Text style={styles.boxLabel}>Impacto Energético</Text>
-            <Text style={styles.boxValue}>{Math.round(macros.kcal)} KCAL</Text>
+            <Text style={styles.boxLabel}>Gasto Total (GET)</Text>
+            <Text style={styles.boxValue}>{Math.round(macrosTotales.kcal || resMetabolico.get || 0)} KCAL</Text>
           </View>
           <View style={styles.boxItem}>
             <Text style={styles.boxLabel}>Proteína</Text>
-            <Text style={styles.boxValue}>{Math.round(macros.p)}g</Text>
+            <Text style={styles.boxValue}>{Math.round(macrosTotales.p)}g</Text>
           </View>
           <View style={styles.boxItem}>
             <Text style={styles.boxLabel}>Carbohidratos</Text>
-            <Text style={styles.boxValue}>{Math.round(macros.c)}g</Text>
+            <Text style={styles.boxValue}>{Math.round(macrosTotales.c)}g</Text>
           </View>
           <View style={styles.boxItem}>
-            <Text style={styles.boxLabel}>Lípidos</Text>
-            <Text style={styles.boxValue}>{Math.round(macros.g)}g</Text>
+            <Text style={styles.boxLabel}>Grasas</Text>
+            <Text style={styles.boxValue}>{Math.round(macrosTotales.g)}g</Text>
           </View>
         </View>
 
-        {meals.map((meal: any, i: number) => meal.items?.length > 0 && (
-          <View key={i} wrap={false} style={{ marginBottom: 10 }}>
-            <Text style={styles.mealTitle}>{meal.nombre}</Text>
-            <View style={styles.mealTable}>
-              <View style={styles.mealHeader}>
-                <Text style={[styles.mCol1, { color: '#64748b', fontSize: 9 }]}>INGREDIENTE</Text>
-                <Text style={[styles.mCol2, { color: '#64748b', fontSize: 9 }]}>CANTIDAD</Text>
-                <Text style={[styles.mCol3, { color: '#64748b', fontSize: 9 }]}>KCAL</Text>
-              </View>
-              {meal.items.map((item: any, j: number) => (
-                <View key={j} style={styles.mealRow}>
-                  <Text style={styles.mCol1}>{item.nombre}</Text>
-                  <Text style={styles.mCol2}>{item.gramos}g</Text>
-                  <Text style={styles.mCol3}>{Math.round((item.kcal * item.gramos) / 100)}</Text>
+        {/* 5. PLANIFICACIÓN DIETÉTICA */}
+        {meals.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>5. Detalle de Alimentación Sugerida</Text>
+            {meals.map((meal: any, i: number) => meal.items?.length > 0 && (
+              <View key={i} wrap={false} style={{ marginBottom: 15 }}>
+                <Text style={styles.mealTitle}>{meal.nombre}</Text>
+                <View style={styles.mealTable}>
+                  <View style={styles.mealHeader}>
+                    <Text style={[styles.mCol1, { color: '#64748b', fontSize: 8 }]}>INGREDIENTE / ALIMENTO</Text>
+                    <Text style={[styles.mCol2, { color: '#64748b', fontSize: 8 }]}>CANTIDAD</Text>
+                    <Text style={[styles.mCol3, { color: '#64748b', fontSize: 8 }]}>KCAL</Text>
+                  </View>
+                  {meal.items.map((item: any, j: number) => (
+                    <View key={j} style={styles.mealRow}>
+                      <Text style={styles.mCol1}>{item.nombre}</Text>
+                      <Text style={styles.mCol2}>{item.gramos}g</Text>
+                      <Text style={styles.mCol3}>{Math.round((item.kcal * item.gramos) / 100)}</Text>
+                    </View>
+                  ))}
                 </View>
-              ))}
-            </View>
-          </View>
-        ))}
+              </View>
+            ))}
+          </>
+        )}
 
+        {/* FIRMA PROFESIONAL */}
         <View style={styles.footer} wrap={false}>
           <Text style={styles.footerText}>Guido Operuk</Text>
-          <Text style={styles.footerSub}>Lic. en Nutrición Clínica y Deportiva</Text>
+          <Text style={styles.footerSub}>Licenciado en Nutrición • CIENCIA APLICADA AL RENDIMIENTO</Text>
         </View>
       </Page>
     </Document>

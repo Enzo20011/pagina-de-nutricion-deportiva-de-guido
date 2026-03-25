@@ -9,7 +9,11 @@ import {
   Footprints,
   Activity as ActivityIcon,
   Flame,
-  Zap
+  Zap,
+  Info,
+  ChevronRight,
+  BookOpen,
+  Target
 } from 'lucide-react';
 import { 
   calcularGastoEnergetico, 
@@ -20,6 +24,7 @@ import { motion } from 'framer-motion';
 import AnimatedNumber from './AnimatedNumber';
 import { z } from 'zod';
 import clsx from 'clsx';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const metabolicSchema = z.object({
   peso: z.number().min(20).max(350),
@@ -55,77 +60,90 @@ export default function CalculadoraMetabolica() {
     return calcularGastoEnergetico(sanitizedPeso, sanitizedAltura, sanitizedEdad, data.sexo, data.actividad);
   }, [data.peso, data.altura, data.edad, data.sexo, data.actividad]);
 
+  const accentColor = data.sexo === 'masculino' ? '#3b82f6' : '#f43f5e';
+  const accentClass = data.sexo === 'masculino' ? 'text-[#3b82f6]' : 'text-[#f43f5e]';
+  const accentBg = data.sexo === 'masculino' ? 'bg-[#3b82f6]' : 'bg-[#f43f5e]';
+  const accentBorder = data.sexo === 'masculino' ? 'border-[#3b82f6]' : 'border-[#f43f5e]';
+  const accentShadow = data.sexo === 'masculino' ? 'rgba(59, 130, 246, 0.5)' : 'rgba(244, 63, 94, 0.5)';
+
   const handleFieldChange = useCallback((field: string, value: any) => {
     setData(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  // Derived goals
   const deficit = useMemo(() => Math.round(resultados.get - 500), [resultados.get]);
   const mantenimiento = useMemo(() => Math.round(resultados.get), [resultados.get]);
   const superavit = useMemo(() => Math.round(resultados.get + 500), [resultados.get]);
 
-  // Chart scaling
-  const maxCal = useMemo(() => Math.max(3000, superavit + 200), [superavit]);
-  // Custom colors purely for the chart as requested
-  const COLOR_PERDER = "#E06C75"; // Rose/Coral
-  const COLOR_MANTENER = "#4285F4"; // Google Blue matches the image
-  const COLOR_GANAR = "#54B47B"; // Emerald Green matches the image
-
+  const chartData = [
+    { name: 'Perder', kcal: deficit, color: '#ff4d4d' },
+    { name: 'Mantener', kcal: mantenimiento, color: '#3b82f6' },
+    { name: 'Ganar', kcal: superavit, color: '#22c55e' },
+  ];
+  
   const activityIndex = useMemo(() => ACT_LEVELS.indexOf(data.actividad), [data.actividad]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto text-white selection:bg-accentBlue/20">
+    <>
+      <div className="w-full max-w-[1200px] mx-auto text-[#eaeef6] pb-10">
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         
-        {/* --- LEFT COLUMN: INTRODUCE TUS DATOS --- */}
-        <div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-3xl p-8 lg:p-10 shadow-2xl space-y-8 flex flex-col">
-           <h2 className="text-2xl md:text-3xl font-bold text-center text-accentBlue mb-2">Introduce tus datos</h2>
+        {/* --- LEFT COLUMN: INPUTS --- */}
+        <div className="bg-[#0e1419] border border-[#1f262e] rounded-sm p-3 space-y-3 flex flex-col relative overflow-hidden shadow-2xl">
+           <div className="absolute top-0 right-0 p-4 opacity-5">
+             <ActivityIcon className="w-32 h-32 text-white" />
+           </div>
+
+           <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a7abb2] mb-2 flex items-center gap-3 relative z-10">
+             <Info className={clsx("w-4 h-4", accentClass)} /> PARÁMETROS BIOMÉTRICOS
+           </h2>
            
            {/* Género */}
-           <div className="space-y-4">
-              <label className="text-sm font-semibold text-white/80">Género</label>
-              <div className="flex bg-darkNavy/60 rounded-xl border border-white/10 p-1 w-full">
+           <div className="space-y-2 relative z-10">
+              <label className="text-[8px] font-bold uppercase tracking-[0.15em] text-[#a7abb2]">Género Biológico</label>
+              <div className="grid grid-cols-2 bg-[#1a2027] rounded-sm border border-[#2a3040] p-1 gap-1">
                 <button
                   onClick={() => handleFieldChange('sexo', 'masculino')}
                   className={clsx(
-                    "flex-1 py-3 text-sm font-bold uppercase tracking-wider rounded-lg transition-all",
-                    data.sexo === 'masculino' ? "bg-accentBlue text-white shadow-lg" : "text-white/50 hover:text-white"
+                    "py-2.5 text-[10px] font-bold uppercase tracking-widest rounded-sm transition-all relative overflow-hidden",
+                    data.sexo === 'masculino' ? "text-white shadow-[0_0_20px_rgba(59,130,246,0.2)]" : "text-[#a7abb2] hover:bg-[#1f262e]"
                   )}
                 >
-                  <span className="flex items-center justify-center gap-2">♂ Hombre</span>
+                  {data.sexo === 'masculino' && <motion.div layoutId="gender-bg" className="absolute inset-0 bg-[#3b82f6] -z-10" />}
+                  Hombre
                 </button>
                 <button
                   onClick={() => handleFieldChange('sexo', 'femenino')}
                   className={clsx(
-                    "flex-1 py-3 text-sm font-bold uppercase tracking-wider rounded-lg transition-all",
-                    data.sexo === 'femenino' ? "bg-accentBlue text-white shadow-lg" : "text-white/50 hover:text-white"
+                    "py-2.5 text-[10px] font-bold uppercase tracking-widest rounded-sm transition-all relative overflow-hidden",
+                    data.sexo === 'femenino' ? "text-white shadow-[0_0_20px_rgba(244,63,94,0.2)]" : "text-[#a7abb2] hover:bg-[#1f262e]"
                   )}
                 >
-                  <span className="flex items-center justify-center gap-2">♀ Mujer</span>
+                  {data.sexo === 'femenino' && <motion.div layoutId="gender-bg" className="absolute inset-0 bg-[#f43f5e] -z-10" />}
+                  Mujer
                 </button>
               </div>
            </div>
 
-           {/* Sliders: Peso, Altura, Edad */}
+           {/* Sliders */}
            {[
-             { label: 'Peso', val: data.peso, unit: 'kg', min: 30, max: 200, key: 'peso' },
-             { label: 'Altura', val: data.altura, unit: 'cm', min: 100, max: 220, key: 'altura' },
-             { label: 'Edad', val: data.edad, unit: 'años', min: 15, max: 90, key: 'edad' },
+             { label: 'Peso Corporal', val: data.peso, unit: 'KG', min: 30, max: 200, key: 'peso' },
+             { label: 'Altura', val: data.altura, unit: 'CM', min: 100, max: 220, key: 'altura' },
+             { label: 'Edad', val: data.edad, unit: 'Años', min: 15, max: 90, key: 'edad' },
            ].map((field) => (
-             <div key={field.key} className="space-y-4">
+             <div key={field.key} className="space-y-2 relative z-10">
                 <div className="flex justify-between items-end">
-                   <label className="text-sm font-semibold text-white/80">{field.label}</label>
-                   <div className="flex items-center gap-1">
-                     <span className="text-lg font-bold text-white">{field.val}</span>
-                     <span className="text-sm text-white/50">{field.unit}</span>
+                   <label className="text-[8px] font-bold uppercase tracking-[0.15em] text-[#a7abb2]">{field.label}</label>
+                   <div className="flex items-baseline gap-2">
+                     <span className="text-xl font-black italic tracking-tighter text-white leading-none">{field.val}</span>
+                     <span className="text-[9px] font-bold uppercase tracking-widest text-[#43484e]">{field.unit}</span>
                    </div>
                 </div>
                 
-                <div className="relative group/slider pb-6">
-                  <div className="w-full relative h-2 bg-darkNavy rounded-full border border-white/10 overflow-hidden">
-                    <div 
-                      className="absolute top-0 left-0 h-full bg-accentBlue transition-all"
+                <div className="relative h-4 flex items-center group">
+                  <div className="w-full h-[2px] bg-[#1a2027] relative">
+                    <motion.div 
+                      className={clsx("absolute top-0 left-0 h-full", accentBg)}
                       style={{ width: `${((field.val - field.min) / (field.max - field.min)) * 100}%` }}
                     />
                   </div>
@@ -135,29 +153,28 @@ export default function CalculadoraMetabolica() {
                     max={field.max}
                     value={field.val}
                     onChange={e => handleFieldChange(field.key, +e.target.value)}
-                    className="absolute inset-x-0 top-[-6px] w-full h-5 opacity-0 cursor-pointer z-20"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                   />
-                  {/* Fake thumb */}
-                  <div 
-                    className="absolute top-[-4px] w-4 h-4 bg-white border-[3px] border-accentBlue rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)] pointer-events-none transition-transform group-hover/slider:scale-125 z-10"
-                    style={{ left: `calc(${((field.val - field.min) / (field.max - field.min)) * 100}% - 8px)` }}
+                   <div 
+                    className={clsx("absolute w-4 h-4 rounded-full bg-[#eaeef6] border-2 shadow-lg pointer-events-none transition-transform group-hover:scale-125 z-10", accentBorder)}
+                    style={{ left: `calc(${((field.val - field.min) / (field.max - field.min)) * 100}% - 8px)`, boxShadow: `0 0 10px ${accentShadow}` }}
                   />
-                  <div className="absolute top-4 inset-x-0 flex justify-between text-[10px] text-white/40 font-semibold tracking-wider">
-                     <span>{field.min}{field.key === 'edad' ? '' : field.unit}</span>
-                     <span>{field.max}{field.key === 'edad' ? '' : field.unit}</span>
-                  </div>
+                </div>
+                <div className="flex justify-between text-[8px] font-bold text-[#43484e] uppercase tracking-widest px-1">
+                   <span>{field.min}{field.unit}</span>
+                   <span>{field.max}{field.unit}</span>
                 </div>
              </div>
            ))}
 
-           {/* Nivel de Actividad */}
-           <div className="space-y-4 pt-2">
-              <label className="text-sm font-semibold text-white/80">Nivel de Actividad</label>
+           {/* Actividad */}
+           <div className="space-y-6 pt-2 relative z-10">
+              <label className="text-[9px] font-bold uppercase tracking-[0.15em] text-[#a7abb2]">Nivel de Actividad Física</label>
               
-              <div className="relative group/activity pb-14 mt-2">
-                <div className="w-full relative h-2 bg-darkNavy rounded-full border border-white/10 overflow-hidden">
-                   <div 
-                      className="absolute top-0 left-0 h-full bg-accentBlue transition-all"
+              <div className="relative group/activity pb-8 mt-1">
+                <div className="w-full h-[2px] bg-[#1a2027] relative">
+                   <motion.div 
+                      className={clsx("absolute top-0 left-0 h-full opacity-40", accentBg)}
                       style={{ width: `${(activityIndex / 4) * 100}%` }}
                    />
                 </div>
@@ -168,177 +185,244 @@ export default function CalculadoraMetabolica() {
                    step="1"
                    value={activityIndex}
                    onChange={e => handleFieldChange('actividad', ACT_LEVELS[+e.target.value])}
-                   className="absolute inset-x-0 top-[-6px] w-full h-5 opacity-0 cursor-pointer z-20"
+                   className="absolute inset-x-0 top-0 w-full h-4 opacity-0 cursor-pointer z-20"
                 />
-                <div 
-                   className="absolute top-[-4px] w-4 h-4 bg-white border-[3px] border-accentBlue rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)] pointer-events-none transition-transform group-hover/activity:scale-125 z-10"
-                   style={{ left: `calc(${(activityIndex / 4) * 100}% - 8px)` }}
-                />
+                 <div 
+                    className={clsx("absolute w-4 h-4 rounded-full pointer-events-none z-10", accentBg)}
+                    style={{ left: `calc(${(activityIndex / 4) * 100}% - 8px)`, top: '-6px', boxShadow: `0 0 15px ${accentShadow}` }}
+                 />
                 
-                {/* Labels under slider */}
-                <div className="absolute top-4 inset-x-0 flex justify-between px-1">
-                   {[
-                     { i: Sofa }, { i: Footprints }, { i: ActivityIcon }, { i: Flame }, { i: Zap }
-                   ].map((Item, i) => (
+                <div className="flex justify-between mt-6">
+                   {[Sofa, Footprints, ActivityIcon, Flame, Zap].map((Icon, i) => (
                       <div key={i} className={clsx(
-                        "flex flex-col items-center gap-1.5 transition-colors cursor-pointer w-16",
-                        activityIndex === i ? "text-accentBlue" : "text-white/30 hover:text-white/60"
+                        "flex flex-col items-center gap-2 cursor-pointer transition-all",
+                        activityIndex === i ? accentClass + " scale-110" : "text-[#43484e] grayscale opacity-50 hover:opacity-100"
                       )} onClick={() => handleFieldChange('actividad', ACT_LEVELS[i])}>
-                        <Item.i className="w-4 h-4" />
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-center">{ACT_LABELS[i]}</span>
+                        <Icon className="w-4 h-4" />
+                        <span className="text-[7px] font-bold uppercase tracking-tighter text-center">{ACT_LABELS[i]}</span>
                       </div>
                    ))}
                 </div>
               </div>
               
-              <div className="text-center pt-2">
-                 <p className="text-sm font-bold text-accentBlue">{ACT_LABELS[activityIndex]}</p>
-                 <p className="text-xs text-white/40">{ACT_DESC[activityIndex]}</p>
+              <div className={clsx("bg-[#141a20]/50 p-4 rounded-sm border border-[#1f262e] border-l-4 transition-all")}>
+                 <p className={clsx("text-[9px] font-bold uppercase tracking-[0.2em] mb-1", accentClass)}>{ACT_LABELS[activityIndex]}</p>
+                 <p className="text-[11px] text-[#a7abb2] font-medium leading-tight">"{ACT_DESC[activityIndex]}"</p>
               </div>
            </div>
-
         </div>
 
-        {/* --- RIGHT COLUMN: TUS RESULTADOS --- */}
-        <div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-3xl p-8 lg:p-10 shadow-2xl space-y-10 flex flex-col">
-           <h2 className="text-2xl md:text-3xl font-bold text-center text-accentBlue mb-2">Tus resultados</h2>
+        {/* --- RIGHT COLUMN: RESULTS --- */}
+        <div className="space-y-4">
+           
+           <div className="bg-[#0e1419] border border-[#1f262e] rounded-sm p-4 flex flex-col shadow-2xl">
+              <h2 className="font-label text-[9px] font-semibold uppercase tracking-[0.2em] text-[#a7abb2] mb-4 flex items-center gap-3">
+                <Target className={clsx("w-4 h-4", accentClass)} /> TUS RESULTADOS_
+              </h2>
 
-           {/* Progress Bars (TMB & TDEE) */}
-           <div className="space-y-8">
-              <div className="space-y-2">
-                 <div className="flex justify-between items-end">
-                    <span className="text-sm font-semibold text-white">Metabolismo Basal (TMB)</span>
-                    <div className="flex items-baseline gap-1">
-                       <span className="text-2xl font-black text-white"><AnimatedNumber value={resultados.tmb} /></span>
-                       <span className="text-[10px] text-white/50 uppercase">calorías/día</span>
+               <div className="space-y-4 mb-4">
+                  {/* TMB and TDEE in a more compact layout */}
+                  {/* TMB */}
+                  <div className="space-y-1">
+                     <div className="flex justify-between items-baseline">
+                        <span className="font-label text-[9px] font-bold uppercase tracking-[0.15em] text-[#eaeef6]">Metabolismo Basal (TMB)</span>
+                        <div className="flex items-baseline gap-1">
+                           <span className="stat-val !text-2xl"><AnimatedNumber value={resultados.tmb} /></span>
+                           <span className="eyebrow !text-[8px] !text-[#43484e]">kcal</span>
+                        </div>
+                     </div>
+                     <div className="w-full h-2 bg-[#1a2027] rounded-full overflow-hidden">
+                       <motion.div 
+                         className="h-full bg-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)]"
+                         initial={{ width: 0 }}
+                         animate={{ width: `${(resultados.tmb / 3000) * 100}%` }}
+                         transition={{ duration: 1.2, ease: "easeOut" }}
+                       />
                     </div>
-                 </div>
-                 <div className="w-full h-3 bg-darkNavy rounded-full overflow-hidden border border-white/10">
-                    <motion.div 
-                      className="h-full bg-cyan-400"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(resultados.tmb / maxCal) * 100}%` }}
-                      transition={{ duration: 1, ease: "easeOut" }}
-                    />
-                 </div>
-              </div>
+                  </div>
 
-              <div className="space-y-2">
-                 <div className="flex justify-between items-end">
-                    <span className="text-sm font-semibold text-white">Necesidades Calóricas (TDEE)</span>
-                    <div className="flex items-baseline gap-1">
-                       <span className="text-2xl font-black text-white"><AnimatedNumber value={resultados.get} /></span>
-                       <span className="text-[10px] text-white/50 uppercase">calorías/día</span>
+                 {/* TDEE */}
+                  <div className="space-y-1">
+                     <div className="flex justify-between items-baseline">
+                        <span className={clsx("font-label text-[9px] font-bold uppercase tracking-[0.15em]", accentClass)}>Gasto Calórico (TDEE)</span>
+                        <div className="flex items-baseline gap-1">
+                           <span className={clsx("stat-val !text-2xl", accentClass)}><AnimatedNumber value={resultados.get} /></span>
+                           <span className="eyebrow !text-[8px] !text-[#43484e]">kcal</span>
+                        </div>
+                     </div>
+                     <div className="w-full h-2 bg-[#1a2027] rounded-full overflow-hidden">
+                       <motion.div 
+                         className={clsx("h-full", accentBg)}
+                         style={{ boxShadow: `0 0 20px ${accentShadow}` }}
+                         initial={{ width: 0 }}
+                         animate={{ width: `${(resultados.get / 3000) * 100}%` }}
+                         transition={{ duration: 1.2, delay: 0.3, ease: "easeOut" }}
+                       />
                     </div>
-                 </div>
-                 <div className="w-full h-3 bg-darkNavy rounded-full overflow-hidden border border-white/10">
-                    <motion.div 
-                      className="h-full bg-accentBlue"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(resultados.get / maxCal) * 100}%` }}
-                      transition={{ duration: 1, ease: "easeOut" }}
-                    />
-                 </div>
+                  </div>
+               </div>
+                        {/* Central Chart */}
+               <div className="flex flex-col items-center justify-center py-2">
+                  <div className="w-full h-[180px] relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} margin={{ top: 10, right: 10, left: 40, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f262e" opacity={0.5} />
+                        <XAxis 
+                           dataKey="name" 
+                           axisLine={{ stroke: '#1f262e' }} 
+                           tickLine={false} 
+                           tick={{ fill: '#a7abb2', fontSize: 10, fontWeight: 'medium' }} 
+                           dy={10}
+                        />
+                        <YAxis 
+                           axisLine={false} 
+                           tickLine={false} 
+                           tick={{ fill: '#43484e', fontSize: 9 }} 
+                           label={{ value: 'Calorías', angle: -90, position: 'insideLeft', offset: -30, fill: '#43484e', fontSize: 9, fontWeight: 'bold' }}
+                           domain={[0, 'dataMax + 500']}
+                        />
+                        <Tooltip 
+                          cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className={clsx("bg-[#1a2027] border p-2 shadow-2xl rounded-sm", accentBorder)}>
+                                  <p className="font-label text-[8px] uppercase tracking-widest text-[#a7abb2] mb-1">{payload[0].payload.name}</p>
+                                  <p className="font-heading font-black text-lg text-[#eaeef6]">{payload[0].value} kcal</p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar dataKey="kcal" radius={[2, 2, 0, 0]} barSize={60}>
+                          {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <h3 className="font-label text-[9px] font-bold uppercase tracking-[0.4em] text-[#3b82f6] mt-4 mb-3">Objetivos calóricos_</h3>
+               </div>
+
+               <div className="grid grid-cols-3 gap-2 mt-0">
+                 {[
+                   { label: 'Perder', val: deficit, icon: ArrowDown, color: 'text-[#ff4d4d]', border: 'border-[#ff4d4d]/10' },
+                   { label: 'Mantener', val: mantenimiento, icon: Equal, color: 'text-[#3b82f6]', border: 'border-[#3b82f6]/20' },
+                   { label: 'Ganar', val: superavit, icon: ArrowUp, color: 'text-[#22c55e]', border: 'border-[#22c55e]/10' },
+                 ].map((card, i) => {
+                   const Icon = card.icon;
+                   return (
+                     <div key={i} className={clsx(
+                        "bg-[#141a20]/40 border p-2.5 rounded-sm flex flex-col items-center gap-1 transition-all hover:bg-[#141a20]",
+                        card.border
+                      )}>
+                        <Icon className={clsx("w-3 h-3", card.color)} />
+                        <p className="font-label text-[7px] font-bold uppercase tracking-[0.05em] text-[#a7abb2]">{card.label}</p>
+                        <p className="font-heading font-black text-base text-[#eaeef6] leading-none">
+                          <AnimatedNumber value={card.val} />
+                        </p>
+                        <p className="font-label text-[6px] uppercase text-[#43484e]">cal/día</p>
+                      </div>
+                   );
+                 })}
+               </div>
+
               </div>
            </div>
+        </div>
+      </div>
 
-           {/* THE BAR CHART (Custom Image Colors) */}
-           <div className="bg-darkNavy/40 border border-white/5 rounded-2xl p-6 relative">
-              <div className="flex h-56 relative w-full pt-4 pr-2">
-                 {/* Y Axis Labels & Grid Lines */}
-                 <div className="absolute inset-y-0 left-0 w-12 flex flex-col justify-between py-4 text-[9px] text-white/30 font-bold items-end pr-2 opacity-50 z-0">
-                    <span>3.000</span>
-                    <span>2.500</span>
-                    <span>2.000</span>
-                    <span>1.500</span>
-                    <span>1.000</span>
-                    <span>500</span>
-                    <span>0</span>
+      {/* --- INFORMATION SECTION: HARRIS BENEDICT --- */}
+      <motion.section 
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="mt-20 border-t border-[#1f262e] pt-20"
+      >
+        <div className="max-w-4xl mx-auto space-y-16 px-4">
+          <div className="text-center space-y-4">
+            <h2 className="heading-lg">
+              ¿QUÉ ES LA CALCULADORA <br/>
+              <span className={accentClass}>HARRIS BENEDICT?</span>
+            </h2>
+            <div className={clsx("w-20 h-1 mx-auto rounded-full", accentBg)} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="space-y-6">
+              <p className="body-text">
+                La calculadora Harris Benedict es una herramienta fundamental para determinar tus necesidades calóricas diarias basándose en tu metabolismo basal (TMB) y nivel de actividad física.
+              </p>
+              <p className="body-text">
+                Esta ecuación, desarrollada por los nutricionistas J. Arthur Harris y Francis G. Benedict en 1919 y actualizada en varias ocasiones, es ampliamente utilizada por profesionales de la nutrición.
+              </p>
+            </div>
+            <div className="bg-[#0e1419] border border-[#1f262e] p-8 rounded-sm relative group overflow-hidden">
+               <div className={clsx("absolute top-0 left-0 w-1 h-full", accentBg)} style={{ boxShadow: `0 0 15px ${accentShadow}` }} />
+               <h3 className="heading-sm mb-6 flex items-center gap-2">
+                 <BookOpen className={clsx("w-4 h-4", accentClass)} /> Fórmulas Actualizadas
+               </h3>
+               <div className={clsx("space-y-6 font-mono text-[11px]", accentClass)}>
+                 <div className="p-3 bg-black/20 rounded-sm">
+                   <p className="text-white mb-2 eyebrow opacity-50 font-sans">Mujeres:</p>
+                   TMB = 447.593 + (9.247 × kg) + (3.098 × cm) - (4.330 × años)
                  </div>
-                 <div className="absolute inset-y-0 left-12 right-0 flex flex-col justify-between py-4 pointer-events-none z-0">
-                    <div className="border-t border-white/5 w-full h-[1px]"></div>
-                    <div className="border-t border-white/5 w-full h-[1px]"></div>
-                    <div className="border-t border-white/5 w-full h-[1px]"></div>
-                    <div className="border-t border-white/5 w-full h-[1px]"></div>
-                    <div className="border-t border-white/5 w-full h-[1px]"></div>
-                    <div className="border-t border-white/5 w-full h-[1px]"></div>
-                    <div className="border-t border-white/20 w-full h-[1px]"></div>
+                 <div className="p-3 bg-black/20 rounded-sm">
+                   <p className="text-white mb-2 eyebrow opacity-50 font-sans">Hombres:</p>
+                   TMB = 88.362 + (13.397 × kg) + (4.799 × cm) - (5.677 × años)
                  </div>
+               </div>
+            </div>
+          </div>
 
-                 {/* Bars Container */}
-                 <div className="flex justify-around items-end ml-12 w-full pb-4 gap-4 z-10 relative">
-                    {/* Bar 1: Perder */}
-                    <div className="w-1/3 max-w-[80px] group flex flex-col justify-end items-center h-full">
-                       <motion.div 
-                         className="w-full"
-                         style={{ backgroundColor: COLOR_PERDER }}
-                         initial={{ height: 0 }}
-                         animate={{ height: `${(deficit / 3000) * 100}%` }}
-                         transition={{ duration: 0.8, ease: "easeOut" }}
-                       />
-                       <span className="text-[10px] text-white/50 font-semibold absolute -bottom-5">Perder</span>
-                    </div>
-
-                    {/* Bar 2: Mantener */}
-                    <div className="w-1/3 max-w-[80px] group flex flex-col justify-end items-center h-full">
-                       <motion.div 
-                         className="w-full"
-                         style={{ backgroundColor: COLOR_MANTENER }}
-                         initial={{ height: 0 }}
-                         animate={{ height: `${(mantenimiento / 3000) * 100}%` }}
-                         transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-                       />
-                       <span className="text-[10px] text-white/50 font-semibold absolute -bottom-5">Mantener</span>
-                    </div>
-
-                    {/* Bar 3: Ganar */}
-                    <div className="w-1/3 max-w-[80px] group flex flex-col justify-end items-center h-full">
-                       <motion.div 
-                         className="w-full"
-                         style={{ backgroundColor: COLOR_GANAR }}
-                         initial={{ height: 0 }}
-                         animate={{ height: `${(superavit / 3000) * 100}%` }}
-                         transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                       />
-                       <span className="text-[10px] text-white/50 font-semibold absolute -bottom-5">Ganar</span>
-                    </div>
-                 </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 md:px-0">
+            {[
+              {
+                title: "Cálculo del TMB",
+                text: "Primero, calculamos tu Tasa Metabólica Basal, la cantidad de energía que tu cuerpo necesita en reposo absoluto para funciones vitales.",
+                num: "01"
+              },
+              {
+                title: "Factor de Actividad",
+                text: "Multiplicamos tu TMB por un factor basado en tu nivel de actividad diaria, de sedentario a extremadamente activo.",
+                num: "02"
+              },
+              {
+                title: "Gasto Diario (TDEE)",
+                text: "Obtenemos tus necesidades totales, indicando cuántas calorías necesitas para mantener tu peso actual.",
+                num: "03"
+              },
+              {
+                title: "Ajuste de Objetivos",
+                text: "Calculamos variaciones para perder, mantener o aumentar peso, aplicando déficits o superávits científicos.",
+                num: "04"
+              }
+            ].map((step, i) => (
+              <div key={i} className="bg-[#0e1419] border border-[#1f262e] p-6 rounded-sm hover:border-[#3b82f6]/30 transition-all group">
+                <span className="heading-sm text-[#1f262e] group-hover:text-[#3b82f6]/20 transition-colors block mb-2">{step.num}</span>
+                <h4 className="heading-sm !text-[12px] opacity-90 mb-4">{step.title}</h4>
+                <p className="body-sm">{step.text}</p>
               </div>
-              <div className="absolute -left-4 top-1/2 -rotate-90 text-[10px] font-bold text-white/30 uppercase tracking-widest origin-center translate-y-[-50%]">Calorías</div>
-           </div>
+            ))}
+          </div>
 
-           {/* Objetivos calóricos CARDS */}
-           <div className="flex flex-col items-center">
-             <h3 className="text-xl font-bold text-accentBlue mb-6 mt-2">Objetivos calóricos</h3>
-             
-             <div className="grid grid-cols-3 gap-3 w-full">
-                {/* Perder */}
-                <div className="bg-darkNavy border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2">
-                   <ArrowDown className="w-5 h-5 text-[#E06C75]" />
-                   <span className="text-xs font-semibold text-white/70">Perder</span>
-                   <span className="text-lg font-black text-white"><AnimatedNumber value={deficit} /></span>
-                   <span className="text-[10px] text-white/40">cal/día</span>
+          <div className="bg-[#3b82f6]/5 border border-[#3b82f6]/20 p-8 rounded-sm mx-4 md:mx-0">
+             <div className="flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left">
+                <div className={clsx("w-12 h-12 rounded-sm flex items-center justify-center shrink-0", accentBg)}>
+                  <Zap className="w-6 h-6 text-white" />
                 </div>
-                {/* Mantener */}
-                <div className="bg-darkNavy border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2">
-                   <Equal className="w-5 h-5 text-[#4285F4]" />
-                   <span className="text-xs font-semibold text-white/70">Mantener</span>
-                   <span className="text-lg font-black text-white"><AnimatedNumber value={mantenimiento} /></span>
-                   <span className="text-[10px] text-white/40">cal/día</span>
-                </div>
-                {/* Ganar */}
-                <div className="bg-darkNavy border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2">
-                   <ArrowUp className="w-5 h-5 text-[#54B47B]" />
-                   <span className="text-xs font-semibold text-white/70">Ganar</span>
-                   <span className="text-lg font-black text-white"><AnimatedNumber value={superavit} /></span>
-                   <span className="text-[10px] text-white/40">cal/día</span>
+                <div>
+                   <h3 className="heading-sm mb-2 text-white">Dato importante</h3>
+                   <p className="body-text !text-sm italic">
+                     "Este método científico proporciona una base sólida para planificar tu alimentación diaria. Sin embargo, recuerda que es una estimación y puede requerir ajustes según tu respuesta individual y monitoreo profesional."
+                   </p>
                 </div>
              </div>
-           </div>
-
+          </div>
         </div>
-
-      </div>
-    </div>
+      </motion.section>
+    </>
   );
 }

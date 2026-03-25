@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, ChevronRight, User, Sparkles } from 'lucide-react';
+import { Search, ChevronRight, User, Sparkles, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Loader from '@/components/Loader';
 import { useQuery } from '@tanstack/react-query';
 
 export default function ConsultaIndexPage() {
@@ -20,75 +21,73 @@ export default function ConsultaIndexPage() {
 
   const pacientes = data?.data || [];
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-accentBlue"></div>
-      </div>
-    );
-  }
+  if (isLoading) return <Loader />;
 
   return (
-    <div className="max-w-[1200px] mx-auto space-y-12 text-bone selection:bg-accentBlue/20 pb-20">
-      <header className="space-y-6">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
-        >
-          <div className="flex items-center gap-3 text-accentBlue font-black uppercase text-[10px] tracking-[0.4em]">
-            <Sparkles className="w-4 h-4 opacity-50" /> Consola de Consultas
+    <div className="max-w-[1200px] mx-auto space-y-12 text-[#eaeef6] selection:bg-white/5 pb-20 p-6 md:p-8">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-10">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 text-[#3b82f6] font-label text-[10px] uppercase tracking-[0.3em] font-bold">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] shadow-[0_0_8px_rgba(59,130,246,0.4)]" /> Consola Clínica
           </div>
-          <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase leading-[0.9] italic">
+          <h1 className="text-4xl md:text-5xl font-heading font-black text-white uppercase tracking-tight leading-none">
             Seleccionar <br />
-            <span className="text-accentBlue not-italic">Paciente.</span>
+            <span className="text-[#3b82f6]">Paciente</span>
           </h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest flex items-center gap-2 mt-4">
-            Inicia un nuevo protocolo clínico o revisa evoluciones activas
-          </p>
-        </motion.div>
+          <p className="text-[#a7abb2] font-label font-bold uppercase text-[9px] tracking-widest mt-4">Gestión de expedientes y protocolos activos</p>
+        </div>
+
+        <div className="flex items-center gap-4 bg-[#0a0f14] p-5 rounded-sm border border-white/5 backdrop-blur-3xl shadow-xl">
+          <Activity className="w-5 h-5 text-[#3b82f6] opacity-40" />
+          <div className="flex flex-col">
+            <span className="text-[8px] font-bold text-[#a7abb2] uppercase tracking-widest">Registros Totales</span>
+            <span className="text-[11px] font-bold text-white uppercase tracking-widest">{pacientes.length} PACIENTES</span>
+          </div>
+        </div>
       </header>
+
       <div className="space-y-10">
         <div className="relative group max-w-2xl">
-          <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-6 h-6 text-white/10 group-focus-within:text-accentBlue transition-colors" />
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-white/10 group-focus-within:text-[#3b82f6] transition-colors" />
           <input 
             type="text" 
-            placeholder="Buscar en el índice maestro..." 
+            placeholder="Buscar paciente por nombre o apellido..." 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full bg-cardDark/40 p-8 pl-20 rounded-[2.5rem] border border-white/5 focus:border-accentBlue/30 outline-none transition-all font-bold text-white placeholder:text-white/10 shadow-3xl backdrop-blur-3xl"
+            className="w-full bg-[#0a0f14] p-6 pl-16 rounded-sm border border-white/5 focus:border-[#3b82f6]/30 outline-none transition-all font-bold uppercase tracking-widest text-[10px] text-white placeholder:text-white/5 shadow-xl"
           />
         </div>
         
         {pacientes.length === 0 && !isLoading && (
-          <div className="text-center text-slate-500 font-bold py-10 text-xl">No se encontraron pacientes.</div>
+          <div className="text-center text-white/20 font-bold uppercase tracking-[0.5em] py-20 text-[10px]">
+            No se han encontrado pacientes coincidentes
+          </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {pacientes.map((p: any, i: number) => (
             <motion.div
               key={p._id || p.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: i * 0.03 }}
             >
               <Link 
                 href={`/admin/consulta/${p._id || p.id}`}
-                className="flex items-center justify-between p-10 bg-cardDark/40 rounded-[3.5rem] border border-white/5 hover:border-accentBlue/30 hover:bg-cardDark/60 transition-all group shadow-2xl relative overflow-hidden backdrop-blur-3xl"
+                className="flex items-center justify-between p-8 bg-[#0a0f14] rounded-sm border border-white/5 hover:border-[#3b82f6]/30 hover:bg-[#0e1419] transition-all group shadow-xl relative overflow-hidden"
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-accentBlue/5 rounded-full blur-[60px] opacity-0 group-hover:opacity-100 transition-opacity" />
-                
-                <div className="flex items-center gap-8 relative z-10">
-                  <div className="w-16 h-16 bg-darkNavy rounded-2xl flex items-center justify-center border border-white/5 group-hover:bg-accentBlue group-hover:text-white transition-all duration-500 shadow-xl">
-                    <User className="w-8 h-8 text-accentBlue group-hover:text-white transition-colors" />
+                <div className="flex items-center gap-6 relative z-10 w-full">
+                  <div className="w-14 h-14 bg-white/5 rounded-sm flex items-center justify-center border border-white/10 group-hover:bg-[#3b82f6] group-hover:text-white transition-all duration-500">
+                    <User className="w-6 h-6 opacity-40 group-hover:opacity-100" />
                   </div>
-                  <div>
-                    <h4 className="text-2xl font-black text-white tracking-tight uppercase italic">{p.nombre} {p.apellido}</h4>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">{p.objetivo || 'Sin objetivo'}</p>
+                  <div className="flex-1 space-y-2">
+                    <p className="text-[8px] font-bold text-[#a7abb2] uppercase tracking-[0.3em]">{p.objetivo || 'SIN PROTOCOLO'}</p>
+                    <h4 className="text-xl font-bold text-white tracking-tight uppercase group-hover:text-[#3b82f6] transition-colors">{p.nombre} {p.apellido}</h4>
                   </div>
                 </div>
 
-                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-darkNavy text-slate-500 border border-white/5 group-hover:bg-accentBlue group-hover:text-white group-hover:translate-x-2 transition-all shadow-xl relative z-10">
-                  <ChevronRight className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-sm flex items-center justify-center bg-white/5 text-white/20 border border-white/5 group-hover:bg-[#3b82f6] group-hover:text-white group-hover:translate-x-1 transition-all shadow-xl relative z-10 shrink-0">
+                  <ChevronRight className="w-5 h-5" />
                 </div>
               </Link>
             </motion.div>

@@ -1,7 +1,7 @@
 {
-  "name": "Guido Nutrición Elite",
+  "name": "Guido Nutrición",
   "short_name": "GuidoNutri",
-  "description": "Plataforma elite de nutrición clínica.",
+  "description": "Plataforma de nutrición clínica.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F9F7F2",

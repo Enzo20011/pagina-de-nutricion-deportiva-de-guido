@@ -66,11 +66,16 @@ export default function EnergyCalculator() {
     setTdee(Math.round(tmbVal * ACTIVIDAD_FACTORES[actividad]));
   }, [peso, altura, edad, sexo, actividad]);
 
-  const CustomSlider = ({ label, value, min, max, onChange, unit }: any) => (
+    const accentColor = sexo === 'hombre' ? 'blue-500' : 'rose-500';
+    const accentText = sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500';
+    const accentBg = sexo === 'hombre' ? 'bg-blue-500' : 'bg-rose-500';
+    const accentBorder = sexo === 'hombre' ? 'border-blue-500' : 'border-rose-500';
+
+    return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{label}</label>
-        <span className="text-xl font-black italic text-emerald-500 tracking-tighter">{value} <span className="text-[10px] opacity-40 not-italic">{unit}</span></span>
+        <span className={`text-xl font-black italic ${accentText} tracking-tighter`}>{value} <span className="text-[10px] opacity-40 not-italic">{unit}</span></span>
       </div>
       <div className="relative flex items-center group">
         <input title="Campo de entrada" 
@@ -79,10 +84,14 @@ export default function EnergyCalculator() {
           max={max}
           value={value}
           onInput={(e: any) => onChange(parseInt(e.target.value))}
-          className="elite-slider w-full h-1 bg-white/5 rounded-full appearance-none cursor-pointer transition-all hover:bg-white/10"
+          className="professional-slider w-full h-1 bg-white/5 rounded-full appearance-none cursor-pointer transition-all hover:bg-white/10"
           style={{
             // @ts-ignore
-            '--slider-gradient': `linear-gradient(to right, #10b981 ${(value - min) / (max - min) * 100}%, rgba(255,255,255,0.05) ${(value - min) / (max - min) * 100}%)`
+            '--slider-gradient': `linear-gradient(to right, ${sexo === 'hombre' ? '#3b82f6' : '#f43f5e'} ${(value - min) / (max - min) * 100}%, rgba(255,255,255,0.05) ${(value - min) / (max - min) * 100}%)`,
+            // @ts-ignore
+            '--thumb-color': sexo === 'hombre' ? '#3b82f6' : '#f43f5e',
+            // @ts-ignore
+            '--thumb-shadow': sexo === 'hombre' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(244, 63, 94, 0.4)'
           }}
         />
       </div>
@@ -96,29 +105,29 @@ export default function EnergyCalculator() {
   return (
     <section id="calculadora" className="py-24 md:py-40 px-6 relative overflow-hidden bg-darkNavy scroll-mt-24">
       <style jsx global>{`
-        .elite-slider::-webkit-slider-thumb {
+        .professional-slider::-webkit-slider-thumb {
           appearance: none;
           width: 24px;
           height: 24px;
-          background: #10b981;
+          background: var(--thumb-color, #10b981);
           border: 4px solid #020617;
           border-radius: 50%;
           cursor: pointer;
-          box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+          box-shadow: 0 0 20px var(--thumb-shadow, rgba(16, 185, 129, 0.4));
           transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
         }
-        .elite-slider:active::-webkit-slider-thumb {
+        .professional-slider:active::-webkit-slider-thumb {
           transform: scale(1.15);
-          box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+          box-shadow: 0 0 30px var(--thumb-shadow, rgba(16, 185, 129, 0.6));
         }
-        .elite-slider::-moz-range-thumb {
+        .professional-slider::-moz-range-thumb {
           width: 24px;
           height: 24px;
-          background: #10b981;
+          background: var(--thumb-color, #10b981);
           border: 4px solid #020617;
           border-radius: 50%;
           cursor: pointer;
-          box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+          box-shadow: 0 0 20px var(--thumb-shadow, rgba(16, 185, 129, 0.4));
         }
       `}</style>
 
@@ -128,13 +137,13 @@ export default function EnergyCalculator() {
 
       <div className="max-w-[1200px] mx-auto relative z-10">
         <div className="mb-20 md:mb-32 space-y-6">
-          <div className="flex items-center gap-4 text-emerald-500">
-            <div className="h-[2px] w-12 bg-emerald-500" />
+          <div className={`flex items-center gap-4 ${sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500'}`}>
+            <div className={`h-[2px] w-12 ${sexo === 'hombre' ? 'bg-blue-500' : 'bg-rose-500'}`} />
             <span className="text-[10px] font-black uppercase tracking-[0.5em] italic">Bio-Stats Engine</span>
           </div>
           <h2 className="text-6xl md:text-9xl font-black text-white italic uppercase tracking-tighter leading-[0.85] font-playfair">
             Calcular <br />
-            <span className="text-emerald-500 not-italic">Energía.</span>
+            <span className={`${sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500'} not-italic`}>Energía.</span>
           </h2>
         </div>
 
@@ -143,8 +152,8 @@ export default function EnergyCalculator() {
           <div className="space-y-12">
             <div className="bg-black/40 border border-white/5 p-10 lg:p-14 rounded-[3rem] backdrop-blur-3xl shadow-2xl relative overflow-hidden">
                <div className="flex items-center gap-4 mb-16">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-600/20 flex items-center justify-center border border-emerald-500/30">
-                    <User className="w-5 h-5 text-emerald-500" />
+                  <div className={`w-10 h-10 rounded-2xl ${sexo === 'hombre' ? 'bg-blue-600/20 border-blue-500/30' : 'bg-rose-600/20 border-rose-500/30'} flex items-center justify-center border`}>
+                    <User className={`w-5 h-5 ${sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500'}`} />
                   </div>
                   <h3 className="text-xl font-black text-white tracking-tighter uppercase italic">Introduce tus datos</h3>
                </div>
@@ -165,7 +174,7 @@ export default function EnergyCalculator() {
                         {sexo === s && (
                           <motion.div 
                             layoutId="sexo-pill"
-                            className="absolute inset-0 bg-emerald-600 shadow-lg rounded-xl -z-10"
+                            className={`absolute inset-0 ${s === 'hombre' ? 'bg-blue-600 shadow-[0_0_20px_rgba(59,130,246,0.3)]' : 'bg-rose-600 shadow-[0_0_20px_rgba(244,63,94,0.3)]'} rounded-xl -z-10`}
                           />
                         )}
                         {s === 'hombre' ? <User className="w-3 h-3" /> : <User2 className="w-3 h-3" />}
@@ -184,7 +193,7 @@ export default function EnergyCalculator() {
                 <div className="space-y-6">
                    <div className="flex justify-between items-center">
                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">Frecuencia de Actividad</label>
-                      <span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest">{ACTIVIDAD_LABELS[actividad]}</span>
+                      <span className={`text-[11px] font-black ${sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500'} uppercase tracking-widest`}>{ACTIVIDAD_LABELS[actividad]}</span>
                    </div>
                    <div className="bg-black/20 p-8 rounded-[2rem] border border-white/5 relative group">
                       <input title="Campo de entrada"
@@ -194,30 +203,30 @@ export default function EnergyCalculator() {
                         step="1"
                         value={['sedentario', 'ligero', 'moderado', 'intenso', 'muy-intenso'].indexOf(actividad)}
                         onInput={(e: any) => setActividad(['sedentario', 'ligero', 'moderado', 'intenso', 'muy-intenso'][parseInt(e.target.value)] as Actividad)}
-                        className="elite-slider w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer"
-                      />
-                      <div className="flex justify-between mt-8 text-[7px] font-black text-white/20 uppercase tracking-[0.1em]">
+                        className="professional-slider w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer"
+                                            <div className="flex justify-between mt-8 text-[7px] font-black text-white/20 uppercase tracking-[0.1em]">
                         <div className="flex flex-col items-center gap-2 flex-1 text-center">
-                          <PersonStanding className={`w-4 h-4 transition-colors ${actividad === 'sedentario' ? 'text-emerald-500' : 'text-white/20'}`} />
-                          <span className={actividad === 'sedentario' ? 'text-emerald-500' : ''}>Sedentario</span>
+                          <PersonStanding className={`w-4 h-4 transition-colors ${actividad === 'sedentario' ? (sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500') : 'text-white/20'}`} />
+                          <span className={actividad === 'sedentario' ? (sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500') : ''}>Sedentario</span>
                         </div>
                         <div className="flex flex-col items-center gap-2 flex-1 text-center">
-                          <Accessibility className={`w-4 h-4 transition-colors ${actividad === 'ligero' ? 'text-emerald-500' : 'text-white/20'}`} />
-                          <span className={actividad === 'ligero' ? 'text-emerald-500' : ''}>Ligero</span>
+                          <Accessibility className={`w-4 h-4 transition-colors ${actividad === 'ligero' ? (sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500') : 'text-white/20'}`} />
+                          <span className={actividad === 'ligero' ? (sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500') : ''}>Ligero</span>
                         </div>
                         <div className="flex flex-col items-center gap-2 flex-1 text-center">
-                          <Dumbbell className={`w-4 h-4 transition-colors ${actividad === 'moderado' ? 'text-emerald-500' : 'text-white/20'}`} />
-                          <span className={actividad === 'moderado' ? 'text-emerald-500' : ''}>Moderado</span>
+                          <Dumbbell className={`w-4 h-4 transition-colors ${actividad === 'moderado' ? (sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500') : 'text-white/20'}`} />
+                          <span className={actividad === 'moderado' ? (sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500') : ''}>Moderado</span>
                         </div>
                         <div className="flex flex-col items-center gap-2 flex-1 text-center">
-                          <Zap className={`w-4 h-4 transition-colors ${actividad === 'intenso' ? 'text-emerald-500' : 'text-white/20'}`} />
-                          <span className={actividad === 'intenso' ? 'text-emerald-500' : ''}>Intenso</span>
+                          <Zap className={`w-4 h-4 transition-colors ${actividad === 'intenso' ? (sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500') : 'text-white/20'}`} />
+                          <span className={actividad === 'intenso' ? (sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500') : ''}>Intenso</span>
                         </div>
                         <div className="flex flex-col items-center gap-2 flex-1 text-center">
-                          <Flame className={`w-4 h-4 transition-colors ${actividad === 'muy-intenso' ? 'text-emerald-500' : 'text-white/20'}`} />
-                          <span className={actividad === 'muy-intenso' ? 'text-emerald-500' : ''}>Atleta</span>
+                          <Flame className={`w-4 h-4 transition-colors ${actividad === 'muy-intenso' ? (sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500') : 'text-white/20'}`} />
+                          <span className={actividad === 'muy-intenso' ? (sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500') : ''}>Atleta</span>
                         </div>
                       </div>
+iv>
                    </div>
                 </div>
                </div>
@@ -230,7 +239,7 @@ export default function EnergyCalculator() {
                <div className="relative z-10 space-y-12">
                   <div className="flex justify-between items-center border-b border-white/5 pb-8">
                     <h3 className="text-2xl font-black text-white tracking-tighter uppercase italic">Tus resultados</h3>
-                    <BarChart3 className="w-5 h-5 text-emerald-500 opacity-40" />
+                    <BarChart3 className={`w-5 h-5 ${sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500'} opacity-40`} />
                   </div>
                   
                   <div className="space-y-10">
@@ -253,23 +262,23 @@ export default function EnergyCalculator() {
                     <div className="space-y-4">
                         <div className="flex justify-between items-end">
                           <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">Gasto Energético (TDEE)</p>
-                          <p className="text-2xl font-black italic text-emerald-500 tracking-tighter">{tdee} <span className="text-[9px] opacity-40 not-italic uppercase">cal/día</span></p>
+                          <p className={`text-2xl font-black italic ${sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500'} tracking-tighter`}>{tdee} <span className="text-[9px] opacity-40 not-italic uppercase">cal/día</span></p>
                         </div>
                         <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                           <motion.div 
                             initial={{ width: 0 }}
                             animate={{ width: `${(tdee / 4000) * 100}%` }}
-                            className="h-full bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]"
+                            className={`h-full ${sexo === 'hombre' ? 'bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.4)]' : 'bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.4)]'}`}
                           />
                         </div>
                     </div>
 
                     {/* BAR CHART */}
-                    <div className="bg-black/20 p-6 rounded-3xl border border-white/5">
-                      <div className="h-32 flex items-end justify-between gap-4 px-2">
+                    <div className="bg-black/20 p-8 rounded-3xl border border-white/5">
+                      <div className="h-56 flex items-end justify-between gap-4 px-2">
                         {[
                           { label: 'Perder', val: tdee - 500, color: 'bg-rose-500/60', text: 'text-rose-400' },
-                          { label: 'Mantener', val: tdee, color: 'bg-blue-500/60', text: 'text-blue-400' },
+                          { label: 'Mantener', val: tdee, color: sexo === 'hombre' ? 'bg-blue-500/60' : 'bg-rose-400/60', text: sexo === 'hombre' ? 'text-blue-400' : 'text-rose-300' },
                           { label: 'Ganar', val: tdee + 500, color: 'bg-emerald-500/60', text: 'text-emerald-400' }
                         ].map((goal, i) => (
                           <div key={i} className="flex-1 flex flex-col items-center gap-3 h-full">
@@ -279,6 +288,9 @@ export default function EnergyCalculator() {
                                 animate={{ height: `${(goal.val / (tdee + 1500)) * 100}%` }}
                                 className={`w-full ${goal.color} border-t border-white/20`}
                               />
+                              <div className="absolute top-2 inset-x-0 text-center">
+                                 <span className="text-[7px] font-mono text-white/40">{goal.val}</span>
+                              </div>
                             </div>
                             <span className={`text-[8px] font-black uppercase tracking-widest ${goal.text}`}>{goal.label}</span>
                           </div>
@@ -293,10 +305,10 @@ export default function EnergyCalculator() {
                     <div className="grid grid-cols-3 gap-3">
                       {[
                         { label: 'Perder', val: Math.max(0, tdee - 500), icon: <TrendingDown className="w-4 h-4 text-rose-500" /> },
-                        { label: 'Mantener', val: tdee, icon: <Equal className="w-4 h-4 text-blue-500" /> },
+                        { label: 'Mantener', val: tdee, icon: <Equal className={`w-4 h-4 ${sexo === 'hombre' ? 'text-blue-500' : 'text-rose-400'}`} /> },
                         { label: 'Ganar', val: tdee + 500, icon: <TrendingUp className="w-4 h-4 text-emerald-500" /> }
                       ].map((obj, i) => (
-                        <div key={i} className="bg-white/5 p-4 rounded-3xl flex flex-col items-center justify-center gap-1 border border-white/5 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/20 group/card">
+                        <div key={i} className={`bg-white/5 p-4 rounded-3xl flex flex-col items-center justify-center gap-1 border border-white/5 transition-all hover:bg-white/10 hover:${sexo === 'hombre' ? 'border-blue-500/20' : 'border-rose-500/20'} group/card`}>
                           <div className="mb-1 group-hover/card:scale-110 transition-transform">{obj.icon}</div>
                           <span className="text-[8px] font-black text-white/40 uppercase tracking-tighter">{obj.label}</span>
                           <span className="text-sm font-black text-white">{obj.val}</span>
@@ -310,8 +322,8 @@ export default function EnergyCalculator() {
 
             <div className="p-8 bg-white/[0.03] border border-white/10 rounded-[2.5rem] backdrop-blur-xl flex items-center justify-between group cursor-help transition-all hover:bg-white/[0.05]">
                <div className="flex gap-4 items-center">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/40">
-                    <Info className="w-4 h-4 text-emerald-500" />
+                  <div className={`w-10 h-10 rounded-2xl ${sexo === 'hombre' ? 'bg-blue-500/20 border-blue-500/40' : 'bg-rose-500/20 border-rose-500/40'} flex items-center justify-center border`}>
+                    <Info className={`w-4 h-4 ${sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500'}`} />
                   </div>
                   <div>
                     <h4 className="text-[9px] font-black text-white uppercase tracking-[0.2em]">Bio-Sincronización</h4>
@@ -327,8 +339,8 @@ export default function EnergyCalculator() {
         <div className="mt-40 md:mt-64 grid grid-cols-1 lg:grid-cols-2 gap-32 items-center">
            <div className="space-y-12">
               <div className="space-y-6">
-                <h3 className="text-5xl md:text-7xl font-black text-white italic uppercase tracking-tighter leading-tight font-playfair">Precision <br /><span className="text-emerald-500 not-italic">Equations.</span></h3>
-                <div className="w-20 h-2 bg-emerald-500 rounded-full" />
+                <h3 className="text-5xl md:text-7xl font-black text-white italic uppercase tracking-tighter leading-tight font-playfair">Precision <br /><span className={`${sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500'} not-italic`}>Equations.</span></h3>
+                <div className={`w-20 h-2 ${sexo === 'hombre' ? 'bg-blue-500' : 'bg-rose-500'} rounded-full`} />
               </div>
               <p className="text-xl text-bone/40 font-light leading-relaxed">
                 Nuestra plataforma utiliza un ajuste patentado de la fórmula Harris-Benedict revisada, optimizada para objetivos clínicos y deportivos actuales. No se trata solo de números, sino de precisión biológica.
@@ -347,18 +359,18 @@ export default function EnergyCalculator() {
               </div>
            </div>
            
-           <div className="relative aspect-square py-12">
-              <div className="absolute inset-0 bg-emerald-500/10 blur-[100px] animate-pulse" />
-              <div className="relative h-full rounded-[4rem] border border-white/10 overflow-hidden flex items-center justify-center bg-black/40 backdrop-blur-3xl shadow-3xl">
-                 <div className="p-12 text-center space-y-8">
-                    <Activity className="w-20 h-20 text-emerald-500 mx-auto" />
+            <div className={`relative aspect-square py-12 ${sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500'}`}>
+               <div className={`absolute inset-0 ${sexo === 'hombre' ? 'bg-blue-500/10' : 'bg-rose-500/10'} blur-[100px] animate-pulse`} />
+               <div className="relative h-full rounded-[4rem] border border-white/10 overflow-hidden flex items-center justify-center bg-black/40 backdrop-blur-3xl shadow-3xl">
+                  <div className="p-12 text-center space-y-8">
+                    <Activity className={`w-20 h-20 ${sexo === 'hombre' ? 'text-blue-500' : 'text-rose-500'} mx-auto`} />
                     <code className="text-sm md:text-lg font-black text-white/60 block bg-white/5 p-8 rounded-3xl border border-white/5 leading-relaxed tracking-tighter">
-                       TMB = 88.362 + (13.397 × kg) + (4.799 × cm) - (5.677 × edad)
+                       TMB = {sexo === 'hombre' ? '88.362 + (13.397 × kg) + (4.799 × cm) - (5.677 × edad)' : '447.593 + (9.247 × kg) + (3.098 × cm) - (4.330 × edad)'}
                     </code>
                     <p className="text-[10px] font-black uppercase tracking-[0.5em] text-white/20">The Foundation of Success</p>
-                 </div>
-              </div>
-           </div>
+                  </div>
+               </div>
+            </div>
         </div>
       </div>
     </section>

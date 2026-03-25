@@ -1,18 +1,24 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IItemComida {
-  alimentoId: mongoose.Types.ObjectId;
-  nombreAlimento: string; // Redundancia para evitar demasiados joins en UI
-  cantidadGramos: number;
+  alimentoId?: mongoose.Types.ObjectId;
+  nombre: string;
+  gramos: number;
   kcal: number;
   proteinas: number;
   grasas: number;
-  carbohidratos: number;
+  carbos: number;
+  origen?: string;
 }
 
 export interface IComida {
-  nombre: string; // Ej: 'Desayuno', 'Almuerzo'
+  id?: string;
+  nombre: string;
   items: IItemComida[];
+  totalKcal?: number;
+  totalProteins?: number;
+  totalCarbs?: number;
+  totalFats?: number;
 }
 
 export interface IPlanAlimentario extends Document {
@@ -21,11 +27,12 @@ export interface IPlanAlimentario extends Document {
   objetivoCalorico: number;
   comidas: IComida[];
   macrosObjetivo: {
-    proteinasPct: number;
-    grasasPct: number;
-    carbosPct: number;
+    p: number;
+    c: number;
+    f: number;
   };
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const PlanAlimentarioSchema: Schema = new Schema(
@@ -35,27 +42,34 @@ const PlanAlimentarioSchema: Schema = new Schema(
     objetivoCalorico: { type: Number, required: true },
     comidas: [
       {
+        id: String,
         nombre: String,
         items: [
           {
             alimentoId: { type: Schema.Types.ObjectId, ref: 'Alimento' },
-            nombreAlimento: String,
-            cantidadGramos: Number,
+            nombre: String,
+            gramos: Number,
             kcal: Number,
             proteinas: Number,
             grasas: Number,
-            carbohidratos: Number,
+            carbos: Number,
+            origen: String,
           },
         ],
+        totalKcal: Number,
+        totalProteins: Number,
+        totalCarbs: Number,
+        totalFats: Number,
       },
     ],
     macrosObjetivo: {
-      proteinasPct: Number,
-      grasasPct: Number,
-      carbosPct: Number,
+      p: Number,
+      c: Number,
+      f: Number,
     },
   },
   { timestamps: true }
 );
 
 export default mongoose.models.PlanAlimentario || mongoose.model<IPlanAlimentario>('PlanAlimentario', PlanAlimentarioSchema);
+

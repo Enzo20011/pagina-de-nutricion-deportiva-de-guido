@@ -1,151 +1,116 @@
 "use client";
 import React from 'react';
 import HeroSection from './HeroSection';
-import HomeMiniSobreMi from './HomeMiniSobreMi';
-import { motion, useScroll, useTransform } from 'framer-motion';
 import ServiciosSection from './ServiciosSection';
 import ScientificAvales from './ScientificAvales';
 import CalculadoraMetabolica from './CalculadoraMetabolica';
+import Testimonios from './Testimonios';
 import { useTurnero } from '@/components/TurneroContext';
-import { TiltCard } from './ui/TiltCard';
+import { motion } from 'framer-motion';
+
+const DOT_GRID = `radial-gradient(circle, rgba(67,72,78,0.4) 1px, transparent 1px)`;
 
 export default function LandingPage() {
   const { openTurnero } = useTurnero();
-  
-  // Parallax for footer background
-  const { scrollYProgress } = useScroll();
-  const yFooterBg = useTransform(scrollYProgress, [0.8, 1], ["-20%", "20%"]);
-
-  const textRevealVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: { delay: i * 0.15, duration: 0.6, ease: "easeOut" as const }
-    })
-  };
 
   return (
-    <div className="min-h-screen w-full bg-[#070C14] text-[#F8FAFC] flex flex-col font-sans selection:bg-[#3B82F6]/20 overflow-x-hidden">
-      {/* SECCIÓN INICIO / HERO */}
-      <div id="inicio">
-        <HeroSection onBookingClick={openTurnero} />
-      </div>
+    <div className="bg-[#0a0f14]">
+      {/* HERO */}
+      <HeroSection onBookingClick={openTurnero} />
 
-      {/* MINI BIO PROFESIONAL - Mascarilla para fusionar con Hero */}
-      <div className="mask-section-top">
-        <HomeMiniSobreMi />
-      </div>
+      {/* SERVICIOS */}
+      <ServiciosSection onBookingClick={openTurnero} />
 
-      {/* FILOSOFÍA NUTRICIONAL */}
-      <section className="py-24 px-6 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16 overflow-visible">
-        <motion.div 
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          className="flex-1 space-y-8"
-        >
-          <motion.div custom={1} variants={textRevealVariants} className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full bg-accentBlue/10 border border-accentBlue/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-accentBlue animate-pulse" />
-            <span className="text-[9px] font-black uppercase tracking-[0.4em] text-accentBlue">Filosofía Nutricional</span>
+      {/* CALCULADORA */}
+      <motion.section 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="bg-[#0a0f14] py-8 px-8 relative overflow-hidden"
+      >
+        <div className="absolute inset-0 pointer-events-none opacity-15"
+          style={{ backgroundImage: DOT_GRID, backgroundSize: "20px 20px" }} />
+        <div className="max-w-[1200px] mx-auto relative z-10 flex flex-col items-center">
+          
+          <div className="max-w-2xl w-full text-center mb-6">
+            <motion.h2 
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="text-3xl md:text-4xl font-black uppercase tracking-tight leading-none mb-4 text-white"
+            >
+              ANÁLISIS<br />
+              <span className="text-[#3b82f6]">METABÓLICO</span>
+            </motion.h2>
+            <motion.p 
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="text-sm font-medium text-[#a7abb2] leading-relaxed mx-auto max-w-xl"
+            >
+              Calculá tu gasto energético basal y total con algoritmos de precisión científica. Primer paso para un plan de nutrición inteligente.
+            </motion.p>
+          </div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 20, scale: 0.99 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="w-full max-w-[1100px] relative"
+          >
+            <CalculadoraMetabolica />
           </motion.div>
-          
-          <motion.h2 custom={2} variants={textRevealVariants} className="text-4xl md:text-5xl font-black uppercase italic tracking-tighter leading-none">
-            La base es la <br/> <span className="text-accentBlue">Ciencia aplicada.</span>
-          </motion.h2>
-          
-          <motion.p custom={3} variants={textRevealVariants} className="text-slate-400 text-lg font-medium leading-relaxed max-w-xl">
-            Cada plato es un sistema de información para tu genoma. No contamos solo calorías, optimizamos señales biológicas para alcanzar tu máximo potencial físico y mental.
-          </motion.p>
-          
-          <motion.ul custom={4} variants={textRevealVariants} className="space-y-4 text-sm font-bold uppercase tracking-widest text-[#F8FAFC]/60">
-            <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-accentBlue" /> Micro-nutrición personalizada</li>
-            <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-accentBlue" /> Bioquímica del rendimiento</li>
-            <li className="flex items-center gap-3"><div className="w-2 h-2 rounded-full bg-accentBlue" /> Sostenibilidad a largo plazo</li>
-          </motion.ul>
-        </motion.div>
-        
-        <div className="flex-1 relative group w-full perspective-[1000px]">
-          <div className="absolute inset-0 bg-accentBlue/20 blur-[100px] rounded-full group-hover:scale-110 transition-transform duration-1000" />
-          <TiltCard className="w-full">
-            <div className="relative rounded-[4rem] overflow-hidden border-[12px] border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-              <img 
-                src="/assets/nutrition-premium.png" 
-                alt="Plato nutrición premium" 
-                className="w-full h-full object-cover brightness-90 group-hover:scale-105 transition-transform duration-700" 
-              />
-            </div>
-          </TiltCard>
         </div>
-      </section>
+      </motion.section>
 
-      {/* SECCIÓN CALCULADORA - Mascarilla para fusionar con Bio */}
-      <div id="calculadora" className="py-24 bg-gradient-to-b from-[#070C14] to-[#0F1A2A] relative overflow-hidden mask-section-top">
-        {/* Background Tech Image */}
-        <div className="absolute inset-0 -z-10 opacity-20 grayscale brightness-50">
-          <img 
-            src="/assets/metabolic-tech.png" 
-            alt="" 
-            className="w-full h-full object-cover" 
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-[#070C14] via-transparent to-[#070C14] -z-10" />
-        
-        <div className="max-w-7xl mx-auto px-4 relative z-10">
+      {/* TESTIMONIOS */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <Testimonios />
+      </motion.section>
+
+      {/* AVALES */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
+        <ScientificAvales />
+      </motion.section>
+
+      {/* FINAL CTA */}
+      <section className="bg-[#0e1419] py-20 px-8 border-t border-[#1f262e] relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none"
+          style={{ background: "radial-gradient(ellipse at center, rgba(59,130,246,0.04) 0%, transparent 70%)" }} />
+        <div className="max-w-[1200px] mx-auto text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-12"
+            transition={{ duration: 0.8 }}
           >
-            <h3 className="text-4xl md:text-5xl font-black uppercase italic text-[#3B82F6] mb-3">
-              Motor <span className="text-white">Metabólico</span>
-            </h3>
-            <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">Cuantificá tu biología para resultados exactos</p>
+            <h2 className="text-4xl md:text-7xl font-black uppercase tracking-tight leading-none mb-10 text-white">
+              INICIAR<br />
+              <span className="text-[#3b82f6]">TU PLAN</span>
+            </h2>
+            <button
+              onClick={openTurnero}
+              className="px-12 py-5 rounded-sm font-bold text-[13px] tracking-[0.2em] uppercase hover:shadow-[0_0_60px_rgba(59,130,246,0.35)] transition-all duration-500 shadow-xl"
+              style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#ffffff" }}
+            >
+              AGENDAR CONSULTA
+            </button>
           </motion.div>
-          <CalculadoraMetabolica />
         </div>
-      </div>
-
-      {/* SECCIÓN SERVICIOS */}
-      <div id="servicios">
-        <ServiciosSection onBookingClick={openTurnero} />
-      </div>
-
-      {/* SECCIÓN AVALES CIENTÍFICOS */}
-      <div className="py-12 bg-[#070C14]">
-         <ScientificAvales />
-      </div>
-
-      {/* BOTÓN AGENDAR DESTACADO ANTES DEL FOOTER */}
-      <section className="py-24 flex flex-col items-center justify-center relative overflow-hidden h-[600px]">
-         {/* Background clinical image con Parallax */}
-         <motion.div 
-           style={{ y: yFooterBg }}
-           className="absolute inset-x-0 -top-32 bottom-[-100px] -z-10 opacity-20 grayscale brightness-75 w-full"
-         >
-            <img 
-               src="/assets/clinical-setup.png" 
-               alt="" 
-               className="w-full h-full object-cover" 
-            />
-         </motion.div>
-         <div className="absolute inset-0 bg-gradient-to-t from-darkNavy via-darkNavy/80 to-darkNavy -z-10" />
-         
-         <div className="absolute inset-0 bg-[#3B82F6]/5 blur-[120px] rounded-full -translate-y-1/2" />
-         <h2 className="text-3xl md:text-5xl lg:text-6xl font-black uppercase italic text-center mb-8 z-10 px-4">
-            Empezá hoy tu camino <br/> al <span className="text-[#3B82F6]">Rendimiento Élite</span>
-         </h2>
-         <motion.button 
-           whileHover={{ scale: 1.05, boxShadow: "0 0 50px rgba(59,130,246,0.6)" }}
-           whileTap={{ scale: 0.95 }}
-           onClick={openTurnero}
-           className="relative overflow-hidden px-8 py-4 md:px-10 md:py-5 rounded-full font-black uppercase tracking-[0.2em] text-base md:text-lg bg-[#3B82F6] text-white shadow-[0_0_50px_rgba(59,130,246,0.5)] z-10 border-4 border-white/20 transition-all cursor-pointer"
-         >
-            {/* Automatic Shimmer loop */}
-            <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-shimmer-loop pointer-events-none" />
-            <span className="relative">Agendar Mi Consulta</span>
-         </motion.button>
       </section>
     </div>
   );

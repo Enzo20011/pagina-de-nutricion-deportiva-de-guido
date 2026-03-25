@@ -13,6 +13,12 @@ interface NavbarProps {
   setActiveTab?: (tab?: string) => void;
 }
 
+const navLinks = [
+  { name: 'Inicio', path: '/' },
+  { name: 'Servicios', path: '/servicios' },
+  { name: 'Sobre Mí', path: '/sobre-mi' },
+];
+
 const Navbar = ({ 
   onBookingClick = () => {}, 
   activeTab = 'inicio', 
@@ -24,13 +30,11 @@ const Navbar = ({
   const pathname = usePathname();
   
   const { scrollY, scrollYProgress } = useScroll();
-  const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+  const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
 
-  // Auto-hide logic based on scroll direction
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious() ?? 0;
-    // Hide if scrolling down past 120px and menu is NOT open
-    if (latest > previous && latest > 120 && !mobileMenuOpen) {
+    if (latest > previous && latest > 100 && !mobileMenuOpen) {
       setHidden(true);
     } else {
       setHidden(false);
@@ -38,33 +42,18 @@ const Navbar = ({
   });
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Lock body scroll when mobile menu is open
   useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
   }, [mobileMenuOpen]);
-
-  const navLinks = [
-    { name: 'Inicio', path: '/' },
-    { name: 'Servicios', path: '/servicios' },
-    { name: 'Sobre Mí', path: '/sobre-mi' },
-  ];
 
   const handleBooking = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (onBookingClick) {
-      onBookingClick();
-    }
+    onBookingClick();
     setMobileMenuOpen(false);
   };
 
@@ -73,164 +62,130 @@ const Navbar = ({
   return (
     <>
       <motion.header 
-        variants={{
-          visible: { y: 0 },
-          hidden: { y: "-100%" }
-        }}
+        variants={{ visible: { y: 0 }, hidden: { y: "-100%" } }}
         initial="visible"
         animate={hidden ? "hidden" : "visible"}
-        transition={{ duration: 0.35, ease: "easeInOut" }}
-        className={clsx(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           (isScrolled || mobileMenuOpen)
-            ? 'bg-[#070C14]/80 backdrop-blur-xl border-b border-white/5 shadow-2xl' 
-            : 'bg-transparent border-transparent'
-        )}
+            ? 'bg-[#0a0f14]/90 backdrop-blur-xl border-b border-[#1f262e]' 
+            : 'bg-transparent'
+        }`}
       >
-        {/* Top Scroll Indicator */}
-        <motion.div 
-          className="absolute top-0 left-0 right-0 h-[2px] bg-accentBlue origin-left z-50"
-          style={{ scaleX }}
-        />
 
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-12 flex items-center justify-between h-20">
+        <div className="max-w-[1200px] mx-auto px-8 lg:px-20 flex items-center justify-between h-20">
           
           {/* Logo */}
           <Link 
             href="/" 
-            className="flex items-center gap-3 group z-50 relative"
+            className="flex items-center gap-3 group z-50"
             onClick={() => { setActiveTab('/'); setMobileMenuOpen(false); }}
           >
-            <div className="absolute -inset-2 bg-accentBlue/0 group-hover:bg-accentBlue/20 blur-xl rounded-full transition-all duration-700" />
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-full overflow-hidden flex items-center justify-center transition-transform duration-500 group-hover:scale-110 group-hover:rotate-[5deg] border-2 border-white/20 shadow-[0_0_15px_rgba(59,130,246,0.3)] relative z-10 p-0.5 shrink-0">
-              <Image 
-                src="/logo.png" 
-                alt="Logo Guido Operuk" 
-                width={56}
-                height={56}
-                className="w-full h-full object-contain mix-blend-multiply"
-                priority
-              />
+            <div className="w-11 h-11 flex items-center justify-center bg-white rounded-xl overflow-hidden p-1.5 transition-transform duration-500 group-hover:scale-110 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+              <Image src="/logo.png" alt="Logo" width={40} height={40} className="w-full h-full object-contain" priority />
             </div>
-            <span className="font-sans font-black tracking-tighter text-xl md:text-2xl text-white uppercase italic relative z-10 transition-colors group-hover:text-white/90">
-              Operuk<span className="text-accentBlue font-light group-hover:animate-pulse">.</span>
-            </span>
+            <div className="flex flex-col gap-0">
+              <span className="heading-sm !text-md !text-[#eaeef6] group-hover:text-[#3b82f6] leading-none transition-colors duration-500 whitespace-nowrap">Guido M. Operuk</span>
+              <span className="eyebrow !text-[#a7abb2] leading-none mt-1">MP 778</span>
+            </div>
           </Link>
 
-          {/* Center Links (Desktop) */}
+          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-10">
-            {navLinks.map((link) => (
-              <Link 
-                key={link.path} 
-                href={link.path}
-                onClick={() => setActiveTab(link.path)}
-                className={clsx(
-                  "relative text-xs font-bold uppercase tracking-[0.2em] transition-colors py-2 group",
-                  activeTab === link.path ? 'text-white' : 'text-white/40 hover:text-white'
-                )}
-              >
-                {link.name}
-                <div className={clsx(
-                  "absolute -bottom-1 left-0 h-[2px] bg-accentBlue transition-all duration-300",
-                  activeTab === link.path ? 'w-full' : 'w-0 group-hover:w-full opacity-50'
-                )} />
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const active = pathname === link.path;
+              return (
+                <Link 
+                  key={link.path} 
+                  href={link.path}
+                  onClick={() => setActiveTab(link.path)}
+                  className={`font-label text-[11px] tracking-[0.12em] uppercase transition-all duration-300 relative group ${
+                    active ? 'text-[#3b82f6]' : 'text-[#a7abb2] hover:text-[#eaeef6]'
+                  }`}
+                >
+                  <motion.span
+                    whileHover={{ y: -2 }}
+                    className="block"
+                  >
+                    {link.name}
+                  </motion.span>
+                  <motion.span 
+                    className={`absolute -bottom-1 left-0 h-[1px] bg-[#3b82f6] transition-all duration-500 ${active ? 'w-full' : 'w-0 group-hover:w-full'}`} 
+                    layoutId="underline"
+                  />
+                </Link>
+              );
+            })}
           </nav>
 
-          {/* Right CTA / Mobile Toggle */}
+          {/* CTA */}
           <div className="flex items-center gap-4 z-50">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(59,130,246,0.4)" }}
+              whileTap={{ scale: 0.95 }}
               onClick={handleBooking}
-              className="hidden md:flex items-center gap-2 bg-white/5 hover:bg-accentBlue border border-white/10 hover:border-accentBlue py-2.5 px-6 rounded-full text-[10px] font-black uppercase tracking-widest text-white transition-all group overflow-hidden relative"
+              className="hidden md:flex items-center gap-3 px-6 py-2.5 rounded-sm font-label text-[11px] tracking-[0.1em] uppercase font-semibold transition-all duration-300"
+              style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#ffffff" }}
             >
-               <span className="relative z-10 flex items-center gap-2">
-                 Reservar <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-               </span>
-            </button>
-            <button 
-              className="md:hidden flex items-center justify-center w-12 h-12 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 transition-colors"
+              RESERVAR <ArrowRight className="w-4 h-4" />
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="md:hidden flex items-center justify-center w-10 h-10 bg-[#1a2027] hover:bg-[#1f262e] rounded-sm border border-[#2a3040] transition-all duration-300"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              <motion.div animate={{ rotate: mobileMenuOpen ? 180 : 0 }}>
-                {mobileMenuOpen ? (
-                  <X className="text-white w-5 h-5" />
-                ) : (
-                  <Menu className="text-white w-5 h-5" />
-                )}
-              </motion.div>
-            </button>
+              {mobileMenuOpen ? <X className="w-5 h-5 text-[#eaeef6]" /> : <Menu className="w-5 h-5 text-[#eaeef6]" />}
+            </motion.button>
           </div>
         </div>
       </motion.header>
 
-      {/* Full Screen Mobile Overlay */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: "-100%" }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: "-100%" }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-40 bg-[#070C14] flex flex-col pt-24 pb-12 px-6 md:hidden"
+            initial={{ opacity: 0, x: "100%" }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: "100%" }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 z-40 bg-[#0a0f14] flex flex-col pt-28 pb-16 px-8 md:hidden"
           >
-             <div className="flex flex-col h-full relative">
-                <div className="absolute top-1/4 right-0 w-96 h-96 bg-accentBlue/10 blur-[150px] rounded-full pointer-events-none" />
-
-                <nav className="flex flex-col gap-8 mt-10">
-                  {navLinks.map((link, i) => (
-                    <motion.div
-                      key={link.path}
-                      initial={{ opacity: 0, x: -30 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 + (i * 0.1), duration: 0.4 }}
-                    >
-                      <Link
-                        href={link.path}
-                        onClick={() => {
-                          setActiveTab(link.path);
-                          setMobileMenuOpen(false);
-                        }}
-                        className="text-4xl sm:text-5xl font-black uppercase italic tracking-tighter text-white/50 hover:text-white transition-colors flex items-center gap-4 group"
-                      >
-                         <span className={clsx(
-                           "w-0 h-0.5 bg-accentBlue transition-all duration-300 object-left",
-                           activeTab === link.path ? 'w-8' : 'group-hover:w-4'
-                         )} />
-                         <span className={activeTab === link.path ? "text-white" : ""}>{link.name}</span>
-                      </Link>
-                    </motion.div>
-                  ))}
-                </nav>
-
-                <div className="mt-auto space-y-6">
-                   <div className="w-full h-px bg-white/10" />
-                   <div className="flex flex-wrap gap-4">
-                      <a href="#" className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-accentBlue hover:bg-white/5 transition-colors">
-                         IG
-                      </a>
-                      <a href="#" className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center text-white/50 hover:text-accentBlue hover:bg-white/5 transition-colors">
-                         IN
-                      </a>
-                   </div>
-                   <button
-                     onClick={handleBooking}
-                     className="w-full bg-accentBlue hover:bg-blue-600 text-white py-6 rounded-2xl text-center font-black uppercase tracking-widest text-sm shadow-[0_20px_40px_rgba(59,130,246,0.3)] active:scale-95 transition-all flex items-center justify-center gap-3"
-                   >
-                     Reservar Turno Ahora <ArrowRight className="w-4 h-4" />
-                   </button>
-                </div>
-             </div>
+            <nav className="flex flex-col gap-8 mt-4">
+              {navLinks.map((link, i) => (
+                <motion.div
+                  key={link.path}
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 + i * 0.08 }}
+                >
+                  <Link
+                    href={link.path}
+                    onClick={() => { setActiveTab(link.path); setMobileMenuOpen(false); }}
+                    className={`heading-lg mb-4 block transition-colors duration-300 ${
+                      pathname === link.path ? 'text-[#3b82f6]' : 'text-[#1f262e] hover:text-[#eaeef6]'
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                </motion.div>
+              ))}
+            </nav>
+            <div className="mt-auto">
+              <div className="h-px bg-[#1f262e] mb-8" />
+              <button
+                onClick={handleBooking}
+                className="w-full py-5 rounded-sm font-label font-semibold text-sm tracking-[0.12em] uppercase"
+                style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#ffffff" }}
+              >
+                AGENDAR CONSULTA
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
     </>
   );
 };
-
-// Minimal clsx helper
-function clsx(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
-}
 
 export default Navbar;

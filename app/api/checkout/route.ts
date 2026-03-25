@@ -1,49 +1,90 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit, getClientIP } from '@/lib/rateLimit';
 import { checkoutSchema } from '@/lib/validations/checkout';
+import dbConnect from '@/lib/dbConnect';
+import Ingreso from '@/models/Ingreso';
+import { MetodoPago, EstadoPago, CategoriaPago } from '@/models/Ingreso';
+import client from '@/lib/mercadoPago';
+import { Preference } from 'mercadopago';
 
 export async function POST(req: Request) {
-  // 🔒 RATE LIMIT check (already implemented)
   const ip = getClientIP(req);
   const { ok, resetAt } = checkRateLimit(`checkout:${ip}`, {
-    limit: 3,
+    limit: 10, // Relaxed slightly for real payments
     windowMs: 5 * 60_000,
   });
 
   if (!ok) {
     const retryAfterSeconds = Math.ceil((resetAt.getTime() - Date.now()) / 1000);
     return NextResponse.json(
-      { error: `Demasiados intentos de pago. Por favor, esperá ${retryAfterSeconds} segundos.` },
+      { error: `Demasiados intentos. Por favor, esperá ${retryAfterSeconds} segundos.` },
       { status: 429 }
     );
   }
 
   try {
     const body = await req.json();
-
-    // SERVER-SIDE ZOD VALIDATION
     const validation = checkoutSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Datos de checkout inválidos', details: validation.error.flatten().fieldErrors },
+        { error: 'Datos inválidos', details: validation.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
 
-    const { name, email, date } = validation.data;
+    const { name, email, date, reservaId, monto = 5000 } = validation.data;
+    await dbConnect();
 
-    // Simulate backend processing
-    console.log('Initiating checkout for:', { name, email, date });
+    // 1. Create real preference in Mercado Pago
+    const preference = new Preference(client);
+    
+    const response = await preference.create({
+      body: {
+        items: [
+          {
+            id: reservaId,
+            title: `Consulta Nutricional - ${name}`,
+            quantity: 1,
+            unit_price: monto,
+            currency_id: 'ARS',
+          }
+        ],
+        payer: {
+          name,
+          email,
+        },
+        back_urls: {
+          success: `${process.env.NEXTAUTH_URL}/api/checkout/callback?status=success&reserva_id=${reservaId}`,
+          failure: `${process.env.NEXTAUTH_URL}/api/checkout/callback?status=failure&reserva_id=${reservaId}`,
+          pending: `${process.env.NEXTAUTH_URL}/api/checkout/callback?status=pending&reserva_id=${reservaId}`,
+        },
+        auto_return: 'approved',
+        external_reference: reservaId,
+        binary_mode: true, // Only allow instant payments (no pending cash/transfer) for auto-confirm
+      }
+    });
 
-    // Mock response simulating Mercado Pago Checkout URL
-    const mockCheckoutUrl = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=mock_pref_${Math.random().toString(36).substring(7)}`;
+    const mpPreferenceId = response.id;
+    const initPoint = response.init_point;
+
+    // 2. Create a PENDING Ingreso in the Finance system
+    await Ingreso.create({
+      concepto: `Reserva de Turno: ${name} (${date})`,
+      monto,
+      metodo: MetodoPago.MERCADOPAGO,
+      estado: EstadoPago.PENDIENTE,
+      categoria: CategoriaPago.CONSULTA,
+      referenciaExterna: reservaId,
+      mpPreferenceId,
+    });
 
     return NextResponse.json({ 
-      url: mockCheckoutUrl,
-      status: 'pending_payment',
-      message: 'Checkout session created successfully' 
+      url: initPoint,
+      prefId: mpPreferenceId,
+      status: 'awaiting_payment'
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('CRITICAL: Mercado Pago preference error:', error);
+    return NextResponse.json({ error: 'Error al procesar el pago. Por favor intente más tarde.' }, { status: 500 });
   }
 }

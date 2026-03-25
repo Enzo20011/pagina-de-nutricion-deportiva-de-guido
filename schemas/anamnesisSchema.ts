@@ -13,6 +13,12 @@ export const anamnesisSchema = z.object({
   nivelEstres: z.number().min(1).max(10),
   aversionesAlimentarias: z.string().optional(),
   ritmoIntestinal: z.enum(['Estreñimiento', 'Normal', 'Diarrea', 'Irregular']).optional(),
+  peso: z.number().min(20).max(300).optional(),
+  altura: z.number().min(50).max(250).optional(),
+  edad: z.number().min(1).max(120).optional(),
+  sexo: z.enum(['masculino', 'femenino']).optional(),
+  caloriasObjetivo: z.number().optional(),
+  tipoObjetivo: z.enum(['deficit', 'mantenimiento', 'superavit']).optional(),
   isDraft: z.boolean().optional(),
 });
 

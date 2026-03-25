@@ -1,120 +1,90 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import dbConnect from '@/lib/mongodb';
 import Anamnesis from '@/models/Anamnesis';
 import { anamnesisSchema, draftAnamnesisSchema } from '@/schemas/anamnesisSchema';
+import { getValidSession, unauthorizedResponse } from '@/lib/protectApi';
+import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
 
-async function requireAuth() {
-  const session = await getServerSession();
-  if (!session) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-  }
-  return null;
+function logServerSide(msg: string) {
+  const logPath = 'c:/Users/enzul/OneDrive/Escritorio/guido/tmp_api_log.txt';
+  const timestamp = new Date().toISOString();
+  fs.appendFileSync(logPath, `[${timestamp}] ANAMNESIS: ${msg}\n`);
 }
 
-/**
- * GET /api/anamnesis?pacienteId=xxx
- * Returns the latest anamnesis for a patient.
- */
 export async function GET(request: Request) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const session = await getValidSession();
+  if (!session) return unauthorizedResponse();
 
   try {
     await dbConnect();
     const { searchParams } = new URL(request.url);
     const pacienteId = searchParams.get('pacienteId');
 
-    if (!pacienteId) {
-      return NextResponse.json({ error: 'pacienteId requerido' }, { status: 400 });
+    if (!pacienteId) return NextResponse.json({ error: 'pacienteId requerido' }, { status: 400 });
+
+    const cleanId = String(pacienteId).trim();
+    if (!/^[0-9a-fA-F]{24}$/.test(cleanId)) {
+        return NextResponse.json({ error: 'Formato de ID inválido' }, { status: 400 });
     }
 
-    const anamnesis = await (Anamnesis as any).findOne({
-      pacienteId,
-      isDeleted: false,
-    }).sort({ updatedAt: -1 });
-
-    if (!anamnesis) {
-      return NextResponse.json({ data: null, message: 'Sin anamnesis registrada' }, { status: 200 });
-    }
-
-    return NextResponse.json({ data: anamnesis });
+    const pacienteObjectId = new mongoose.Types.ObjectId(cleanId);
+    const anamnesis = await (Anamnesis as any).findOne({ pacienteId: pacienteObjectId, isDeleted: false }).sort({ updatedAt: -1 });
+    logServerSide(`GET SUCCESS: Paciente=${cleanId}, Found=${!!anamnesis}`);
+    return NextResponse.json({ data: anamnesis || null });
   } catch (error: any) {
-    console.error('Error al obtener anamnesis:', error);
+    logServerSide(`GET ERROR: ${error.message}\n${error.stack}`);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-/**
- * POST /api/anamnesis
- * Create or update anamnesis (upsert by pacienteId).
- */
 export async function POST(request: Request) {
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const session = await getValidSession();
+  if (!session) return unauthorizedResponse();
 
   try {
     await dbConnect();
     const body = await request.json();
     const isDraft = body.isDraft === true;
+    
+    logServerSide(`POST START: Draft=${isDraft}, Paciente=${body.pacienteId}, Body=${JSON.stringify(body)}`);
 
     const schema = isDraft ? draftAnamnesisSchema : anamnesisSchema;
     const validation = schema.safeParse(body);
 
-    if (!validation.success) {
-      return NextResponse.json(
-        {
-          message: 'Error de validación',
-          errors: validation.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      );
+    if (!validation.success && !isDraft) {
+      logServerSide(`VALIDATION FAILED: ${JSON.stringify(validation.error.flatten().fieldErrors)}`);
+      return NextResponse.json({ message: 'Error de validación', errors: validation.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const anamnesisActualizada = await (Anamnesis as any).findOneAndUpdate(
-      { pacienteId: validation.data.pacienteId, isDeleted: false },
-      { ...validation.data, isDraft },
-      { upsert: true, new: true, runValidators: true }
+    const dataToSave = validation.success ? validation.data : body;
+    const targetId = dataToSave.pacienteId || body.pacienteId;
+
+    if (!targetId) {
+      logServerSide('ERROR: NO ID IN BODY');
+      return NextResponse.json({ message: 'pacienteId es requerido' }, { status: 400 });
+    }
+
+    // Explicit casting to string before ObjectId to avoid [object Object] errors
+    const cleanId = String(targetId).trim();
+    if (!/^[0-9a-fA-F]{24}$/.test(cleanId)) {
+        logServerSide(`ERROR: INVALID ID FORMAT: "${cleanId}"`);
+        return NextResponse.json({ message: 'Formato de ID de paciente inválido' }, { status: 400 });
+    }
+
+    const pacienteObjectId = new mongoose.Types.ObjectId(cleanId);
+
+    const doc = await (Anamnesis as any).findOneAndUpdate(
+      { pacienteId: pacienteObjectId, isDeleted: false },
+      { ...dataToSave, pacienteId: pacienteObjectId, isDraft },
+      { upsert: true, new: true, runValidators: !isDraft }
     );
 
-    return NextResponse.json(
-      {
-        message: isDraft ? 'Borrador guardado' : 'Anamnesis finalizada correctamente',
-        data: anamnesisActualizada,
-      },
-      { status: 200 }
-    );
+    logServerSide(`POST SUCCESS: DocID=${doc._id}`);
+    return NextResponse.json({ message: isDraft ? 'Borrador guardado' : 'Guardado finalizado', data: doc });
   } catch (error: any) {
-    console.error('Error en API Anamnesis:', error);
+    logServerSide(`POST ERROR: ${error.message}\n${error.stack}`);
     return NextResponse.json({ message: 'Error interno del servidor', error: error.message }, { status: 500 });
-  }
-}
-
-/**
- * DELETE /api/anamnesis?pacienteId=xxx
- * Soft-deletes the anamnesis record (isDeleted: true).
- */
-export async function DELETE(request: Request) {
-  const authError = await requireAuth();
-  if (authError) return authError;
-
-  try {
-    await dbConnect();
-    const { searchParams } = new URL(request.url);
-    const pacienteId = searchParams.get('pacienteId');
-
-    if (!pacienteId) {
-      return NextResponse.json({ error: 'pacienteId requerido' }, { status: 400 });
-    }
-
-    await (Anamnesis as any).updateMany(
-      { pacienteId, isDeleted: false },
-      { isDeleted: true }
-    );
-
-    return NextResponse.json({ message: 'Anamnesis archivada correctamente' });
-  } catch (error: any) {
-    console.error('Error al archivar anamnesis:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -4,12 +4,16 @@ import Paciente from '@/models/Paciente';
 import { pacienteSchema } from '@/lib/validations/paciente';
 import { apiSuccess, apiError } from '@/lib/api-response';
 import { ZodError } from 'zod';
+import { getValidSession, unauthorizedResponse } from '@/lib/protectApi';
 
 /**
  * GET /api/pacientes
  * Retrieves paginated list of patients.
  */
 export async function GET(req: Request) {
+  const session = await getValidSession();
+  if (!session) return unauthorizedResponse();
+
   try {
     await dbConnect();
     const url = new URL(req.url);
@@ -61,6 +65,9 @@ export async function GET(req: Request) {
  * Create a new patient with Zod Validation.
  */
 export async function POST(req: Request) {
+  const session = await getValidSession();
+  if (!session) return unauthorizedResponse();
+
   try {
     await dbConnect();
     const body = await req.json();

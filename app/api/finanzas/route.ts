@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { manualPaymentSchema } from '@/lib/validations/finance';
+import { getValidSession, unauthorizedResponse } from '@/lib/protectApi';
 
 export async function GET() {
+  const session = await getValidSession();
+  if (!session) return unauthorizedResponse();
   // ... (GET logic) ...
   return NextResponse.json({
     totalMes: 342500,
@@ -15,6 +18,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const session = await getValidSession();
+  if (!session) return unauthorizedResponse();
+
   try {
     const body = await req.json();
     

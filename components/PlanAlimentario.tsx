@@ -56,7 +56,15 @@ const FOOD_DATABASE: Omit<FoodItem, 'gramos' | 'id'>[] = [
   { nombre: 'Queso Casancrem Light', kcal: 120, proteinas: 9, carbos: 4.8, grasas: 6.8, origen: 'Nutrinfo' },
 ];
 
-export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: string, onSync?: (data: any) => void }) {
+export default function PlanAlimentario({ 
+  pacienteId, 
+  onSync,
+  anamnesisData
+}: { 
+  pacienteId: string, 
+  onSync?: (data: any) => void,
+  anamnesisData?: any
+}) {
   const queryClient = useQueryClient();
   const [meals, setMeals] = useState<Meal[]>([
     { id: '1', nombre: 'Desayuno', items: [], totalKcal: 0, totalProteins: 0, totalCarbs: 0, totalFats: 0 },
@@ -67,6 +75,15 @@ export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: st
   const [targetKcal, setTargetKcal] = useState(2000);
   const [targetMacros, setTargetMacros] = useState({ p: 30, c: 40, f: 30 });
   const [isExporting, setIsExporting] = useState(false);
+
+  // Sync calories from clinical panel (Anamnesis)
+  React.useEffect(() => {
+    if (anamnesisData?.targetKcal) {
+      setTargetKcal(Math.round(anamnesisData.targetKcal));
+    } else if (anamnesisData?.resultados?.get) {
+      setTargetKcal(Math.round(anamnesisData.resultados.get));
+    }
+  }, [anamnesisData]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeMealId, setActiveMealId] = useState<string | null>(null);
@@ -85,11 +102,11 @@ export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: st
   });
 
   // Sync server data to local state once
+  const serverHydratedRef = React.useRef(false);
   React.useEffect(() => {
-    if (serverData?.data) {
+    if (serverData?.data && !serverHydratedRef.current) {
        const { comidas, objetivoCalorico, macrosObjetivo } = serverData.data;
        if (comidas && comidas.length > 0) {
-         // Fix totals if they are not present or differ
          const fixedMeals = comidas.map((m: any, i: number) => ({
            ...m,
            id: m.id || m._id || (i + 1).toString(),
@@ -102,10 +119,14 @@ export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: st
          setMeals(fixedMeals);
          setNumComidas(fixedMeals.length);
        }
-       if (objetivoCalorico) setTargetKcal(objetivoCalorico);
+       // Only hydrate calories if we have no anamnesis data yet
+       if (objetivoCalorico && !anamnesisData?.resultados?.get) {
+         setTargetKcal(objetivoCalorico);
+       }
        if (macrosObjetivo) setTargetMacros(macrosObjetivo);
+       serverHydratedRef.current = true;
     }
-  }, [serverData]);
+  }, [serverData, anamnesisData]);
 
   // Dynamic meals handler
   const getMealNames = (num: number) => {
@@ -170,13 +191,15 @@ export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: st
   });
 
   // Auto-sync with parent (PDF/Summary)
+  const lastSyncRef = React.useRef<string>('');
   React.useEffect(() => {
     if (onSync) {
-      onSync({
-        meals,
-        totals,
-        targets: { targetKcal, targetMacros }
-      });
+      const syncObj = { meals, totals, targets: { targetKcal, targetMacros } };
+      const syncStr = JSON.stringify(syncObj);
+      if (syncStr !== lastSyncRef.current) {
+        lastSyncRef.current = syncStr;
+        onSync(syncObj);
+      }
     }
   }, [meals, totals, targetKcal, targetMacros, onSync]);
 
@@ -192,22 +215,44 @@ export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: st
         });
       }
     }, 3000);
-
     return () => clearTimeout(timer);
-  }, [meals, targetKcal, targetMacros]);
+  }, [meals, targetKcal, targetMacros, pacienteId]);
 
-  const searchResults = useMemo(() => {
-    return FOOD_DATABASE.filter(f => 
-       f.nombre.toLowerCase().includes(searchQuery.toLowerCase()) &&
-       (filterSource === 'ALL' || f.origen === filterSource)
-    );
-  }, [searchQuery, filterSource]);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+
+  // Debounce logic
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Search API Call
+  const { data: searchData, isLoading: isSearchLoading } = useQuery({
+    queryKey: ['alimentos', debouncedSearch, filterSource],
+    queryFn: async () => {
+      if (debouncedSearch.length < 2) return { data: [] };
+      const res = await fetch(`/api/alimentos?q=${debouncedSearch}&categoria=${filterSource}`);
+      if (!res.ok) throw new Error('Error buscando alimentos');
+      return res.json();
+    },
+    enabled: debouncedSearch.length >= 2
+  });
+
+  React.useEffect(() => {
+    if (searchData?.data) {
+      setSearchResults(searchData.data);
+    }
+  }, [searchData]);
 
   const addFood = (mealId: string, baseFood: any) => {
     const newFood: FoodItem = {
       ...baseFood,
       id: Math.random().toString(),
-      gramos: 100
+      gramos: baseFood.porcionBaseGramos || 100,
+      carbos: baseFood.carbohidratos !== undefined ? baseFood.carbohidratos : baseFood.carbos,
     };
     setMeals(meals.map(m => m.id === mealId ? { ...m, items: [...m.items, newFood] } : m));
     setSearchQuery('');
@@ -218,185 +263,190 @@ export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: st
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 text-bone">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 text-white">
       
-      {/* MOBILE ADVISORY */}
+      {/* ADVISORY BAR */}
       <div className="xl:col-span-12">
-        <div className="bg-blue-500/10 border border-blue-500/20 p-6 rounded-3xl flex items-center gap-6 group">
-          <div className="w-12 h-12 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400">
+        <div className="bg-white/5 border border-white/10 p-4 rounded-sm flex items-center gap-6 group relative">
+          <div className="w-12 h-12 bg-[#3b82f6] rounded-sm flex items-center justify-center text-white shadow-xl group-hover:rotate-6 transition-transform duration-700">
             <Info className="w-6 h-6" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-black text-white uppercase tracking-wider italic">Protocolo de Escritorio</p>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Se recomienda PC o Tablet para el armado de dietas complejas. Mobile optimizado para seguimiento.</p>
+            <p className="text-xs font-bold text-white uppercase tracking-widest leading-none">Gestión de Plan Alimentario</p>
+            <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mt-2">Personalización de ingestas y distribución de macronutrientes.</p>
           </div>
         </div>
       </div>
 
-      {/* LEFT SECTION: SEARCH & MEALS */}
-      <div className="xl:col-span-8 space-y-10">
+      {/* LEFT SECTION: STRATEGIC SEARCH & ARCHITECTURE */}
+      <div className="xl:col-span-8 space-y-12">
         
-        {/* SEARCH BAR ELITE */}
-        <div className="bg-white/[0.03] p-10 rounded-[4rem] border border-white/5 shadow-inner backdrop-blur-md space-y-8">
-           <div className="flex items-center gap-4 text-slate-500 px-2">
-              <Database className="w-5 h-5 text-accentBlue" />
-              <span className="text-xs font-black uppercase tracking-[0.4em]">Arquitectura Nutricional Dual</span>
+        {/* BIO-SEARCH TERMINAL */}
+        <div className="bg-[#0e1419] p-6 md:p-8 rounded-sm border border-white/5 shadow-xl space-y-10 relative overflow-hidden group">
+           <div className="flex items-center gap-4 text-white/10 px-2">
+              <Database className="w-5 h-5" />
+              <span className="text-[9px] font-bold uppercase tracking-[0.4em]">BASE DE DATOS NUTRICIONAL</span>
            </div>
            
-           <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-1 relative group">
-                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-white/10 group-focus-within:text-accentBlue transition-colors" />
-                 <input 
-                   type="text" 
-                   placeholder="Indexar alimento..." 
-                   value={searchQuery}
-                   onChange={e => setSearchQuery(e.target.value)}
-                   className="w-full bg-darkNavy/80 pl-16 pr-6 py-6 rounded-2xl outline-none border border-white/5 focus:border-accentBlue/30 transition-all font-bold text-white placeholder:text-white/10 shadow-inner"
-                 />
-              </div>
-              <div className="flex gap-2 bg-darkNavy/50 p-2 rounded-2xl border border-white/5">
-                 {['ALL', 'USDA', 'Nutrinfo'].map(s => (
-                   <button 
-                     key={s}
-                     onClick={() => setFilterSource(s as any)}
-                     className={clsx(
-                       "px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                       filterSource === s ? 'bg-white text-darkNavy shadow-xl' : 'text-slate-500 hover:text-white hover:bg-white/5'
-                     )}
-                   >
-                     {s}
-                   </button>
-                 ))}
-              </div>
+           <div className="flex flex-col md:flex-row gap-8">
+            <div className="flex-1 relative group/search">
+               <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-white/10 group-focus-within/search:text-[#3b82f6]/40 transition-all duration-700" />
+               <input 
+                 type="text" 
+                 placeholder="Buscar alimentos..." 
+                 value={searchQuery}
+                 onChange={e => setSearchQuery(e.target.value)}
+                 className="w-full bg-[#0a0f14] pl-16 pr-6 py-4 rounded-sm outline-none border border-white/5 focus:border-[#3b82f6]/30 transition-all duration-700 font-bold text-white placeholder:text-white/5 shadow-inner uppercase tracking-widest text-[10px]"
+               />
+            </div>
+            <div className="flex gap-2 bg-[#0a0f14] p-2 rounded-sm border border-white/5 shadow-xl">
+               {['ALL', 'USDA', 'Nutrinfo'].map(s => (
+                 <button 
+                   key={s}
+                   onClick={() => setFilterSource(s as any)}
+                   className={clsx(
+                     "px-4 py-2 rounded-sm text-[9px] font-bold uppercase tracking-widest transition-all duration-700",
+                     filterSource === s ? 'bg-[#3b82f6] text-white shadow-xl' : 'text-white/20 hover:text-white hover:bg-white/5'
+                   )}
+                 >
+                   {s}
+                 </button>
+               ))}
+            </div>
            </div>
 
-           {/* Selector de Comidas */}
-           <div className="pt-6 border-t border-white/5">
-             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
-                <div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-widest">Frecuencia de Ingestas</h3>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] mt-1">Sincroniza el nivel de comidas (1-9)</p>
-                </div>
-                <div className="flex items-center gap-1.5 bg-darkNavy/50 p-2 rounded-2xl border border-white/5 shadow-inner">
-                  <button
-                    onClick={() => numComidas > 1 && handleNumComidasChange(numComidas - 1)}
-                    disabled={numComidas <= 1}
-                    className="w-10 h-10 rounded-xl hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center text-slate-400 hover:text-white disabled:opacity-30"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <div className="w-12 text-center">
-                    <span className="text-xl font-black text-white italic">{numComidas}</span>
-                  </div>
-                  <button
-                    onClick={() => numComidas < 9 && handleNumComidasChange(numComidas + 1)}
-                    disabled={numComidas >= 9}
-                    className="w-10 h-10 rounded-xl hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center text-slate-400 hover:text-white disabled:opacity-30"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-             </div>
-           </div>
-
-           {/* Results Overlay */}
-           <AnimatePresence>
-             {searchQuery.length > 1 && (
-               <motion.div 
-                 initial={{ opacity: 0, height: 0 }}
-                 animate={{ opacity: 1, height: 'auto' }}
-                 exit={{ opacity: 0, height: 0 }}
-                 className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 max-h-[450px] overflow-y-auto custom-scrollbar p-2"
-               >
-                  {searchResults.map((food, i) => (
-                    <button 
-                      key={i}
-                      disabled={!activeMealId}
-                      onClick={() => activeMealId && addFood(activeMealId, food)}
-                      className={clsx(
-                        "flex flex-col p-8 rounded-[2.5rem] border transition-all text-left group relative overflow-hidden",
-                        activeMealId 
-                          ? 'bg-darkNavy/80 border-white/5 hover:border-accentBlue/50 hover:translate-y-[-4px] shadow-lg' 
-                          : 'opacity-40 cursor-not-allowed bg-darkNavy/20 border-transparent shadow-none'
-                      )}
-                    >
-                       <div className="flex justify-between items-start mb-6">
-                          <span className={clsx(
-                            "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest",
-                            food.origen === 'USDA' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-orange-500/10 text-orange-400'
-                          )}>
-                            {food.origen}
-                          </span>
-                          <span className="text-xs font-black text-slate-500 group-hover:text-white transition-colors">{food.kcal} <span className="text-xs opacity-40">KCAL</span></span>
-                       </div>
-                       <p className="text-white font-black uppercase tracking-tight text-base mb-6 group-hover:text-accentBlue transition-colors italic">{food.nombre}</p>
-                       <div className="flex gap-6 text-slate-500 group-hover:text-white/60 transition-colors">
-                          <div className="text-xs font-black uppercase tracking-widest">P: {food.proteinas}g</div>
-                          <div className="text-xs font-black uppercase tracking-widest">C: {food.carbos}g</div>
-                          <div className="text-xs font-black uppercase tracking-widest">G: {food.grasas}g</div>
-                       </div>
-                    </button>
-                  ))}
-               </motion.div>
-             )}
-           </AnimatePresence>
+          <div className="pt-8 border-t border-white/5 relative z-10">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 px-2">
+               <div className="space-y-1">
+                 <h3 className="text-[10px] font-bold text-white uppercase tracking-widest">Número de Ingestas</h3>
+                 <p className="text-[9px] font-bold text-white/10 uppercase tracking-widest">DEFINIR FRECUENCIA DIARIA</p>
+               </div>
+               <div className="flex items-center gap-4 bg-[#0a0f14] p-2 rounded-sm border border-white/5 shadow-inner">
+                 <button
+                   onClick={() => numComidas > 1 && handleNumComidasChange(numComidas - 1)}
+                   disabled={numComidas <= 1}
+                   className="w-10 h-10 rounded-sm hover:bg-white/5 transition-all duration-700 flex items-center justify-center text-white/20 hover:text-white disabled:opacity-0"
+                 >
+                   <Minus className="w-4 h-4" />
+                 </button>
+                 <div className="w-12 text-center">
+                   <span className="text-2xl font-bold text-white tracking-tighter">{numComidas}</span>
+                 </div>
+                 <button
+                   onClick={() => numComidas < 9 && handleNumComidasChange(numComidas + 1)}
+                   disabled={numComidas >= 9}
+                   className="w-10 h-10 rounded-sm hover:bg-white/5 transition-all duration-700 flex items-center justify-center text-white/20 hover:text-white disabled:opacity-0"
+                 >
+                   <Plus className="w-4 h-4" />
+                 </button>
+               </div>
+            </div>
+          </div>
         </div>
 
-        {/* MEALS ENGINE */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <AnimatePresence>
+          {searchQuery.length > 1 && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12 max-h-[500px] overflow-y-auto custom-scrollbar p-3 relative z-20"
+            >
+              {isSearchLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-40 bg-white/5 rounded-sm animate-pulse border border-white/5" />
+                ))
+              ) : (
+                searchResults.map((food, i) => (
+                  <button 
+                    key={food._id || i}
+                    disabled={!activeMealId}
+                    onClick={() => activeMealId && addFood(activeMealId, food)}
+                    className={clsx(
+                      "flex flex-col p-5 rounded-sm border transition-all duration-700 text-left group relative",
+                      activeMealId 
+                        ? 'bg-[#0a0f14] border-white/5 hover:border-[#3b82f6]/30 shadow-xl' 
+                        : 'opacity-20 cursor-not-allowed bg-transparent border-transparent'
+                    )}
+                  >
+                     <div className="flex justify-between items-start mb-6 w-full">
+                        <span className="px-3 py-1 bg-white/5 rounded-sm text-[8px] font-bold uppercase tracking-widest text-[#3b82f6]">
+                          {food.categoria || 'ALIMENTO'}
+                        </span>
+                        <span className="text-[10px] font-bold text-white/20 group-hover:text-white transition-all duration-700">{food.kcal} <span className="text-[8px] opacity-40">KCAL</span></span>
+                     </div>
+                     <p className="text-white font-bold uppercase tracking-tight text-[12px] mb-6 group-hover:text-[#3b82f6] transition-all duration-700 truncate w-full">{food.nombre}</p>
+                     <div className="flex gap-6 text-[9px] font-bold uppercase tracking-widest text-white/10 group-hover:text-white/30 transition-all duration-700">
+                        <div>P: {food.proteinas}g</div>
+                        <div>C: {food.carbohidratos !== undefined ? food.carbohidratos : food.carbos}g</div>
+                        <div>G: {food.grasas}g</div>
+                     </div>
+                  </button>
+                ))
+              )}
+               {!isSearchLoading && searchResults.length === 0 && (
+                 <div className="col-span-1 md:col-span-2 text-center py-20 opacity-10">
+                    <p className="text-sm font-black uppercase tracking-[0.8em] italic">Sin Coincidencias en Terminal_</p>
+                 </div>
+               )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
            {meals.map(meal => (
              <div 
                key={meal.id} 
-               onClick={() => setActiveMealId(meal.id)}
-               className={clsx(
-                 "bg-white/[0.03] rounded-[4rem] border transition-all cursor-pointer overflow-hidden backdrop-blur-md group",
-                 activeMealId === meal.id 
-                  ? 'border-accentBlue/50 shadow-[0_0_80px_rgba(59,130,246,0.1)] translate-y-[-4px]' 
-                  : 'border-white/5 shadow-xl hover:border-white/10'
-               )}
-             >
-                <div className="px-10 py-8 border-b border-white/5 flex items-center justify-between bg-darkNavy/20">
-                   <div className="flex items-center gap-5">
-                      <div className={clsx(
-                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
-                        activeMealId === meal.id ? 'bg-accentBlue text-white shadow-xl' : 'bg-darkNavy text-slate-500'
-                      )}>
-                         <Utensils className="w-5 h-5" />
-                      </div>
-                      <div>
-                       <input 
-                         type="text"
-                         value={meal.nombre}
-                         onChange={e => setMeals(meals.map(m => m.id === meal.id ? { ...m, nombre: e.target.value } : m))}
-                         className="text-lg font-black text-white uppercase italic tracking-tighter bg-transparent outline-none border-b border-transparent focus:border-accentBlue/50 w-full min-w-[150px] placeholder:text-white/20 transition-colors"
-                         placeholder="Nombre Comida"
-                       />
-                      </div>
-                   </div>
-                   <div className="flex flex-col items-end gap-1.5">
-                      <div className="flex items-center gap-2">
-                        {activeMealId === meal.id && <div className="w-1.5 h-1.5 rounded-full bg-accentBlue animate-pulse" />}
-                        <span className={clsx(
-                          "text-xs font-black uppercase tracking-widest leading-none",
-                          activeMealId === meal.id ? 'text-accentBlue' : 'text-slate-500'
-                        )}>{meal.items.length} ELM</span>
-                      </div>
-                       <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-                        Target: <span className="text-white ml-0.5">{Math.round(targetKcal / numComidas)}</span> <span className="text-[8px] opacity-50">KCAL</span>
-                      </p>
-                   </div>
-                </div>
+              onClick={() => setActiveMealId(meal.id)}
+              className={clsx(
+                "bg-[#0e1419] rounded-sm border transition-all duration-1000 cursor-pointer overflow-hidden group relative",
+                activeMealId === meal.id 
+                 ? 'border-[#3b82f6]/30 shadow-xl' 
+                 : 'border-white/5 shadow-lg hover:border-white/10'
+              )}
+            >
+               <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-[#0a0f14]/40 relative z-10">
+                  <div className="flex items-center gap-4">
+                     <div className={clsx(
+                       "w-10 h-10 rounded-sm flex items-center justify-center transition-all duration-700 border",
+                       activeMealId === meal.id ? 'bg-[#3b82f6] text-white border-[#3b82f6] shadow-xl' : 'bg-[#0a0f14] border-white/5 text-white/10'
+                     )}>
+                        <Utensils className="w-5 h-5" />
+                     </div>
+                     <div>
+                      <input 
+                        type="text"
+                        value={meal.nombre}
+                        onChange={e => setMeals(meals.map(m => m.id === meal.id ? { ...m, nombre: e.target.value } : m))}
+                        className="text-[14px] font-bold text-white uppercase tracking-tight bg-transparent outline-none border-b border-transparent focus:border-white/20 w-full min-w-[140px] placeholder:text-white/10 transition-all duration-700"
+                        placeholder="Nombre Ingesta"
+                      />
+                     </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 text-right">
+                     <div className="flex items-center gap-2">
+                       {activeMealId === meal.id && <div className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] animate-pulse" />}
+                       <span className={clsx(
+                         "text-[9px] font-bold uppercase tracking-widest leading-none",
+                         activeMealId === meal.id ? 'text-[#3b82f6]' : 'text-white/10'
+                       )}>{meal.items.length} ITEMS</span>
+                     </div>
+                      <p className="text-[8px] font-bold uppercase tracking-widest text-white/5">
+                       META: <span className="text-white/30 ml-1">{Math.round(targetKcal / numComidas)}</span> <span className="opacity-20">KCAL</span>
+                     </p>
+                  </div>
+               </div>
 
-                <div className="p-8 space-y-4">
+                <div className="p-6 space-y-4 relative z-10">
                    {meal.items.map(item => (
-                     <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 bg-darkNavy/80 rounded-[2.5rem] border border-white/5 group/item transition-all hover:bg-darkNavy gap-6 sm:gap-4">
-                        <div className="flex flex-1 items-center gap-5 w-full">
-                           <div className="w-8 h-8 bg-white/5 rounded-xl flex items-center justify-center border border-white/5 flex-shrink-0">
-                              <CheckCircle2 className="w-4 h-4 text-accentBlue" />
+                     <div key={item.id} className="flex flex-col items-start justify-between p-4 bg-[#0a0f14] rounded-sm border border-white/5 group/item transition-all duration-700 hover:bg-[#0e1419] gap-4 shadow-inner">
+                        <div className="flex flex-1 items-center gap-4 w-full">
+                           <div className="w-8 h-8 bg-white/5 rounded-sm flex items-center justify-center border border-white/10 shrink-0">
+                              <CheckCircle2 className="w-4 h-4 text-white/20 group-hover/item:text-[#3b82f6] transition-all duration-700" />
                            </div>
                            <div className="flex-1 min-w-0">
-                              <p className="font-black text-white uppercase italic text-xs tracking-tight truncate">{item.nombre}</p>
-                              <div className="flex items-center gap-3 mt-1.5">
+                              <p className="font-bold text-white uppercase text-[12px] tracking-tight truncate">{item.nombre}</p>
+                              <div className="flex items-center gap-3 mt-2">
                                  <input 
                                    type="number" 
                                    value={item.gramos} 
@@ -404,29 +454,29 @@ export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: st
                                       const newGrams = +e.target.value;
                                       setMeals(meals.map(m => m.id === meal.id ? { ...m, items: m.items.map(i => i.id === item.id ? { ...i, gramos: newGrams } : i) } : m));
                                    }}
-                                   className="w-16 bg-white/5 border-b border-white/10 text-xs font-black text-accentBlue outline-none focus:border-accentBlue p-1.5 rounded-lg text-center"
+                                   className="w-16 bg-[#0a0f14] border border-white/5 text-[10px] font-bold text-white outline-none focus:border-[#3b82f6]/30 p-1.5 rounded-sm text-center transition-all duration-700"
                                  />
-                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">G</span>
+                                 <span className="text-[9px] font-bold text-white/10 uppercase tracking-widest">G</span>
                               </div>
                            </div>
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-4 sm:pt-0 border-t sm:border-t-0 border-white/5">
-                           <div className="text-left sm:text-right">
-                              <p className="text-base font-black text-white tracking-tighter italic leading-none">{Math.round((item.kcal * item.gramos) / 100)}</p>
-                              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">KCAL</p>
+                        <div className="flex items-center justify-between gap-8 w-full pt-4 border-t border-white/5">
+                           <div className="text-left">
+                              <p className="text-lg font-bold text-white tracking-tight leading-none">{Math.round((item.kcal * item.gramos) / 100)}</p>
+                              <p className="text-[8px] font-bold text-white/10 uppercase tracking-widest mt-1">KCAL</p>
                            </div>
                            <button 
                              onClick={(e) => { e.stopPropagation(); removeFood(meal.id, item.id); }}
-                             className="p-4 bg-white/5 text-slate-500 hover:bg-rose-500 hover:text-white rounded-2xl transition-all border border-white/5"
+                             className="p-3 bg-white/5 text-white/10 hover:bg-red-500/20 hover:text-red-400 rounded-sm transition-all duration-700 border border-white/5"
                            >
-                             <Trash2 className="w-5 h-5" />
+                             <Trash2 className="w-4 h-4" />
                            </button>
                         </div>
                      </div>
                    ))}
                    {meal.items.length === 0 && (
-                     <div className="text-center py-10 opacity-10">
-                        <p className="text-xs font-black uppercase tracking-[0.4em] italic">Auditando Ingesta...</p>
+                     <div className="text-center py-16 opacity-5">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.5em]">Cargando Ingestas</p>
                      </div>
                    )}
                 </div>
@@ -435,85 +485,104 @@ export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: st
         </div>
       </div>
 
-      {/* RIGHT SECTION: MACRO CONSOLE */}
+      {/* RIGHT SECTION: STRATEGIC MACRO CONSOLE */}
       <div className="xl:col-span-4">
-        <div className="sticky top-12 space-y-8">
-           <div className="bg-darkNavy/40 p-10 rounded-[4rem] border border-white/5 shadow-2xl relative overflow-hidden backdrop-blur-md">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-accentBlue/10 rounded-full blur-[100px]" />
-              
-              <header className="flex items-center gap-4 mb-14 relative z-10">
-                 <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5 group">
-                    <PieChart className="w-6 h-6 text-accentBlue group-hover:scale-110 transition-transform" />
+        <div className="sticky top-12 space-y-12">
+           <div className="bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl relative overflow-hidden">
+              <header className="flex items-center gap-6 mb-8 relative z-10">
+                 <div className="w-12 h-12 bg-[#3b82f6] rounded-sm flex items-center justify-center shadow-xl">
+                    <PieChart className="w-6 h-6 text-white" />
                  </div>
-                 <h3 className="text-xl font-black text-white uppercase tracking-tighter italic leading-none">Status Macroquímico</h3>
+                 <h3 className="text-lg font-bold text-white uppercase tracking-tight leading-none">MACRONUTRIENTES</h3>
               </header>
 
-              <div className="space-y-10">
-                 {/* Kcal Dial */}
-                 <div className="p-10 bg-darkNavy/80 rounded-[3.5rem] border border-white/5 text-center space-y-6 shadow-inner relative group">
-                    <div className="absolute inset-0 bg-accentBlue/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-500 leading-none">Energía Indexada</p>
+              <div className="space-y-12 relative z-10">
+                 <div className="p-8 bg-[#0a0f14] rounded-sm border border-white/5 text-center space-y-6 shadow-inner relative group transition-all duration-1000">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-white/10 leading-none">ENERGÍA CALCULADA</p>
                     <div className="flex items-baseline justify-center gap-3">
-                       <h4 className="text-7xl font-black text-white italic tracking-tighter drop-shadow-2xl">{Math.round(totals.kcal)}</h4>
-                       <span className="text-xl font-black text-accentBlue/30 italic">/{targetKcal}</span>
+                       <h4 className="text-4xl font-bold text-white tracking-tight">{Math.round(totals.kcal)}</h4>
+                       <span className="text-xl font-bold text-white/10 tracking-tight">/{targetKcal}</span>
                     </div>
-                    <div className="w-full h-1.5 bg-darkNavy rounded-full overflow-hidden shadow-inner">
+                    <div className="w-full h-2.5 bg-[#0e1419] rounded-full overflow-hidden shadow-inner border border-white/5 relative">
                        <motion.div 
                          initial={{ width: 0 }}
                          animate={{ width: `${Math.min((totals.kcal / targetKcal) * 100, 100)}%` }}
-                         className="h-full bg-accentBlue shadow-[0_0_20px_rgba(59,130,246,0.4)] rounded-full"
+                         transition={{ duration: 1.5, ease: "easeOut" }}
+                         className="h-full bg-[#3b82f6] shadow-[0_0_20px_rgba(59,130,246,0.3)] rounded-full"
                        />
                     </div>
                  </div>
 
-                 {/* Macros Status */}
-                 <div className="grid grid-cols-1 gap-5">
+                 <div className="grid grid-cols-1 gap-4">
                     {[
-                      { l: 'Proteína', v: totals.p, c: 'bg-white', k: 'P' },
-                      { l: 'Carbohidratos', v: totals.c, c: 'bg-accentBlue', k: 'C' },
-                      { l: 'Lípidos', v: totals.g, c: 'bg-slate-400', k: 'G' }
+                      { l: 'Proteína', v: totals.p, c: 'bg-[#3b82f6]', k: 'P' },
+                      { l: 'Carbohidratos', v: totals.c, c: 'bg-white/10', k: 'C' },
+                      { l: 'Lípidos', v: totals.g, c: 'bg-white/5', k: 'G' }
                     ].map(m => (
-                      <div key={m.k} className="p-7 bg-white/[0.03] rounded-[2.5rem] border border-white/5 flex items-center justify-between hover:border-white/20 transition-all group/item">
-                         <div className="flex items-center gap-5">
+                      <div key={m.k} className="p-6 bg-[#0a0f14] rounded-sm border border-white/5 flex items-center justify-between hover:border-white/10 transition-all duration-700 group/item shadow-inner">
+                         <div className="flex items-center gap-4">
                             <div className={clsx(
-                               "w-12 h-12 rounded-2xl flex items-center justify-center text-darkNavy font-black text-sm italic shadow-lg",
-                               m.c
+                               "w-10 h-10 rounded-sm flex items-center justify-center font-bold text-sm shadow-xl transition-all duration-700",
+                               m.c,
+                               'text-white'
                             )}>
                                {m.k}
                             </div>
-                            <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest group-hover/item:text-white transition-colors">{m.l}</span>
+                            <span className="text-[11px] font-bold text-white/10 uppercase tracking-widest group-hover/item:text-white transition-all duration-700">{m.l}</span>
                          </div>
                          <div className="text-right">
-                            <p className="text-2xl font-black text-white italic tracking-tighter leading-none">{Math.round(m.v)}<span className="text-xs opacity-20 ml-1">G</span></p>
+                            <p className="text-2xl font-bold text-white tracking-tight leading-none">{Math.round(m.v)}<span className="text-xs opacity-20 ml-1">G</span></p>
                          </div>
                       </div>
                     ))}
                  </div>
               </div>
 
-              <div className="mt-12 p-8 bg-darkNavy/60 border border-white/5 rounded-[2.5rem] space-y-4 group">
-                 <div className="flex items-center gap-3">
-                    <Sparkles className="w-4 h-4 text-accentBlue group-hover:rotate-12 transition-transform" />
-                    <p className="text-xs font-black text-white uppercase tracking-widest">IA de Cuadre Clínico</p>
+              <div className="mt-12 p-6 bg-[#0a0f14] border border-white/5 rounded-sm space-y-4 group transition-all duration-700 hover:border-[#3b82f6]/20 relative overflow-hidden">
+                 <div className="flex items-center gap-4 relative z-10">
+                    <Sparkles className="w-5 h-5 text-[#3b82f6]/40" />
+                    <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">ESTADO DEL PLAN</p>
                  </div>
-                 <p className="text-[11px] text-slate-500 font-bold leading-relaxed italic">
+                 <p className="text-[11px] text-white/10 font-bold leading-relaxed uppercase tracking-widest relative z-10">
                     {totals.kcal < targetKcal 
-                      ? `Precisión requerida: faltan ${Math.round(targetKcal - totals.kcal)} KCAL. Ajuste las ingestas para optimizar el balance.`
-                      : 'Equilibrio metabólico alcanzado. Sincronización completa.'}
+                      ? `DELTA ENERGÉTICO: ${Math.round(targetKcal - totals.kcal)} KCAL RESTANTES.`
+                      : 'EQUILIBRIO METABÓLICO ALCANZADO.'}
                  </p>
               </div>
 
-              <motion.button 
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={async () => {
-                    const { exportarDietaLazy } = await import('@/utils/exportPdfAction');
-                    await exportarDietaLazy({ nombre: 'Paciente_Elite', edad: 25 }, totals, meals);
-                  }}
-                  className="w-full mt-12 py-8 bg-white text-darkNavy hover:bg-accentBlue hover:text-white rounded-3xl font-black uppercase text-xs tracking-widest shadow-[0_30px_60px_rgba(0,0,0,0.5)] transition-all flex items-center justify-center gap-4 group"
-                >
-                   Exportar Protocolo PDF <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </motion.button>
+               <div className={clsx(
+                  "flex flex-col gap-4 mt-12 transition-all duration-700",
+                  saveMutation.isPending ? "opacity-50" : "opacity-100"
+               )}>
+                  <button 
+                    onClick={() => {
+                      saveMutation.mutate({
+                        pacienteId,
+                        objetivoCalorico: targetKcal,
+                        comidas: meals,
+                        macrosObjetivo: targetMacros
+                      });
+                      const el = document.getElementById('dieta-success');
+                      if (el) {
+                        el.style.opacity = '1';
+                        setTimeout(() => { if (el) el.style.opacity = '0'; }, 3000);
+                      }
+                    }}
+                    disabled={saveMutation.isPending}
+                    className="w-full py-6 bg-white/10 hover:bg-white/20 text-white rounded-sm font-bold uppercase text-[10px] tracking-widest shadow-xl transition-all duration-700 flex items-center justify-center gap-4 border border-white/5 active:scale-95 group/save overflow-hidden relative"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover/save:translate-x-full transition-transform duration-1000" />
+                    {saveMutation.isPending ? (
+                      <div className="w-4 h-4 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                       <Save className="w-5 h-5 text-[#3b82f6]" />
+                    )}
+                    {saveMutation.isPending ? 'SINCRONIZANDO...' : 'GUARDAR PLAN'}
+                  </button>
+                  <div id="dieta-success" className="text-center text-[9px] font-bold text-emerald-400 uppercase tracking-[0.4em] opacity-0 transition-opacity duration-700 leading-none">
+                     ✓ PLAN NUTRICIONAL ASEGURADO
+                  </div>
+               </div>
            </div>
         </div>
       </div>
@@ -521,7 +590,6 @@ export default function PlanAlimentario({ pacienteId, onSync }: { pacienteId: st
   );
 }
 
-// Minimal clsx helper
 function clsx(...classes: any[]) {
   return classes.filter(Boolean).join(' ');
 }

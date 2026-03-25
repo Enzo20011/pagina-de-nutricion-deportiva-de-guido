@@ -1,18 +1,24 @@
 import { z } from 'zod';
 
 export const itemComidaSchema = z.object({
-  alimentoId: z.string().optional(),
-  nombreAlimento: z.string().min(1, 'Nombre de alimento requerido'),
-  cantidadGramos: z.number().positive(),
+  id: z.string().optional(),
+  nombre: z.string().min(1, 'Nombre de alimento requerido'),
+  gramos: z.number().positive(),
   kcal: z.number().nonnegative(),
   proteinas: z.number().nonnegative(),
   grasas: z.number().nonnegative(),
-  carbohidratos: z.number().nonnegative(),
+  carbos: z.number().nonnegative(),
+  origen: z.string().optional(),
 });
 
 export const comidaSchema = z.object({
-  nombre: z.string().min(1, 'Nombre de comida requerido'), // Ej: 'Desayuno'
+  id: z.string().optional(),
+  nombre: z.string().min(1, 'Nombre de comida requerido'),
   items: z.array(itemComidaSchema),
+  totalKcal: z.number().optional(),
+  totalProteins: z.number().optional(),
+  totalCarbs: z.number().optional(),
+  totalFats: z.number().optional(),
 });
 
 export const dietaSchema = z.object({
@@ -20,9 +26,9 @@ export const dietaSchema = z.object({
   objetivoCalorico: z.number().positive('El objetivo calórico debe ser positivo'),
   comidas: z.array(comidaSchema),
   macrosObjetivo: z.object({
-    proteinasPct: z.number().min(0).max(100),
-    grasasPct: z.number().min(0).max(100),
-    carbosPct: z.number().min(0).max(100),
+    p: z.number().min(0).max(100),
+    f: z.number().min(0).max(100),
+    c: z.number().min(0).max(100),
   }),
 });
 

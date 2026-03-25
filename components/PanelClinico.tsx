@@ -17,10 +17,12 @@ import {
   Clock,
   ArrowDown,
   ArrowUp,
-  Equal
+  Equal,
+  User,
+  Zap
 } from 'lucide-react';
 import AnimatedNumber from './AnimatedNumber';
-import { anamnesisSchema, type AnamnesisInput } from '@/schemas/anamnesisSchema';
+import { anamnesisSchema, draftAnamnesisSchema, type AnamnesisInput } from '@/schemas/anamnesisSchema';
 import { 
   calcularGastoEnergetico, 
   calcularMacros, 
@@ -28,79 +30,144 @@ import {
   type FactorActividad 
 } from '@/utils/calculosNutricionales';
 
-export default function PanelClinico({ pacienteId, onSync }: { pacienteId: string, onSync?: (data: any) => void }) {
+export default function PanelClinico({ 
+  pacienteId, 
+  onSync,
+  pacienteInitialData
+}: { 
+  pacienteId: string, 
+  onSync?: (data: any) => void,
+  pacienteInitialData?: any
+}) {
   const queryClient = useQueryClient();
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastSaved, setLastSaved] = useState<string | null>(null);
 
   // 1. Fetch data from server
   const { data: serverData, isLoading } = useQuery({
     queryKey: ['anamnesis', pacienteId],
     queryFn: async () => {
-      const res = await fetch(`/api/anamnesis?pacienteId=${pacienteId}`);
+      const res = await fetch(`/api/anamnesis?pacienteId=${pacienteId}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('Error al cargar anamnesis');
       return res.json();
     },
     enabled: !!pacienteId
   });
 
-  const [calcData, setCalcData] = useState({
-    peso: 70,
-    altura: 170,
-    edad: 30,
-    sexo: 'masculino' as Sexo,
-    actividad: 'sedentario' as FactorActividad
+  // 1.5 Fetch Biometry for Calculator Sync (FALLBACK if no Anamnesis data)
+  const { data: antroData } = useQuery({
+    queryKey: ['antropometria', pacienteId],
+    queryFn: async () => {
+      const res = await fetch(`/api/biometria?pacienteId=${pacienteId}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('Error');
+      return res.json();
+    },
+    enabled: !!pacienteId && !serverData?.data?.peso // Only if anamnesis doesn't have peso yet
   });
-  const [macrosPct, setMacrosPct] = useState({ carbos: 50, proteinas: 20, grasas: 30 });
-  
-  const resultados = calcularGastoEnergetico(
-    calcData.peso,
-    calcData.altura,
-    calcData.edad,
-    calcData.sexo,
-    calcData.actividad
-  );
-  
-  const deficit = Math.round(resultados.get - 500);
-  const mantenimiento = Math.round(resultados.get);
-  const superavit = Math.round(resultados.get + 500);
-
-  const macros = calcularMacros(
-    resultados.get,
-    macrosPct.carbos,
-    macrosPct.proteinas,
-    macrosPct.grasas
-  );
 
   const { 
     register, 
     handleSubmit, 
     watch,
     reset,
+    setValue,
     formState: { errors, isValid },
   } = useForm<AnamnesisInput>({
     resolver: zodResolver(anamnesisSchema),
+    mode: 'onChange',
     defaultValues: {
       pacienteId: pacienteId,
+      motivoConsulta: pacienteInitialData?.objetivo || '',
+      alergiasIntolerancias: 'Ninguna',
       nivelActividad: 'Sedentario' as any,
       ritmoIntestinal: 'Normal' as any,
       horasSueno: 8,
       nivelEstres: 5,
+      peso: pacienteInitialData?.weight || pacienteInitialData?.peso || 70,
+      altura: pacienteInitialData?.height || pacienteInitialData?.altura || 170,
+      edad: pacienteInitialData?.fechaNacimiento ? 
+            new Date().getFullYear() - new Date(pacienteInitialData.fechaNacimiento).getFullYear() : 30,
+      sexo: pacienteInitialData?.sexo || 'masculino',
+      tipoObjetivo: 'mantenimiento',
     }
   });
 
-  // Sync server data to form when available
-  React.useEffect(() => {
-    if (serverData?.data) {
-      reset({
-        ...serverData.data,
-        pacienteId: pacienteId // ensure ID is correct
-      });
-    }
-  }, [serverData, reset, pacienteId]);
-
   const watchedFields = watch();
+
+  // Sync server data to form only ONCE per patient load
+  const hasLoadedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (serverData?.data && !hasLoadedRef.current) {
+      const data = serverData.data;
+      // Only reset if we have saved data to hydrate
+      if (Object.keys(data).length > 2) { // 2 keys usually: _id, pacienteId
+        reset({
+          ...watchedFields,
+          ...data,
+          pacienteId: pacienteId
+        });
+        hasLoadedRef.current = true;
+      }
+    } else if (pacienteInitialData && !hasLoadedRef.current && !serverData?.data) {
+       // Fallback to patient root data if no anamnesis yet
+       reset({
+         ...watchedFields,
+         motivoConsulta: pacienteInitialData.objetivo || '',
+         peso: pacienteInitialData.weight || pacienteInitialData.peso || 70,
+         altura: pacienteInitialData.height || pacienteInitialData.altura || 170,
+         sexo: pacienteInitialData.sexo || 'masculino',
+         edad: pacienteInitialData.fechaNacimiento ? 
+               new Date().getFullYear() - new Date(pacienteInitialData.fechaNacimiento).getFullYear() : 30,
+       });
+       hasLoadedRef.current = true;
+    }
+  }, [serverData, reset, pacienteId, pacienteInitialData]);
+
+  // Sync latest biometry to form ONLY if form is still at default (new patient session)
+  React.useEffect(() => {
+     if (antroData?.data?.length > 0 && !serverData?.data?.peso) {
+        const latest = antroData.data[antroData.data.length - 1];
+        if (latest.peso) reset({ ...watchedFields, peso: latest.peso });
+        if (latest.altura) reset({ ...watchedFields, altura: latest.altura });
+     }
+  }, [antroData]);
+
+  // Reset flag when patient changes
+  React.useEffect(() => {
+    hasLoadedRef.current = false;
+  }, [pacienteId]);
+
+  const [macrosPct, setMacrosPct] = useState({ carbos: 50, proteinas: 20, grasas: 30 });
+  
+  const resultados = React.useMemo(() => calcularGastoEnergetico(
+    watchedFields.peso || 70,
+    watchedFields.altura || 170,
+    watchedFields.edad || 30,
+    (watchedFields.sexo as any) || 'masculino',
+    (watchedFields.nivelActividad?.toLowerCase() as any) || 'sedentario'
+  ), [watchedFields.peso, watchedFields.altura, watchedFields.edad, watchedFields.sexo, watchedFields.nivelActividad]);
+  
+  const deficit = Math.round(resultados.get - 500);
+  const mantenimiento = Math.round(resultados.get);
+  const superavit = Math.round(resultados.get + 500);
+
+  const currentTargetKcal = React.useMemo(() => {
+    if (watchedFields.tipoObjetivo === 'deficit') return deficit;
+    if (watchedFields.tipoObjetivo === 'superavit') return superavit;
+    return mantenimiento;
+  }, [watchedFields.tipoObjetivo, deficit, mantenimiento, superavit]);
+
+  // Sync currentTargetKcal to form field for persistence
+  React.useEffect(() => {
+    setValue('caloriasObjetivo', currentTargetKcal);
+  }, [currentTargetKcal, setValue]);
+
+  const macros = React.useMemo(() => calcularMacros(
+    currentTargetKcal,
+    macrosPct.carbos,
+    macrosPct.proteinas,
+    macrosPct.grasas
+  ), [currentTargetKcal, macrosPct]);
 
   // 2. Mutation for saving
   const saveMutation = useMutation({
@@ -110,7 +177,10 @@ export default function PanelClinico({ pacienteId, onSync }: { pacienteId: strin
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error('Error al guardar');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || errData.error || 'Error al guardar');
+      }
       return res.json();
     },
     onSuccess: (res) => {
@@ -118,9 +188,8 @@ export default function PanelClinico({ pacienteId, onSync }: { pacienteId: strin
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       }
-      const now = new Date();
-      setLastSaved(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      queryClient.setQueryData(['anamnesis', pacienteId], res);
+      // Uniform structure: always { data: ... }
+      queryClient.setQueryData(['anamnesis', pacienteId], { data: res.data });
     },
     onError: (err: any) => {
        setError(err.message);
@@ -129,253 +198,290 @@ export default function PanelClinico({ pacienteId, onSync }: { pacienteId: strin
   });
 
   // Sync state to parent for PDF/Preview
+  const lastSyncRef = React.useRef<string>('');
+  
   React.useEffect(() => {
     if (onSync) {
-      onSync({
+      const syncObj = {
         anamnesis: watchedFields,
         resultados,
         macros,
-        objetivos: { deficit, mantenimiento, superavit }
-      });
+        objetivos: { deficit, mantenimiento, superavit },
+        targetKcal: currentTargetKcal,
+        tipoObjetivo: watchedFields.tipoObjetivo
+      };
+      
+      const syncStr = JSON.stringify(syncObj);
+      if (syncStr !== lastSyncRef.current) {
+        lastSyncRef.current = syncStr;
+        onSync(syncObj);
+      }
     }
-  }, [watchedFields, resultados, macros, onSync, deficit, mantenimiento, superavit]);
+  }, [watchedFields, resultados, macros, onSync, deficit, mantenimiento, superavit, currentTargetKcal]);
 
-  // Autoguardado silencioso
+  // Autosave debounced — saves using DRAFT schema to allow partial data
+  const autoSaveRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   React.useEffect(() => {
-    const timer = setTimeout(() => {
-      if (isValid && watchedFields.pacienteId) {
+    if (!watchedFields.pacienteId) return;
+    if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
+    autoSaveRef.current = setTimeout(() => {
+      // Validate with draft schema before sending
+      const validation = draftAnamnesisSchema.safeParse(watchedFields);
+      if (validation.success) {
         saveMutation.mutate({ ...watchedFields, isDraft: true });
       }
-    }, 2000);
+    }, 1500);
+    return () => { if (autoSaveRef.current) clearTimeout(autoSaveRef.current); };
+  }, [watchedFields]);
 
-    return () => clearTimeout(timer);
-  }, [watchedFields, isValid]);
-
-  const onSubmit = async (data: AnamnesisInput) => {
+  const onSubmit = (data: AnamnesisInput) => {
     saveMutation.mutate({ ...data, isDraft: false });
   };
 
-  const inputStyles = "w-full p-8 bg-navy/20 backdrop-blur-md border border-white/5 focus:border-accentBlue/30 rounded-[2rem] outline-none transition-all font-bold text-bone placeholder:text-white/10 shadow-inner";
+  const inputStyles = "w-full p-4 bg-[#0a0f14]/60 border border-white/5 focus:border-[#3b82f6]/30 rounded-sm outline-none transition-all duration-700 font-bold uppercase text-[10px] tracking-[0.15em] text-white placeholder:text-white/5 shadow-xl";
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 text-bone">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 text-white">
       
       {/* LEFT SECTION: ANAMNESIS FORM */}
-      <div className="xl:col-span-7 space-y-8">
-        <header className="flex items-center gap-6 bg-cardDark/60 backdrop-blur-xl p-10 rounded-[3.5rem] shadow-3xl border border-white/10 group overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-accentBlue/5 rounded-full blur-[80px]" />
-          <div className="w-16 h-16 bg-darkNavy rounded-2xl flex items-center justify-center border border-white/5 group-hover:scale-110 transition-transform relative z-10 shadow-xl">
-             <ClipboardList className="w-8 h-8 text-accentBlue" />
+      <div className="xl:col-span-7 space-y-12">
+        <header className="flex items-center gap-8 bg-[#0e1419] p-6 rounded-sm shadow-xl border border-white/5 group overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#3b82f6]/5 rounded-full blur-[100px] -mr-32 -mt-32" />
+          <div className="w-16 h-16 bg-[#3b82f6] rounded-sm flex items-center justify-center transition-all duration-700 shadow-xl relative z-10">
+             <ClipboardList className="w-8 h-8 text-white" />
           </div>
           <div className="relative z-10">
-            <h2 className="text-3xl font-black uppercase tracking-tighter leading-none italic text-white">Anamnesis</h2>
-            <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-500 mt-2">Protocolo Clínico • Registro de Hábitos</p>
+            <h2 className="text-2xl font-bold uppercase tracking-tight leading-none text-white">ANAMNESIS</h2>
+            <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/20 mt-4">ANÁLISIS DE HÁBITOS Y ANTECEDENTES</p>
           </div>
         </header>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="bg-cardDark/40 p-12 rounded-[4rem] border border-white/5 shadow-2xl space-y-12 group/form backdrop-blur-md">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl space-y-12 group/form relative overflow-hidden">
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/[0.01] rounded-full blur-[120px] -ml-48 -mb-48" />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
             
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] pl-4">Motivo de Consulta</label>
+            <div className="space-y-4">
+              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Motivo de Consulta</label>
+              {/* Persistent Objective Fields */}
+              <input type="hidden" {...register('tipoObjetivo')} />
+              <input type="hidden" {...register('caloriasObjetivo')} />
+              
               <textarea 
                 {...register('motivoConsulta')}
-                className={clsx(inputStyles, "h-32 resize-none")}
+                className={clsx(inputStyles, "h-32 resize-none py-6")}
                 placeholder="Descripción del cuadro clínico..."
               />
-              {errors.motivoConsulta && <p className="text-rose-500 text-[10px] font-black uppercase mt-1 pl-4">{errors.motivoConsulta.message}</p>}
+              {errors.motivoConsulta && <p className="text-red-500 text-[10px] font-black uppercase mt-2 pl-6 italic tracking-widest">{errors.motivoConsulta.message}</p>}
             </div>
 
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] pl-4">Entorno / Laboral</label>
+            <div className="space-y-4">
+              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Entorno / Laboral</label>
               <textarea 
                 {...register('horariosTrabajo')}
-                className={clsx(inputStyles, "h-32 resize-none")}
+                className={clsx(inputStyles, "h-32 resize-none py-6")}
                 placeholder="Turnos, horarios, nivel de actividad laboral..."
               />
             </div>
 
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] pl-4">Patologías</label>
-              <input {...register('patologias')} className={inputStyles} placeholder="Ninguna" />
-            </div>
+            {[
+              { label: 'Patologías', key: 'patologias', ph: 'Ninguna' },
+              { label: 'Alergias', key: 'alergiasIntolerancias', ph: 'Sin alergias reportadas' },
+              { label: 'Medicanción', key: 'medicacionActual', ph: 'Uso de fármacos o suplementos' },
+            ].map(f => (
+              <div key={f.key} className="space-y-4">
+                <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">{f.label}</label>
+                <input {...register(f.key as any)} className={inputStyles} placeholder={f.ph} />
+                {(errors as any)[f.key] && <p className="text-red-500 text-[9px] font-black uppercase mt-1 pl-6 italic tracking-widest">{(errors as any)[f.key].message}</p>}
+              </div>
+            ))}
 
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] pl-4">Alergias</label>
-              <input {...register('alergiasIntolerancias')} className={inputStyles} placeholder="Sin alergias reportadas" />
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] pl-4">Medicanción</label>
-              <input {...register('medicacionActual')} className={inputStyles} placeholder="Uso de fármacos o suplementos" />
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] pl-4">Nivel de Actividad</label>
-              <select {...register('nivelActividad')} className={clsx(inputStyles, "font-black uppercase tracking-[0.2em] text-xs font-bold text-accentBlue")}>
-                <option value="Sedentario" className="bg-darkNavy text-white">Sedentario</option>
-                <option value="Ligero" className="bg-darkNavy text-white">Ligero</option>
-                <option value="Moderado" className="bg-darkNavy text-white">Moderado</option>
-                <option value="Intenso" className="bg-darkNavy text-white">Intenso</option>
-                <option value="Atleta" className="bg-darkNavy text-white">Atleta</option>
+            <div className="space-y-4">
+              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Nivel de Actividad</label>
+              <select {...register('nivelActividad')} className={clsx(inputStyles, "text-white/40 appearance-none")}>
+                <option value="Sedentario" className="bg-[#0a0f14] text-white">Sedentario</option>
+                <option value="Ligero" className="bg-[#0a0f14] text-white">Ligero</option>
+                <option value="Moderado" className="bg-[#0a0f14] text-white">Moderado</option>
+                <option value="Intenso" className="bg-[#0a0f14] text-white">Intenso</option>
+                <option value="Atleta" className="bg-[#0a0f14] text-white">Atleta</option>
               </select>
             </div>
 
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] pl-4">Ritmo Intestinal</label>
-              <select {...register('ritmoIntestinal')} className={clsx(inputStyles, "font-black uppercase tracking-[0.2em] text-xs font-bold text-white")}>
-                <option value="Normal" className="bg-darkNavy text-white">Normal</option>
-                <option value="Estreñimiento" className="bg-darkNavy text-white">Estreñimiento</option>
-                <option value="Diarrea" className="bg-darkNavy text-white">Diarrea</option>
-                <option value="Irregular" className="bg-darkNavy text-white">Irregular</option>
+            <div className="space-y-4">
+              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Ritmo Intestinal</label>
+              <select {...register('ritmoIntestinal')} className={clsx(inputStyles, "text-white/40 appearance-none")}>
+                <option value="Normal" className="bg-[#0a0f14] text-white">Normal</option>
+                <option value="Estreñimiento" className="bg-[#0a0f14] text-white">Estreñimiento</option>
+                <option value="Diarrea" className="bg-[#0a0f14] text-white">Diarrea</option>
+                <option value="Irregular" className="bg-[#0a0f14] text-white">Irregular</option>
               </select>
             </div>
 
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] pl-4">Aversiones</label>
+            <div className="space-y-4">
+              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Aversiones</label>
               <input {...register('aversionesAlimentarias')} className={inputStyles} placeholder="Alimentos que rechaza" />
             </div>
 
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] pl-4">Horas de Sueño</label>
+            <div className="space-y-4">
+              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Horas de Sueño</label>
               <input type="number" {...register('horasSueno', { valueAsNumber: true })} className={inputStyles} placeholder="Ej. 8" />
             </div>
 
-            <div className="space-y-3">
-              <label className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] pl-4">Nivel de Estrés (1-10)</label>
+            <div className="space-y-4">
+              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Nivel de Estrés (1-10)</label>
               <input type="number" {...register('nivelEstres', { valueAsNumber: true })} className={inputStyles} placeholder="Ej. 5" min={1} max={10} />
             </div>
 
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-6 pt-10 border-t border-white/5">
-            <div className="flex-1 w-full">
-              <AnimatePresence>
-                {lastSaved && !success && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 text-slate-500 font-bold uppercase tracking-widest text-[9px] bg-white/5 px-4 py-2 rounded-full border border-white/5">
-                    <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-pulse" />
-                    Borrador: {lastSaved}
-                  </motion.div>
-                )}
-                {success && (
-                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="inline-flex items-center gap-3 text-emerald-400 font-black uppercase text-xs tracking-widest bg-emerald-500/10 px-6 py-2.5 rounded-full border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-                    <CheckCircle2 className="w-4 h-4" /> Registro de Anamnesis Guardado
-                  </motion.div>
-                )}
-                {error && (
-                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="inline-flex items-center gap-3 text-rose-400 font-black uppercase text-xs tracking-widest bg-rose-500/10 px-6 py-2.5 rounded-full border border-rose-500/20 shadow-[0_0_20px_rgba(244,63,94,0.1)]">
-                    <AlertCircle className="w-4 h-4" /> {error}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="submit" 
+          <div className="flex flex-col md:flex-row items-center gap-8 pt-8 border-t border-white/5 relative z-10">
+            <button 
+              type="submit"
               disabled={saveMutation.isPending}
-              className="w-full sm:w-auto bg-white text-navy px-12 py-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-4 group"
+              className={clsx(
+                "flex items-center gap-4 px-10 py-5 rounded-sm font-bold uppercase text-[11px] tracking-[0.3em] transition-all duration-700 shadow-2xl group/save relative overflow-hidden",
+                saveMutation.isPending 
+                  ? "bg-white/5 text-white/20 cursor-wait" 
+                  : "bg-white text-[#0a0f14] hover:bg-white/90 active:scale-95"
+              )}
             >
-              <Save className="w-5 h-5 text-accentBlue group-hover:rotate-12 transition-transform" />
-              {saveMutation.isPending ? 'Sincronizando...' : 'Finalizar Bloque'}
-            </motion.button>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/save:translate-x-full transition-transform duration-1000" />
+              {saveMutation.isPending ? (
+                <div className="w-4 h-4 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Save className="w-5 h-5" />
+              )}
+              <span className="relative z-10">{saveMutation.isPending ? 'Sincronizando...' : 'Guardar Clínica'}</span>
+            </button>
+
+            <AnimatePresence>
+              {success && (
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="inline-flex items-center gap-4 text-emerald-400 font-bold uppercase text-[10px] tracking-[0.2em] bg-emerald-500/10 px-10 py-4 rounded-sm border border-emerald-500/20 shadow-2xl">
+                  <CheckCircle2 className="w-5 h-5 shadow-lg" /> CAMBIOS PERMANENTES GUARDADOS
+                </motion.div>
+              )}
+              {error && (
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="inline-flex items-center gap-4 text-red-400 font-bold uppercase text-[10px] tracking-[0.2em] bg-red-500/10 px-10 py-4 rounded-sm border border-red-500/20 shadow-2xl">
+                  <AlertCircle className="w-5 h-5" /> ERROR CRÍTICO: {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </form>
       </div>
 
-      {/* RIGHT SECTION: CALCULATOR & MACROS */}
-      <div className="xl:col-span-5 space-y-8">
-        <header className="flex items-center gap-6 bg-cardDark/60 backdrop-blur-xl p-10 rounded-[3.5rem] border border-white/10 shadow-3xl group overflow-hidden relative">
-          <div className="w-16 h-16 bg-darkNavy rounded-2xl flex items-center justify-center border border-white/5 group-hover:rotate-12 transition-transform shadow-xl">
-             <Calculator className="w-8 h-8 text-accentBlue" />
+      {/* RIGHT SECTION: STRATEGIC CALCULATOR & BIO-ANALYSIS */}
+      <div className="xl:col-span-5 space-y-12">
+        <header className="flex items-center gap-8 bg-[#0e1419] p-6 rounded-sm border border-white/5 shadow-xl group overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#3b82f6]/5 rounded-full blur-[100px] -mr-32 -mt-32" />
+          <div className="w-16 h-16 bg-[#3b82f6] rounded-sm flex items-center justify-center transition-all duration-700 shadow-xl relative z-10">
+             <Calculator className="w-8 h-8 text-white" />
           </div>
-          <div>
-            <h2 className="text-3xl font-black uppercase tracking-tighter leading-none italic text-white">Motor Clínico</h2>
-            <p className="text-xs font-black uppercase tracking-[0.4em] text-slate-500 mt-2">Cálculo de Bioquímica Energética</p>
+          <div className="relative z-10">
+            <h2 className="text-2xl font-bold uppercase tracking-tight leading-none text-white">CÁLCULOS</h2>
+            <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/20 mt-4">GASTO ENERGÉTICO Y MACROS</p>
           </div>
         </header>
 
-        <section className="bg-cardDark/40 backdrop-blur-md p-10 rounded-[3rem] border border-white/5 shadow-2xl relative overflow-hidden">
-          <div className="grid grid-cols-2 gap-6 mb-12 relative z-10">
+        <section className="bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-80 h-80 bg-white/[0.01] rounded-full blur-[90px] -ml-40 -mt-40" />
+          
+          <div className="grid grid-cols-2 gap-10 mb-16 relative z-10">
             {[
-               { label: 'Peso (KG)', val: calcData.peso, key: 'peso', icon: Activity },
-               { label: 'Altura (CM)', val: calcData.altura, key: 'altura', icon: Sparkles },
-               { label: 'Edad', val: calcData.edad, key: 'edad', icon: Clock },
+               { label: 'SEXO', key: 'sexo', icon: User, type: 'select', options: ['masculino', 'femenino'] },
+               { label: 'ACTIVIDAD', key: 'nivelActividad', icon: Zap, type: 'select', options: ['Sedentario', 'Ligero', 'Moderado', 'Intenso', 'Atleta'] },
+               { label: 'PESO (KG)', key: 'peso', icon: Activity, type: 'number' },
+               { label: 'ALTURA (CM)', key: 'altura', icon: Sparkles, type: 'number' },
+               { label: 'EDAD', key: 'edad', icon: Clock, type: 'number' },
             ].map(item => (
-              <div key={item.key} className="space-y-3">
-                <label className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] pl-2">{item.label}</label>
+              <div key={item.key} className="space-y-4">
+                <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-4">{item.label}</label>
                 <div className="relative group/input">
-                  <input 
-                    type="number" 
-                    value={item.val} 
-                    onChange={e => setCalcData({...calcData, [item.key]: +e.target.value})} 
-                    className="w-full p-6 bg-darkNavy/50 border border-white/5 rounded-2xl text-3xl font-black text-white focus:border-accentBlue/50 outline-none transition-all shadow-inner group-hover/input:border-white/10" 
-                  />
-                  <item.icon className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-white/5 group-focus-within/input:text-accentBlue/20 transition-colors" />
+                  {item.type === 'select' ? (
+                    <select 
+                      {...register(item.key as any)}
+                      className="w-full p-4 bg-[#0a0f14]/60 border border-white/5 rounded-sm font-bold text-[10px] uppercase text-white focus:border-[#3b82f6]/30 outline-none shadow-inner tracking-[0.2em] appearance-none cursor-pointer"
+                    >
+                      {item.options?.map(opt => (
+                        <option key={opt} value={item.key === 'sexo' ? opt.toLowerCase() : opt} className="bg-[#0a0f14] text-white">
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input 
+                      type="number" 
+                      step={item.key === 'edad' ? '1' : '0.1'}
+                      {...register(item.key as any, { valueAsNumber: true })}
+                      className="w-full p-4 bg-[#0a0f14]/60 border border-white/5 rounded-sm text-2xl font-bold text-white focus:border-[#3b82f6]/30 outline-none transition-all duration-700 shadow-inner group-hover/input:border-white/10 tracking-tight" 
+                    />
+                  )}
+                  <item.icon className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/5 group-focus-within/input:text-[#3b82f6]/40 transition-all duration-700 pointer-events-none" />
                 </div>
               </div>
             ))}
-             <div className="space-y-3">
-                <label className="text-xs font-black text-slate-500 uppercase tracking-[0.4em] pl-2">Actividad</label>
-                <select 
-                  value={calcData.actividad} 
-                  onChange={e => setCalcData({...calcData, actividad: e.target.value as any})} 
-                  className="w-full p-[1.85rem] bg-darkNavy/50 border border-white/5 rounded-2xl font-black text-xs uppercase text-bone focus:border-accentBlue/50 outline-none shadow-inner"
-                >
-                  {['sedentario', 'ligero', 'moderado', 'intenso', 'atleta'].map(o => <option key={o} value={o} className="bg-darkNavy text-white">{o}</option>)}
-                </select>
-              </div>
           </div>
 
-          <div className="mb-8 relative group">
-             <div className="absolute inset-0 bg-accentBlue rounded-[2.5rem] blur-[40px] opacity-10 group-hover:opacity-20 transition-opacity" />
-             <div className="relative flex items-center justify-between p-10 bg-accentBlue text-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20 transition-all group-hover:translate-y-[-4px]">
+          <div className="mb-12 relative group">
+             <div className="relative flex items-center justify-between p-10 bg-[#3b82f6] text-white rounded-sm shadow-xl overflow-hidden group-hover:-translate-y-1 transition-all duration-500">
                 <div className="relative z-10">
-                  <p className="text-xs font-black uppercase tracking-[0.5em] text-white/50 mb-3 leading-none italic">Total Diario (GET)</p>
-                  <p className="text-6xl font-black tracking-tighter leading-none italic drop-shadow-lg"><AnimatedNumber value={resultados.get} /> <span className="text-xl opacity-40 italic not-italic font-medium pr-2">KCAL</span></p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/60 mb-6 leading-none">TOTAL DIARIO (GET)</p>
+                  <p className="text-4xl font-bold tracking-tight leading-none"><AnimatedNumber value={resultados.get} /> <span className="text-xl opacity-40 font-bold pr-2">KCAL</span></p>
                 </div>
-                <Activity className="w-20 h-20 opacity-10 absolute right-[-10px] bottom-[-20px] group-hover:scale-125 transition-transform duration-1000" />
+                <Activity className="w-24 h-24 opacity-10 absolute right-[-10px] bottom-[-20px]" />
              </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 w-full mb-12">
-             <div className="bg-darkNavy border border-white/5 rounded-2xl p-5 flex flex-col items-center justify-center text-center gap-3">
-                <ArrowDown className="w-6 h-6 text-[#E06C75]" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Déficit</span>
-                <span className="text-xl font-black text-white"><AnimatedNumber value={deficit} /></span>
-                <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest">cal/día</span>
-             </div>
-             <div className="bg-darkNavy border border-white/5 rounded-2xl p-5 flex flex-col items-center justify-center text-center gap-3">
-                <Equal className="w-6 h-6 text-[#4285F4]" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Mantener</span>
-                <span className="text-xl font-black text-white"><AnimatedNumber value={mantenimiento} /></span>
-                <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest">cal/día</span>
-             </div>
-             <div className="bg-darkNavy border border-white/5 rounded-2xl p-5 flex flex-col items-center justify-center text-center gap-3">
-                <ArrowUp className="w-6 h-6 text-[#54B47B]" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Superávit</span>
-                <span className="text-xl font-black text-white"><AnimatedNumber value={superavit} /></span>
-                <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest">cal/día</span>
-             </div>
+          <div className="grid grid-cols-3 gap-6 w-full mb-12 relative z-10">
+             {[
+               { id: 'deficit', label: 'Déficit', val: deficit, color: 'text-red-400', activeBg: 'bg-red-500/10 border-red-500/30', icon: ArrowDown },
+               { id: 'mantenimiento', label: 'Mantener', val: mantenimiento, color: 'text-white/20', activeBg: 'bg-white/5 border-white/20', icon: Equal },
+               { id: 'superavit', label: 'Superávit', val: superavit, color: 'text-emerald-400', activeBg: 'bg-emerald-500/10 border-emerald-500/30', icon: ArrowUp }
+             ].map((opt, i) => (
+                <button 
+                  key={i} 
+                  type="button"
+                  onClick={() => setValue('tipoObjetivo', opt.id as any)}
+                  className={clsx(
+                    "rounded-sm p-6 flex flex-col items-center justify-center text-center gap-6 shadow-xl group/opt transition-all duration-700 border",
+                    watchedFields.tipoObjetivo === opt.id 
+                      ? opt.activeBg 
+                      : "bg-[#0a0f14]/60 border-white/5 hover:border-white/20"
+                  )}
+                >
+                  <opt.icon className={clsx(
+                    "w-8 h-8 transition-transform duration-700",
+                    watchedFields.tipoObjetivo === opt.id ? opt.color : "text-white/10 group-hover/opt:scale-110"
+                  )} />
+                  <div className="space-y-2">
+                    <span className={clsx(
+                      "text-[9px] font-bold uppercase tracking-[0.4em] transition-colors",
+                      watchedFields.tipoObjetivo === opt.id ? "text-white" : "text-white/10"
+                    )}>{opt.label}</span>
+                    <div className="text-2xl font-bold text-white tracking-tight"><AnimatedNumber value={opt.val} /></div>
+                    <span className="text-[8px] font-bold text-white/10 uppercase tracking-widest leading-none">cal/día</span>
+                  </div>
+                </button>
+             ))}
           </div>
 
-          <div className="space-y-10 relative z-10">
-            <h3 className="font-black uppercase text-xs tracking-[0.4em] text-slate-500 flex items-center gap-3">
-               <Sparkles className="w-4 h-4 text-accentBlue" /> Desglose Macroquímico
+          <div className="space-y-12 relative z-10">
+            <h3 className="font-bold uppercase text-[10px] tracking-[0.5em] text-white/10 flex items-center gap-6">
+               <Sparkles className="w-4 h-4 text-[#3b82f6]" /> MACROS
             </h3>
             
             <div className="space-y-8">
               {[
-                { label: 'Carbohidratos', key: 'carbos', g: macros.carbohidratos, color: 'bg-white shadow-[0_0_15px_rgba(255,255,255,0.3)]' },
-                { label: 'Proteínas', key: 'proteinas', g: macros.proteinas, color: 'bg-accentBlue shadow-[0_0_15px_rgba(59,130,246,0.5)]' },
-                { label: 'Grasas', key: 'grasas', g: macros.grasas, color: 'bg-slate-400' }
+                { label: 'Carbohidratos', key: 'carbos', g: macros.carbohidratos, color: 'bg-white shadow-[0_0_30px_rgba(255,255,255,0.2)]' },
+                { label: 'Proteínas', key: 'proteinas', g: macros.proteinas, color: 'bg-[#1B365D] shadow-[0_0_30px_rgba(27,54,93,0.3)] border border-white/10' },
+                { label: 'Grasas', key: 'grasas', g: macros.grasas, color: 'bg-white/5' }
               ].map((macro) => (
-                <div key={macro.key} className="space-y-3 group cursor-default">
-                  <div className="flex items-center justify-between text-xs font-black uppercase tracking-widest">
-                    <span className="text-slate-500 group-hover:text-white transition-colors">{macro.label} ({macrosPct[macro.key as keyof typeof macrosPct]}%)</span>
-                    <span className="text-white text-base tracking-tighter italic">{macro.g}g</span>
+                <div key={macro.key} className="space-y-4 group cursor-default">
+                  <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.3em]">
+                    <span className="text-white/20 group-hover:text-white transition-all duration-700">{macro.label} ({macrosPct[macro.key as keyof typeof macrosPct]}%)</span>
+                    <span className="text-white text-2xl tracking-tight">{macro.g}g</span>
                   </div>
-                  <div className="w-full h-1.5 bg-darkNavy rounded-full overflow-hidden relative">
+                  <div className="w-full h-2 bg-[#070C14]/80 rounded-full overflow-hidden relative border border-white/5">
                     <motion.div 
                       layout
                       initial={{ width: 0 }}
@@ -388,10 +494,12 @@ export default function PanelClinico({ pacienteId, onSync }: { pacienteId: strin
               ))}
             </div>
 
-            <div className="mt-10 p-8 bg-darkNavy/80 rounded-[2.5rem] border border-white/10 flex items-start gap-5 group">
-               <Info className="w-5 h-5 text-accentBlue mt-1 shrink-0 group-hover:scale-110 transition-transform" />
-               <p className="text-[11px] text-slate-500 font-bold leading-relaxed italic">
-                 Metodología Harris-Benedict optimizada para entornos deportivos y nutrición clínica de alta precisión.
+            <div className="mt-12 p-8 bg-[#0a0f14]/60 rounded-sm border border-white/5 flex items-start gap-8 group transition-all duration-700">
+               <div className="w-10 h-10 bg-white/5 rounded-sm flex items-center justify-center shrink-0">
+                  <Info className="w-5 h-5 text-[#3b82f6]/40" />
+               </div>
+               <p className="text-[11px] text-white/10 font-bold leading-relaxed uppercase tracking-[0.15em] group-hover:text-white/20 transition-all duration-700">
+                 METODOLOGÍA HARRIS-BENEDICT OPTIMIZADA PARA NUTRICIÓN DEPORTIVA Y CLÍNICA. CÁLCULO DE ALTA PRECISIÓN.
                </p>
             </div>
           </div>

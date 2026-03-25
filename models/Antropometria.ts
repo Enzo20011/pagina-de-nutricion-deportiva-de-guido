@@ -2,26 +2,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { z } from 'zod';
 
 // --- ZOD SCHEMA FOR VALIDATION ---
-export const antropometriaSchema = z.object({
-  pacienteId: z.string().min(1),
-  peso: z.number().min(20).max(300),
-  altura: z.number().min(50).max(250),
-  // Pliegues (mm)
-  triceps: z.number().min(0).optional(),
-  subescapular: z.number().min(0).optional(),
-  suprailiaco: z.number().min(0).optional(),
-  abdominal: z.number().min(0).optional(),
-  muslo: z.number().min(0).optional(),
-  pierna: z.number().min(0).optional(),
-  // Perímetros (cm)
-  cintura: z.number().min(0).optional(),
-  cadera: z.number().min(0).optional(),
-  // Resultados calculados (se pueden guardar o calcular al vuelo)
-  porcentajeGrasa: z.number().optional(),
-  imc: z.number().optional(),
-});
-
-export type AntropometriaInput = z.infer<typeof antropometriaSchema>;
+import { antropometriaSchema, type AntropometriaInput } from '@/schemas/antropometriaSchema';
+export { antropometriaSchema, type AntropometriaInput };
 
 // --- MONGOOSE MODEL ---
 export interface IAntropometria extends Document {

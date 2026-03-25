@@ -1,20 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import Image from 'next/image';
 import { 
   Calendar as CalendarIcon, 
   Clock, 
   User, 
   Mail, 
   Phone, 
-  CreditCard, 
   ChevronLeft, 
   ChevronRight, 
   Loader2,
   CheckCircle,
-  AlertCircle,
-  Sparkles
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -29,6 +26,47 @@ export default function TurneroInteractivo() {
   const [errorSlot, setErrorSlot] = useState<string | null>(null);
   const [sessionId] = useState(() => Math.random().toString(36).substring(7));
   const [formData, setFormData] = useState({ nombre: '', email: '', whatsapp: '' });
+  
+  // NAVEGACIÓN DE CALENDARIO
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
+  });
+
+  const calendarDays = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    let startDayIdx = firstDay.getDay() - 1;
+    if (startDayIdx === -1) startDayIdx = 6; 
+    
+    const days = [];
+    for (let i = 0; i < startDayIdx; i++) {
+        days.push(null);
+    }
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+        days.push(new Date(year, month, i));
+    }
+    return days;
+  }, [currentMonth]);
+
+  const changeMonth = (offset: number) => {
+    const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + offset, 1);
+    const now = new Date();
+    now.setDate(1);
+    now.setHours(0,0,0,0);
+    
+    if (nextMonth < now) return;
+    
+    setCurrentMonth(nextMonth);
+    setSelectedDate(null);
+    setSelectedTime(null);
+    setTakenSlots([]);
+  };
 
   const fetchAvailability = useCallback(async (date: string) => {
     try {
@@ -38,14 +76,6 @@ export default function TurneroInteractivo() {
     } catch (err) {
       console.error('Error fetching availability:', err);
     }
-  }, []);
-
-  const dates = useMemo(() => {
-    return Array.from({ length: 14 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() + i + 1);
-      return d.toISOString().split('T')[0];
-    });
   }, []);
 
   const handleNextStep = useCallback(async () => {
@@ -68,7 +98,7 @@ export default function TurneroInteractivo() {
       if (resp.status === 409) {
         const data = await resp.json();
         setErrorSlot(data.error);
-        fetchAvailability(selectedDate); // Refresh slots
+        fetchAvailability(selectedDate);
         setLoading(false);
         return;
       }
@@ -86,128 +116,187 @@ export default function TurneroInteractivo() {
     setLoading(true);
     
     try {
+      const reserveResp = await fetch('/api/appointments/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.nombre,
+          email: formData.email,
+          phone: formData.whatsapp,
+          fecha: selectedDate,
+          hora: selectedTime,
+          sessionId
+        })
+      });
+
+      if (!reserveResp.ok) {
+        const errorData = await reserveResp.json();
+        throw new Error(errorData.error || 'Error al crear la reserva');
+      }
+
+      const { reservaId } = await reserveResp.json();
+
       const resp = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fecha: selectedDate,
-          hora: selectedTime,
-          paciente: formData.nombre,
+          name: formData.nombre,
           email: formData.email,
-          whatsapp: formData.whatsapp,
-          sessionId // Pass session to match the lock
+          date: selectedDate,
+          reservaId,
+          monto: 5000
         })
       });
+
+      if (!resp.ok) {
+        const errorData = await resp.json();
+        throw new Error(errorData.error || 'Error en la pasarela de pago');
+      }
+
       const data = await resp.json();
-      window.location.href = data.url; // Modified from data.init_point to data.url to match mock/real checkout
-    } catch (err) {
-      console.error(err);
+      window.location.href = data.url; 
+    } catch (err: any) {
+      console.error('Booking Error:', err);
+      alert(err.message || 'Ocurrió un error al procesar tu reserva.');
       setLoading(false);
     }
   }, [selectedDate, selectedTime, formData, sessionId]);
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col">
-      {/* MINIMAL STEP INDICATOR */}
-      <div className="flex gap-2 mb-8 px-2">
-        {[1, 2, 3].map((num) => (
-          <div key={num} className="flex-1 space-y-3">
-             <div className={`h-1 rounded-full transition-all duration-1000 ${step >= num ? 'bg-accentBlue shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-white/5'}`} />
-             <span className={`text-[8px] font-black uppercase tracking-[0.3em] block text-center ${step === num ? 'text-accentBlue' : 'text-white/10'}`}>
-               Fase 0{num}
-             </span>
-          </div>
-        ))}
-      </div>
 
       <div className="flex-1 px-2">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           {step === 1 && (
             <motion.div 
               key="step1"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-10"
+              initial={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, scale: 0.95, filter: "blur(5px)" }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="space-y-12"
             >
-              <div>
-                <label className="flex items-center gap-3 text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-8">
-                  <CalendarIcon className="w-4 h-4 text-accentBlue" /> 1. Elegir Fecha
-                </label>
-                <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
-                  {dates.map((date) => (
-                    <button
-                      key={date}
-                      onClick={() => {
-                        setSelectedDate(date);
-                        fetchAvailability(date);
-                        setSelectedTime(null);
-                        setErrorSlot(null);
-                      }}
-                      className={`p-4 rounded-2xl flex flex-col items-center justify-center transition-all duration-500 border ${
-                        selectedDate === date 
-                        ? 'bg-accentBlue border-accentBlue text-white' 
-                        : 'bg-white/5 border-white/5 text-bone/40 hover:border-white/20'
-                      }`}
-                    >
-                      <span className="text-[8px] uppercase font-black opacity-40 mb-1">
-                        {new Date(date).toLocaleDateString('es', { weekday: 'short' })}
-                      </span>
-                      <span className="text-lg font-black tracking-tighter">
-                        {new Date(date).getDate()}
-                      </span>
-                    </button>
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] animate-pulse" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#3b82f6]">PASO 01</span>
+                  </div>
+                  <h2 className="text-xl font-black uppercase tracking-tight text-white">FECHA Y HORA</h2>
+                </div>
+                
+                <div className="flex items-center gap-4 bg-[#141a20] px-4 py-2 border border-[#1f262e] rounded-sm">
+                  <button 
+                    onClick={() => changeMonth(-1)} 
+                    disabled={currentMonth.getMonth() === new Date().getMonth() && currentMonth.getFullYear() === new Date().getFullYear()}
+                    className="p-1.5 hover:bg-white/5 disabled:opacity-5 disabled:cursor-not-allowed rounded-sm transition-colors text-white/40 hover:text-white"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="text-center min-w-[100px]">
+                    <p className="text-[7px] font-bold uppercase tracking-widest text-[#43484e] mb-0.5">MES</p>
+                    <p className="text-[11px] font-bold text-white uppercase tracking-tight">{currentMonth.toLocaleString('es', { month: 'long', year: 'numeric' }).toUpperCase()}</p>
+                  </div>
+                  <button onClick={() => changeMonth(1)} className="p-1.5 hover:bg-white/5 rounded-sm transition-colors text-white/40 hover:text-white">
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-7 text-center mb-1">
+                  {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day, i) => (
+                    <span key={i} className="text-[8px] font-bold uppercase tracking-widest text-[#43484e]">{day}</span>
                   ))}
+                </div>
+
+                <div className="grid grid-cols-7 gap-1 relative min-h-[200px]">
+                  <AnimatePresence mode="popLayout">
+                    <motion.div
+                      key={currentMonth.toISOString()}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.4 }}
+                      className="contents" // Use contents to keep grid layout
+                    >
+                      {calendarDays.map((date, idx) => {
+                        if (!date) return <div key={`empty-${idx}`} className="p-2" />;
+                        const dateStr = date.toISOString().split('T')[0];
+                        const isToday = new Date().toISOString().split('T')[0] === dateStr;
+                        const isPassed = date < new Date(new Date().setHours(0,0,0,0));
+                        const isSelected = selectedDate === dateStr;
+
+                        return (
+                          <motion.button
+                            key={dateStr}
+                            disabled={isPassed}
+                            whileHover={!isPassed ? { backgroundColor: isSelected ? "#3b82f6" : "#1a2027" } : {}}
+                            whileTap={!isPassed ? { scale: 0.95 } : {}}
+                            onClick={() => {
+                              setSelectedDate(dateStr);
+                              fetchAvailability(dateStr);
+                              setSelectedTime(null);
+                            }}
+                            className={`relative p-2.5 rounded-sm flex flex-col items-center justify-center transition-all duration-300 border ${
+                              isSelected 
+                              ? 'bg-[#3b82f6] border-[#3b82f6] text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] z-10' 
+                              : isPassed ? 'bg-transparent border-transparent text-white/5 cursor-not-allowed'
+                              : 'bg-[#1a2027]/20 border-white/5 text-[#a7abb2] hover:border-white/10'
+                            }`}
+                          >
+                            <span className={`text-[11px] font-bold tracking-tighter leading-none ${isToday && !isSelected ? 'text-[#3b82f6]' : ''}`}>
+                              {date.getDate()}
+                            </span>
+                            {isToday && !isSelected && <div className="absolute top-1 right-1 w-1 h-1 bg-[#3b82f6] rounded-full" />}
+                          </motion.button>
+                        );
+                      })}
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
               </div>
 
               {selectedDate && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                  <label className="flex items-center gap-3 text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-8">
-                    <Clock className="w-4 h-4 text-accentBlue" /> 2. Elegir Horario
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="space-y-8">
+                  <label className="flex items-center gap-4 eyebrow !text-[#3b82f6]/40 italic">
+                    <Clock className="w-4 h-4" /> 02. Horarios
                   </label>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                     {TIMES.map((time) => {
                       const isTaken = takenSlots.includes(time);
                       return (
-                        <button
+                        <motion.button
                           key={time}
                           disabled={isTaken}
-                          onClick={() => {
-                            setSelectedTime(time);
-                            setErrorSlot(null);
-                          }}
-                          className={`py-4 rounded-xl font-bold text-sm transition-all duration-300 border ${
+                          onClick={() => setSelectedTime(time)}
+                          className={`relative py-4 rounded-sm font-bold text-xs uppercase tracking-widest transition-all duration-500 border overflow-hidden ${
                             selectedTime === time 
-                            ? 'bg-white text-darkNavy border-white shadow-xl scale-105' 
-                            : isTaken 
-                              ? 'bg-white/5 text-white/5 border-white/5 cursor-not-allowed line-through opacity-30 shadow-none'
-                              : 'bg-white/5 text-bone/40 hover:bg-white/10 border-white/5'
+                            ? 'bg-[#3b82f6] text-white border-[#3b82f6] shadow-[0_0_30px_rgba(59,130,246,0.3)]' 
+                            : isTaken ? 'bg-transparent text-[#1f262e] border-[#1f262e] cursor-not-allowed line-through opacity-10'
+                            : 'bg-[#1a2027]/20 border-white/5 text-[#a7abb2] hover:border-white/10'
                           }`}
                         >
-                          {time}hs
-                        </button>
+                          <span className="relative z-10">{time}</span>
+                        </motion.button>
                       );
                     })}
                   </div>
-                  {errorSlot && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }} 
-                      animate={{ opacity: 1, y: 0 }} 
-                      className="mt-6 flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-500 animate-pulse"
-                    >
-                      <AlertCircle className="w-4 h-4" /> {errorSlot}
-                    </motion.div>
-                  )}
                 </motion.div>
+              )}
+
+              {errorSlot && (
+                <div className="flex items-center gap-4 p-6 bg-red-500/5 border border-red-500/20 rounded-sm text-[10px] font-bold uppercase tracking-widest text-red-500/80">
+                  <AlertCircle className="w-5 h-5 shrink-0" /> {errorSlot}
+                </div>
               )}
 
               <button
                 disabled={!selectedDate || !selectedTime || loading}
-                onClick={handleNextStep}
-                className="w-full mt-8 py-6 bg-white disabled:bg-white/5 disabled:text-white/10 text-darkNavy font-black rounded-2xl transition-all shadow-xl hover:bg-accentBlue hover:text-white uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 group"
+                onClick={() => setStep(2)}
+                className="w-full mt-10 py-6 bg-[#3b82f6] disabled:bg-[#1f262e] disabled:text-[#43484e] text-white font-bold rounded-sm transition-all shadow-[0_0_40px_rgba(59,130,246,0.1)] hover:shadow-[0_0_60px_rgba(59,130,246,0.3)] eyebrow !text-[10px] flex items-center justify-center gap-4 group overflow-hidden"
               >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Continuar reserva <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>RESERVAR TURNO <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}
               </button>
             </motion.div>
           )}
@@ -215,126 +304,116 @@ export default function TurneroInteractivo() {
           {step === 2 && (
             <motion.div 
               key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-8"
+              initial={{ opacity: 0, x: 20, filter: "blur(10px)" }}
+              animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, x: -20, filter: "blur(5px)" }}
+              className="space-y-12"
             >
-              <button onClick={() => setStep(1)} className="text-[10px] font-black text-accentBlue flex items-center gap-2 uppercase tracking-[0.3em] mb-10 hover:opacity-60 transition-opacity">
-                <ChevronLeft className="w-4 h-4" /> Volver a disponibilidad
-              </button>
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] animate-pulse" />
+                    <span className="eyebrow !text-[#3b82f6]">TUS DATOS</span>
+                  </div>
+                  <h2 className="heading-md">DATOS DE CONTACTO</h2>
+                </div>
+                <button onClick={() => setStep(1)} className="eyebrow !text-[9px] !text-white/20 hover:text-[#3b82f6] transition-colors flex items-center gap-2">
+                  <ChevronLeft className="w-4 h-4" /> VOLVER
+                </button>
+              </div>
 
               <div className="space-y-4">
                 {[
-                  { icon: User, placeholder: 'Nombre Completo', key: 'nombre', type: 'text' },
-                  { icon: Mail, placeholder: 'Tu Email', key: 'email', type: 'email' },
+                  { icon: User, placeholder: 'Nombre y Apellido', key: 'nombre', type: 'text' },
+                  { icon: Mail, placeholder: 'Email de Contacto', key: 'email', type: 'email' },
                   { icon: Phone, placeholder: 'WhatsApp / Móvil', key: 'whatsapp', type: 'tel' }
                 ].map((input) => (
                   <div key={input.key} className="relative group">
-                    <input.icon className="absolute left-7 top-1/2 -translate-y-1/2 w-5 h-5 text-white/10 group-focus-within:text-accentBlue transition-colors" />
+                    <input.icon className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/10 group-focus-within:text-[#3b82f6] transition-all duration-300" />
                     <input 
-                      required 
-                      type={input.type} 
-                      placeholder={input.placeholder} 
+                      required type={input.type} placeholder={input.placeholder} 
                       value={formData[input.key as keyof typeof formData]}
                       onChange={e => setFormData({...formData, [input.key]: e.target.value})}
-                      className="w-full pl-16 pr-8 py-6 bg-slate-950 rounded-[2rem] outline-none border border-white/5 focus:border-accentBlue/30 transition-all font-bold text-white placeholder:text-white/10" 
+                      className="w-full pl-16 pr-6 py-5 bg-white/[0.02] rounded-sm outline-none border border-white/5 focus:border-[#3b82f6]/30 focus:bg-white/[0.04] transition-all duration-300 font-bold text-[#eaeef6] placeholder:text-white/10 text-xs uppercase tracking-widest" 
                     />
                   </div>
                 ))}
               </div>
 
-              <button
-                disabled={!formData.nombre || !formData.email || !formData.whatsapp}
+              <motion.button
+                disabled={!formData.nombre || !formData.email.includes('@') || formData.whatsapp.length < 8}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setStep(3)}
-                className="w-full mt-8 py-6 bg-white text-darkNavy font-black rounded-2xl transition-all shadow-xl hover:bg-accentBlue hover:text-white uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-4 group disabled:opacity-50"
+                className="w-full py-6 bg-[#3b82f6] text-white font-bold rounded-sm transition-all shadow-[0_0_40px_rgba(59,130,246,0.1)] eyebrow !text-[10px] flex items-center justify-center gap-4 group disabled:opacity-20 disabled:cursor-not-allowed"
               >
-                Revisar selección <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
+                CONTINUAR <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </motion.button>
             </motion.div>
           )}
 
           {step === 3 && (
             <motion.div 
               key="step3"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               className="space-y-10"
             >
-              <header className="text-center space-y-4">
-                <div className="w-20 h-20 bg-accentBlue/10 rounded-full flex items-center justify-center mx-auto border border-accentBlue/20">
-                   <CheckCircle className="w-10 h-10 text-accentBlue" />
+              <div className="bg-[#0e1419] border border-white/5 rounded-sm p-10 space-y-10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-5">
+                   <CheckCircle className="w-32 h-32 text-white" />
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic">Confirmación</h3>
-                  <p className="text-white/20 font-black uppercase text-[10px] tracking-[0.4em]">Resumen de tu selección</p>
-                </div>
-              </header>
 
-              <div className="bg-slate-900/50 backdrop-blur-xl p-8 rounded-[3rem] space-y-8 border border-white/5 shadow-[inner_0_0_40px_rgba(0,0,0,0.5)]">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-[0.4em] text-white/20">
-                    <span>Sincronización</span>
-                    <span className="text-accentBlue">Activa</span>
+                <div className="space-y-2 relative z-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="eyebrow !text-green-500">RESERVA LISTA</span>
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex justify-between items-end">
-                      <p className="text-3xl font-black text-white italic tracking-tighter uppercase">{new Date(selectedDate || '').toLocaleDateString('es', { day: 'numeric', month: 'long' })}</p>
-                      <p className="text-xl font-black text-accentBlue italic">{selectedTime}HS</p>
-                    </div>
-                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{formData.nombre}</p>
-                  </div>
+                  <h2 className="heading-md !text-white leading-none">DATOS DE TU TURNO</h2>
+                  <p className="body-text !text-sm mt-4">Confirmá los detalles para finalizar el proceso.</p>
                 </div>
 
-                <div className="h-px bg-white/5 w-full" />
+                <div className="grid grid-cols-2 gap-8 border-y border-white/5 py-8 relative z-10">
+                   <div className="space-y-1">
+                      <p className="eyebrow !text-[#43484e] !text-[8px]">FECHA</p>
+                      <p className="heading-sm !text-lg !text-white">
+                        {new Date(selectedDate || '').toLocaleDateString('es', { day: 'numeric', month: 'long' }).toUpperCase()}
+                      </p>
+                   </div>
+                   <div className="space-y-1">
+                      <p className="eyebrow !text-[#43484e] !text-[8px]">HORARIO</p>
+                      <p className="heading-sm !text-lg !text-white">{selectedTime}HS</p>
+                   </div>
+                   <div className="col-span-full pt-4">
+                      <p className="eyebrow !text-[#43484e] !text-[8px]">PACIENTE</p>
+                      <p className="heading-sm !text-lg !text-white uppercase">{formData.nombre}</p>
+                   </div>
+                </div>
 
-                <div className="bg-white p-8 rounded-[2.5rem] flex items-center justify-between shadow-[0_20px_50px_rgba(0,0,0,0.3)] group hover:scale-[1.02] transition-transform">
+                <div className="bg-[#3b82f6]/5 border border-[#3b82f6]/20 p-8 rounded-sm flex items-center justify-between relative z-10 shadow-[0_0_40px_rgba(59,130,246,0.05)]">
                   <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-darkNavy/40">Seña de Compromiso</p>
-                    <p className="text-[9px] font-bold text-darkNavy/20 uppercase">Bloqueo inmediato del turno</p>
+                    <p className="eyebrow !text-[#3b82f6] !text-[8px]">SEÑA</p>
+                    <p className="body-text !text-[10px] !text-[#3b82f6]/40 uppercase tracking-widest">Pago para confirmar el compromiso</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-4xl font-black tracking-tighter text-accentBlue">$2.500</p>
-                  </div>
+                  <p className="stat-val !text-4xl text-white italic tracking-tighter">$5.000</p>
                 </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-7 bg-white/5 rounded-[2.5rem] border border-white/5">
-                <div className="w-10 h-10 rounded-2xl bg-accentBlue/10 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5 text-accentBlue" />
-                </div>
-                <div className="space-y-1">
-                   <p className="text-[10px] font-black text-white uppercase tracking-widest">Protocolo Anti-Ausencias</p>
-                   <p className="text-[10px] text-white/30 font-medium leading-relaxed italic">
-                     Para garantizar la excelencia en la atención, el turno se confirma únicamente tras el pago de la seña. Si no se completa la transacción, el horario permanecerá disponible para otros pacientes.
-                   </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-6 bg-accentBlue/5 rounded-[2rem] border border-accentBlue/10">
-                <AlertCircle className="w-5 h-5 text-accentBlue mt-1 shrink-0" />
-                <p className="text-[11px] text-white/40 font-bold leading-relaxed italic">
-                  El sistema bloqueará el turno automáticamente al confirmar el pago. Recibirás las instrucciones en tu email.
-                </p>
               </div>
 
               <div className="flex gap-4">
-                <button onClick={() => setStep(2)} className="flex-1 py-6 bg-transparent border border-white/10 text-white/20 font-black rounded-[2rem] uppercase tracking-widest text-[10px] hover:text-white transition-all">
-                  Corregir
+                <button onClick={() => setStep(2)} className="flex-1 py-5 border border-white/10 text-white/30 eyebrow !text-[9px] hover:text-white hover:bg-white/5 transition-all">
+                   CORREGIR
                 </button>
                 <button
                   onClick={handleBooking}
                   disabled={loading}
-                  className="flex-[2.5] py-7 bg-accentBlue text-white font-black rounded-[2rem] transition-all shadow-2xl shadow-accentBlue/20 uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-4 group"
+                  className="flex-[2] py-5 bg-[#3b82f6] text-white font-bold rounded-sm transition-all shadow-[0_0_60px_rgba(59,130,246,0.1)] hover:bg-[#2563eb] eyebrow !text-[10px] flex items-center justify-center gap-4 group"
                 >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> Confirmar en Mercado Pago</>}
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "RESERVAR Y PAGAR"}
                 </button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
     </div>
   );
 }

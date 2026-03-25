@@ -35,23 +35,20 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
               className="absolute inset-0 bg-black/80 backdrop-blur-md"
             />
             <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              initial={{ scale: 0.9, opacity: 0, y: 30 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-4xl max-h-[90vh] bg-cardDark border border-white/10 rounded-[3rem] shadow-2xl p-8 md:p-12 overflow-y-auto custom-scrollbar"
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-2xl max-h-[95vh] bg-[#0B1120]/60 border border-white/5 rounded-sm shadow-3xl p-6 md:p-10 overflow-y-auto custom-scrollbar backdrop-blur-3xl"
             >
               <button 
                 onClick={closeTurnero}
-                className="absolute top-6 right-6 p-3 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all border border-white/10 z-50"
+                className="absolute top-4 right-4 p-3 bg-white/5 hover:bg-white hover:text-[#1B365D] rounded-sm text-white transition-all duration-500 border border-white/10 z-50 shadow-2xl group"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
               </button>
               
-              <div className="mb-10 text-center">
-                <h2 className="text-3xl md:text-5xl font-black uppercase italic text-white tracking-tighter">
-                    Reserva tu <span className="text-accentBlue">Sesión.</span>
-                </h2>
-                <p className="text-slate-500 text-sm font-black uppercase tracking-widest mt-2">Selecciona fecha y hora para tu consulta online</p>
+              <div className="mb-6 text-center">
+                <h2 className="text-2xl font-black uppercase tracking-tight text-white !mb-0">AGENDAR TURNO</h2>
               </div>
 
               <TurneroInteractivo />

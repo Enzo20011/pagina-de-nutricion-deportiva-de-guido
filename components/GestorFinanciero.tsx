@@ -30,7 +30,7 @@ export default function GestorFinanciero() {
   return (
     <div className="max-w-[1400px] mx-auto space-y-12 text-bone selection:bg-accentBlue/20">
       
-      {/* HEADER ELITE FINANCE */}
+      {/* HEADER PROFESSIONAL FINANCE */}
       <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -42,7 +42,7 @@ export default function GestorFinanciero() {
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase leading-[0.9] italic">
             Gestor <br />
-            <span className="text-accentBlue not-italic">Elite.</span>
+            <span className="text-accentBlue not-italic">Profesional.</span>
           </h1>
           <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest flex items-center gap-2">
             Mercado Pago & Cash Flow Sincronizado

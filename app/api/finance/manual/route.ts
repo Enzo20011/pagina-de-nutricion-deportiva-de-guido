@@ -1,26 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import dbConnect from '@/lib/mongodb';
 import Ingreso from '@/models/Ingreso';
 import { MetodoPago, EstadoPago, CategoriaPago } from '@/types/finance';
-import { z } from 'zod';
-
-// ─── AUTH GUARD ────────────────────────────────────────────────────────────────
-async function requireAuth() {
-  const session = await getServerSession();
-  if (!session) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-  }
-  return null;
-}
+import { getValidSession, unauthorizedResponse } from '@/lib/protectApi';
 
 // ─── INPUT VALIDATION ─────────────────────────────────────────────────────────
 import { manualPaymentSchema } from '@/lib/validations/finance';
 
 export async function POST(req: Request) {
-  // Auth check
-  const authError = await requireAuth();
-  if (authError) return authError;
+  const session = await getValidSession();
+  if (!session) return unauthorizedResponse();
 
   try {
     await dbConnect();

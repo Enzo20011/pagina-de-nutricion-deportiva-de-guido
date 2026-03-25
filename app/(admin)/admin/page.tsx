@@ -22,15 +22,17 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 
 export default function HomePage() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [formattedDate, setFormattedDate] = useState('');
   const [search, setSearch] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [notif, setNotif] = useState(3);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(timer);
+    setMounted(true);
+    setFormattedDate(new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }));
   }, []);
 
   // Simulación de autocompletado
@@ -49,40 +51,39 @@ export default function HomePage() {
   }, [search]);
 
   if (loading) return (
-    <div className="p-8 bg-navy-dark min-h-screen">
+    <div className="p-8 bg-[#0a0f14] min-h-screen">
       <DashboardSkeleton />
     </div>
   );
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-12 pb-20 text-bone">
+    <div className="max-w-[1200px] mx-auto space-y-12 pb-20 text-[#eaeef6] px-4 md:px-8">
       
       {/* HEADER SECTION */}
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-8">
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-3"
+          className="space-y-2"
         >
-          <div className="flex items-center gap-3 text-accentBlue font-bold uppercase text-[10px] tracking-[0.4em]">
-             <Sparkles className="w-4 h-4 opacity-50" /> Portal Profesional Elite · {new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          <div className="flex items-center gap-2 text-[#3b82f6] font-label text-[10px] uppercase tracking-[0.3em] font-bold">
+             <div className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] animate-pulse" /> {mounted ? formattedDate : ''}
           </div>
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase leading-[0.9] italic">
-            Panel de <span className="text-accentBlue not-italic">Control.</span>
+          <h1 className="text-4xl font-heading font-black text-white tracking-tight uppercase leading-none">
+            Resumen de <span className="text-[#3b82f6]">Actividad</span>
           </h1>
-          <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Próxima sesión: 16:30hs · Juan Díaz
+          <p className="text-[#a7abb2] font-label uppercase text-[9px] tracking-widest flex items-center gap-2">
+            Próximo paciente: 16:30hs · Juan Díaz
           </p>
         </motion.div>
 
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           className="flex items-center gap-4 w-full lg:w-auto"
         >
-          <div className="relative group flex-1 lg:w-[360px] lg:flex-none">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-accentBlue transition-colors" />
+          <div className="relative group flex-1 lg:w-[320px] lg:flex-none">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#a7abb2]/40 group-focus-within:text-[#3b82f6] transition-colors" />
             <input 
               type="text" 
               placeholder="Buscar paciente..." 
@@ -90,14 +91,14 @@ export default function HomePage() {
               onChange={e => setSearch(e.target.value)}
               onFocus={() => setShowSuggestions(search.length > 1)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-              className="pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-2xl focus:border-accentBlue/50 outline-none w-full transition-all font-semibold text-sm text-white placeholder:text-white/20 backdrop-blur-md"
+              className="pl-11 pr-4 py-3 bg-[#0e1419] border border-[#1f262e] rounded-sm focus:border-[#3b82f6]/50 outline-none w-full transition-all font-label uppercase tracking-widest text-[10px] text-white placeholder:text-[#a7abb2]/20"
               aria-label="Buscar paciente"
               autoComplete="off"
             />
             {showSuggestions && suggestions.length > 0 && (
-              <ul className="absolute left-0 top-full mt-2 w-full bg-darkNavy border border-white/10 rounded-2xl shadow-2xl z-20 overflow-hidden">
+              <ul className="absolute left-0 top-full mt-2 w-full bg-[#0e1419] border border-[#1f262e] rounded-sm shadow-2xl z-30 overflow-hidden">
                 {suggestions.map((s, i) => (
-                  <li key={i} className="px-5 py-3 text-white hover:bg-accentBlue/10 cursor-pointer text-sm font-semibold transition-colors" onMouseDown={() => { setSearch(s); setShowSuggestions(false); }}>
+                  <li key={i} className="px-5 py-3 text-[#a7abb2] hover:bg-[#1a2027] hover:text-[#3b82f6] cursor-pointer text-[9px] font-label font-bold uppercase tracking-widest transition-colors border-b border-[#1f262e] last:border-0" onMouseDown={() => { setSearch(s); setShowSuggestions(false); }}>
                     {s}
                   </li>
                 ))}
@@ -105,125 +106,133 @@ export default function HomePage() {
             )}
           </div>
           <motion.button
-            whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(59,130,246,0.4)" }}
-            whileTap={{ scale: 0.97 }}
-            className="shrink-0 flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-accentBlue/20 border border-accentBlue/30 text-accentBlue text-xs font-black uppercase tracking-widest hover:bg-accentBlue hover:text-white transition-all"
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            className="shrink-0 flex items-center gap-3 px-6 py-3 rounded-sm bg-[#3b82f6] text-white text-[10px] font-label font-bold uppercase tracking-[0.2em] shadow-lg shadow-[#3b82f6]/10 hover:bg-[#3b82f6]/90 transition-all"
           >
-            <Plus className="w-4 h-4" /> Nuevo
+            <Plus className="w-4 h-4" /> Nuevo Registro
           </motion.button>
           {notif > 0 && (
             <div className="relative shrink-0">
-              <div className="w-11 h-11 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center">
-                <Activity className="w-5 h-5 text-white/40" />
+              <div className="w-11 h-11 bg-[#0e1419] border border-[#1f262e] rounded-sm flex items-center justify-center">
+                <Activity className="w-4 h-4 text-[#a7abb2]/40" />
               </div>
-              <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[9px] font-black rounded-full w-5 h-5 flex items-center justify-center shadow-lg border border-darkNavy">{notif}</span>
+              <span className="absolute -top-1 -right-1 bg-[#3b82f6] text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#0a0f14]">{notif}</span>
             </div>
           )}
         </motion.div>
       </header>
 
       {/* STATS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 md:gap-8">
         {[
-          { label: 'Pacientes', value: 128, growth: '+12%', trend: '+5.2%', trendLabel: 'vs mes anterior', icon: Users, accent: false, spark: [110, 115, 120, 128], href: '/admin/pacientes' },
-          { label: 'Turnos Hoy', value: 8, growth: 'Próximo: 16:30', trend: '+2', trendLabel: 'promedio diario', icon: Calendar, accent: true, spark: [5, 7, 6, 8], href: '/admin/agenda' },
-          { label: 'Actividad', value: 94, growth: 'Escala Max', trend: '+14%', trendLabel: 'uso del sistema', icon: Zap, accent: false, spark: [80, 85, 90, 94], href: '/admin' },
-          { label: 'Evolución', value: 18.2, growth: 'Objetivo OK', trend: '+3.1%', trendLabel: 'crecimiento anual', icon: TrendingUp, accent: false, spark: [10, 12, 15, 18.2], href: '/admin/finanzas' },
+          { label: 'Pacientes Totales', value: 128, growth: '+12%', trend: '+5.2%', trendLabel: 'Eficiencia', icon: Users, accent: false, spark: [110, 115, 120, 128], href: '/admin/pacientes' },
+          { label: 'Agenda de Hoy', value: 8, growth: 'Próximo: 16:30', trend: '+2', trendLabel: 'Sesiones', icon: Calendar, accent: true, spark: [5, 7, 6, 8], href: '/admin/agenda' },
+          { label: 'Estado Sistema', value: 94, growth: 'Operativo', trend: 'ACTIVO', trendLabel: 'Tiempo Real', icon: Zap, accent: false, spark: [80, 85, 90, 94], href: '/admin' },
+          { label: 'Crecimiento', value: 18.2, growth: 'Sostenible', trend: '+3.1%', trendLabel: 'Anual', icon: TrendingUp, accent: false, spark: [10, 12, 15, 18.2], href: '/admin/finanzas' },
         ].map((stat, i) => (
           <motion.div 
             key={i}
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            whileHover={{ y: -8, scale: 1.02, transition: { duration: 0.3 } }}
-            className={`rounded-3xl backdrop-blur-3xl border border-white/5 shadow-2xl relative overflow-hidden group transition-all duration-500 ${
+            transition={{ delay: i * 0.05, duration: 0.5 }}
+            whileHover={{ y: -5 }}
+            className={clsx(
+              "rounded-sm border p-4 md:p-5 transition-all duration-300 relative overflow-hidden group h-full flex flex-col justify-between",
               stat.accent 
-                ? 'bg-accentBlue/90 shadow-[0_20px_60px_-15px_rgba(59,130,246,0.4)] text-white border-white/20' 
-                : 'bg-cardDark/40 text-bone hover:border-white/20 hover:bg-cardDark/60'
-            }`}
+                ? "bg-[#3b82f6] border-[#3b82f6] text-white" 
+                : "bg-[#0e1419] border-[#1f262e] text-[#eaeef6] hover:border-[#3b82f6]/30"
+            )}
           >
-            <Link href={stat.href} className="p-6 lg:p-8 block w-full h-full">
-              {/* Dynamic Background Glow */}
-              {!stat.accent && (
-                <div className="absolute top-0 right-0 w-32 h-32 bg-accentBlue/5 rounded-full blur-[60px] group-hover:bg-accentBlue/10 transition-colors" />
-              )}
-
-              <div className={`w-14 h-14 ${stat.accent ? 'bg-white/20 text-white' : 'bg-darkNavy text-accentBlue'} rounded-xl flex items-center justify-center mb-6 transition-all group-hover:scale-110 duration-500 shadow-xl border-2 border-accentBlue/20`}>
-                <stat.icon className="w-7 h-7 drop-shadow-[0_0_8px_rgba(59,130,246,0.15)]" />
+            <Link href={stat.href} className="flex flex-col h-full gap-6">
+              <div className={clsx(
+                "w-10 h-10 rounded-sm flex items-center justify-center transition-all",
+                stat.accent ? "bg-white/10 text-white" : "bg-[#1f262e] text-[#3b82f6]"
+              )}>
+                <stat.icon className="w-5 h-5" />
               </div>
-              {/* Sparkline */}
-              <div className="absolute bottom-6 right-6">
-                <Sparkline data={stat.spark} color={stat.accent ? '#fff' : '#3B82F6'} />
+              
+              <div className="space-y-1">
+                <p className={clsx(
+                  "font-label text-[8px] font-bold uppercase tracking-[0.2em]",
+                  stat.accent ? "text-white/60" : "text-[#a7abb2]"
+                )}>{stat.label}</p>
+                <div className="flex items-baseline gap-2">
+                  <h3 className="text-3xl font-heading font-black tracking-tight leading-none">{stat.value}</h3>
+                  {stat.label === 'Crecimiento' && <span className="text-sm font-bold opacity-40">%</span>}
+                </div>
               </div>
-              <div className="space-y-2">
-                <p className={`text-[11px] font-black uppercase tracking-[0.4em] ${stat.accent ? 'text-white/70' : 'text-accentBlue/80'}`}>{stat.label}</p>
-                <h3 className={`text-4xl lg:text-5xl font-black tracking-tighter font-outfit ${stat.accent ? 'text-white' : 'text-white'}`}>{stat.value}{stat.label === 'Evolución' && <span className="text-base font-bold opacity-40 ml-1">%</span>}</h3>
-                  <div className="flex flex-col gap-2 pt-2">
-                    <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border-2 ${stat.accent ? 'bg-white/10 text-white border-white/20' : 'bg-accentBlue/10 text-accentBlue border-accentBlue/20'}`}>
-                        {stat.growth}
-                      </span>
-                      {!stat.accent && <ArrowRight className="w-4 h-4 text-accentBlue/40 group-hover:text-accentBlue translate-x-[-10px] opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300" />}
-                    </div>
-                    <p className={`text-[9px] font-bold uppercase tracking-wider ${stat.accent ? 'text-white/40' : 'text-slate-500'}`}>
-                      <span className={stat.accent ? 'text-white' : 'text-emerald-500'}>{stat.trend}</span> {stat.trendLabel}
-                    </p>
-                  </div>
+              
+              <div className="space-y-4">
+                 <div className="flex justify-between items-center">
+                    <span className={clsx(
+                      "px-2 py-0.5 rounded-sm text-[7px] font-label font-bold uppercase tracking-widest border",
+                      stat.accent ? "bg-white/10 border-white/20 text-white" : "bg-[#1f262e] border-[#1a2027] text-[#3b82f6]"
+                    )}>
+                      {stat.growth}
+                    </span>
+                    <Sparkline data={stat.spark} color={stat.accent ? '#ffffff' : '#3b82f6'} />
+                 </div>
+                 <p className={clsx(
+                   "font-label text-[7px] uppercase tracking-[0.1em] font-bold",
+                   stat.accent ? "text-white/40" : "text-[#43484e]"
+                 )}>
+                   <span className={stat.accent ? "text-white" : "text-[#a7abb2]"}>{stat.trend}</span> {stat.trendLabel}
+                 </p>
               </div>
             </Link>
           </motion.div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* RECENT SESIONS */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="xl:col-span-2 bg-cardDark/40 p-8 rounded-[2rem] backdrop-blur-3xl border border-white/5 shadow-2xl space-y-8"
+          className="xl:col-span-2 bg-[#0e1419] p-6 md:p-10 rounded-sm border border-[#1f262e] space-y-8"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-4">
-              <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
-              <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic">
-                Próximas <span className="text-accentBlue not-italic">Sesiones</span>
+              <div className="w-2 h-2 rounded-full bg-[#3b82f6] animate-pulse" />
+              <h2 className="text-2xl font-heading font-black text-white tracking-tight uppercase">
+                Próximas <span className="text-[#3b82f6]">Sesiones</span>
               </h2>
             </div>
-            <Link href="/admin/agenda" className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] hover:text-accentBlue transition-colors border-b border-transparent hover:border-accentBlue pb-1">Ver Agenda Full</Link>
+            <Link href="/admin/agenda" className="text-[9px] font-label font-bold text-[#a7abb2] uppercase tracking-[0.2em] hover:text-[#3b82f6] transition-all border-b border-[#1f262e] pb-1">Ver Calendario</Link>
           </div>
           
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4">
             {[
-              { id: '1', paciente: 'Juan Díaz', hora: '16:30HS', tipo: 'Control Antropométrico', status: 'Activa' },
-              { id: '2', paciente: 'Maria Silva', hora: '17:45HS', tipo: 'Plan Alimentario', status: 'Aceptada' },
-              { id: '3', paciente: 'Carlos Ruiz', hora: '19:00HS', tipo: 'Primera Consulta', status: 'Activa' },
+              { id: '1', paciente: 'Juan Díaz', hora: '16:30HS', tipo: 'Control Nutricional', status: 'Activa' },
+              { id: '2', paciente: 'Maria Silva', hora: '17:45HS', tipo: 'Seguimiento Deportivo', status: 'Aceptada' },
+              { id: '3', paciente: 'Carlos Ruiz', hora: '19:00HS', tipo: 'Evaluación Inicial', status: 'Activa' },
             ].map((session, i) => (
                 <motion.div 
                   key={i}
-                  whileHover={{ x: 5, backgroundColor: "rgba(30, 41, 59, 0.8)" }}
-                  className="p-6 bg-darkNavy/50 rounded-2xl border border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6 group transition-all"
+                  className="p-6 bg-[#141a20]/40 rounded-sm border border-[#1f262e] flex flex-col sm:flex-row sm:items-center justify-between gap-6 group hover:border-[#3b82f6]/20 transition-all"
                 >
                   <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-darkNavy text-accentBlue rounded-xl flex items-center justify-center font-black text-xl italic shadow-inner border border-white/5 group-hover:bg-accentBlue group-hover:text-white transition-all">
+                    <div className="w-14 h-14 bg-[#1f262e] text-[#3b82f6] rounded-sm flex items-center justify-center font-heading font-black text-xl border border-[#3b82f6]/10 group-hover:bg-[#3b82f6] group-hover:text-white transition-all duration-300">
                       {session.paciente.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div>
-                      <p className="text-[10px] text-accentBlue font-bold uppercase tracking-[0.4em] mb-1.5">{session.hora} - {session.tipo}</p>
-                      <h4 className="text-xl font-black text-white tracking-tight italic uppercase">{session.paciente}</h4>
+                      <p className="text-[8px] text-[#a7abb2] font-label font-bold uppercase tracking-widest mb-1">{session.hora} · {session.tipo}</p>
+                      <h4 className="text-xl font-heading font-black text-white tracking-tight uppercase">{session.paciente}</h4>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 text-[10px] font-bold uppercase tracking-widest text-white/50 hover:text-white hover:bg-white/10 transition-colors">
+                    <button className="flex items-center gap-2 px-5 py-3 rounded-sm border border-[#1f262e] text-[9px] font-label font-bold uppercase tracking-widest text-[#a7abb2] hover:text-[#eaeef6] hover:bg-[#1a2027] transition-all">
                       <FileText className="w-3.5 h-3.5" /> Ficha
                     </button>
                     <button className={clsx(
-                      "px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all flex items-center gap-2",
+                      "px-6 py-3 rounded-sm text-[9px] font-label font-bold tracking-widest uppercase transition-all flex items-center gap-2",
                       session.status === 'Activa' 
-                        ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' 
-                        : 'bg-accentBlue/20 text-accentBlue hover:bg-accentBlue hover:text-white'
+                        ? "bg-[#3b82f6] text-white hover:bg-[#3b82f6]/90 shadow-lg shadow-[#3b82f6]/10" 
+                        : "bg-[#1f262e] text-[#43484e] border border-[#1a2027]"
                     )}>
-                      {session.status === 'Activa' ? <><Play className="w-3.5 h-3.5" /> Iniciar</> : 'Aceptada'}
+                      {session.status === 'Activa' ? <><Play className="w-3.5 h-3.5" /> Iniciar</> : 'Pendiente'}
                     </button>
                   </div>
                 </motion.div>
@@ -235,54 +244,49 @@ export default function HomePage() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-accentBlue p-8 rounded-[2rem] text-white shadow-[0_20px_50px_-10px_rgba(59,130,246,0.3)] relative overflow-hidden flex flex-col justify-between"
+          transition={{ delay: 0.1 }}
+          className="bg-white p-10 rounded-sm text-[#0a0f14] shadow-2xl relative overflow-hidden flex flex-col justify-between h-full"
         >
-          {/* Decorative Background */}
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/20 blur-[80px] rounded-full pointer-events-none" />
-          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-3xl font-black tracking-tighter uppercase italic mb-0">Accesos <br/> Rápidos.</h2>
-                <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-md">
+            <div className="flex items-center justify-between mb-10">
+                <div className="flex flex-col">
+                  <h2 className="text-2xl font-heading font-black tracking-tight uppercase leading-none">Accesos</h2>
+                  <h2 className="text-2xl font-heading font-black tracking-tight uppercase text-[#0a0f14]/30">Rápidos</h2>
+                </div>
+                <div className="w-12 h-12 bg-[#0a0f14] text-white rounded-sm flex items-center justify-center">
                    <Zap className="w-6 h-6" />
                 </div>
             </div>
 
-            <div className="space-y-4">
-                  <Link href="/admin/pacientes/nuevo" className="p-6 bg-white/10 hover:bg-white/20 rounded-2xl flex items-center gap-4 transition-all group border border-white/10 backdrop-blur-md">
-                    <div className="w-12 h-12 bg-white/20 text-white rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Plus className="w-6 h-6" />
+            <div className="space-y-3">
+                  <Link href="/admin/pacientes/nuevo" className="p-5 bg-[#0a0f14]/5 hover:bg-[#0a0f14] hover:text-white rounded-sm flex items-center gap-5 transition-all group border border-[#0a0f14]/10">
+                    <div className="w-10 h-10 bg-[#0a0f14] text-white rounded-sm flex items-center justify-center group-hover:bg-white group-hover:text-[#0a0f14] transition-all">
+                      <Plus className="w-5 h-5" />
                     </div>
-                    <span className="text-lg font-black uppercase tracking-widest italic">Alta Paciente</span>
+                    <span className="text-[10px] font-label font-bold uppercase tracking-widest">Alta de Paciente</span>
                   </Link>
-                  <Link href="/admin/agenda" className="p-6 bg-white/10 hover:bg-white/20 rounded-2xl flex items-center gap-4 transition-all group border border-white/10 backdrop-blur-md">
-                    <div className="w-12 h-12 bg-white/20 text-white rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Calendar className="w-6 h-6" />
+                  <Link href="/admin/agenda" className="p-5 bg-[#0a0f14]/5 hover:bg-[#0a0f14] hover:text-white rounded-sm flex items-center gap-5 transition-all group border border-[#0a0f14]/10">
+                    <div className="w-10 h-10 bg-[#0a0f14] text-white rounded-sm flex items-center justify-center group-hover:bg-white group-hover:text-[#0a0f14] transition-all">
+                      <Calendar className="w-5 h-5" />
                     </div>
-                    <span className="text-lg font-black uppercase tracking-widest italic">Calendario</span>
+                    <span className="text-[10px] font-label font-bold uppercase tracking-widest">Calendario</span>
                   </Link>
-                  <Link href="/admin/finanzas" className="p-6 bg-white/10 hover:bg-white/20 rounded-2xl flex items-center gap-4 transition-all group border border-white/10 backdrop-blur-md">
-                    <div className="w-12 h-12 bg-white/20 text-white rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <TrendingUp className="w-6 h-6" />
+                  <Link href="/admin/finanzas" className="p-5 bg-[#0a0f14]/5 hover:bg-[#0a0f14] hover:text-white rounded-sm flex items-center gap-5 transition-all group border border-[#0a0f14]/10">
+                    <div className="w-10 h-10 bg-[#0a0f14] text-white rounded-sm flex items-center justify-center group-hover:bg-white group-hover:text-[#0a0f14] transition-all">
+                      <TrendingUp className="w-5 h-5" />
                     </div>
-                    <span className="text-lg font-black uppercase tracking-widest italic">Facturación</span>
+                    <span className="text-[10px] font-label font-bold uppercase tracking-widest">Ingresos</span>
                   </Link>
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* MOTOR CLÍNICO NUTRICIONAL */}
-      <div className="pt-10">
-        <h2 className="text-xl font-black text-white mb-8 uppercase tracking-tighter flex items-center gap-3 px-4">
-          <Activity className="w-6 h-6 text-accentBlue" /> Motor Clínico Nutricional
-        </h2>
-        <div className="bg-white/5 p-1 rounded-[3rem] border border-white/5 overflow-hidden">
-             <div className="bg-navy-dark rounded-[2.8rem] p-8 min-h-[400px]">
-                <p className="text-slate-500 text-center py-20 font-bold uppercase tracking-widest text-xs">Cargando Herramientas Clínicas...</p>
-             </div>
+      {/* FOOTER INDICATOR */}
+      <div className="pt-20 text-center">
+        <div className="inline-flex items-center gap-3 px-6 py-3 bg-[#0e1419] border border-[#1f262e] rounded-sm">
+           <div className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
+           <p className="text-[#a7abb2] font-label font-bold uppercase tracking-[0.3em] text-[8px]">Sistema de Sincronización Profesional Activo</p>
         </div>
       </div>
 

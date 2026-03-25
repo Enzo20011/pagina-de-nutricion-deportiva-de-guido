@@ -1,50 +1,73 @@
-"use client";
+import { motion } from "framer-motion";
 import { Instagram, Mail, ArrowRight } from "lucide-react";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { SpotlightCard } from "./ui/SpotlightCard";
+import Link from 'next/link';
+import Image from 'next/image';
 
 export default function HomeMiniSobreMi() {
-  const { scrollYProgress } = useScroll();
-  const yPic = useTransform(scrollYProgress, [0, 1], ["0%", "25%"]);
-
   return (
-    <SpotlightCard className="w-full max-w-5xl mx-auto py-16 px-6 flex flex-col md:flex-row items-center gap-12 bg-cardDark/40 rounded-[3rem] border border-white/5 backdrop-blur-3xl shadow-2xl my-12 group">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-accentBlue/5 rounded-full blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-      
-      <div className="flex-shrink-0 flex flex-col items-center relative z-10 w-32 md:w-40 perspective-[1000px]">
-        <motion.div 
-          style={{ y: yPic }}
-          className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-[6px] border-darkNavy shadow-2xl shadow-accentBlue/20 mb-6 group-hover:scale-105 transition-transform duration-500"
+    <section className="bg-[#0e1419] py-16 px-8">
+      <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        
+        {/* Photo placeholder */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="relative aspect-square rounded-sm overflow-hidden max-w-sm border border-[#1f262e] group shadow-2xl"
+          style={{ boxShadow: "0 0 60px rgba(59,130,246,0.06)" }}
         >
-          <img src="/assets/guido.jpg" alt="Guido Martin Operuk" className="object-cover w-full h-full brightness-110 scale-[1.15]" />
+          <Image 
+            src="/guido_portrait_professional.png"
+            alt="Lic. Guido Operuk"
+            fill
+            className="object-cover object-top transition-all duration-700"
+          />
+          {/* Corner accents */}
+          <div className="absolute top-0 left-0 w-8 h-8 border-t border-l border-[#3b82f6]/30 z-20" />
+          <div className="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-[#3b82f6]/30 z-20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0e1419] via-transparent to-transparent z-10 opacity-60" />
         </motion.div>
-        <span className="text-sm font-black uppercase tracking-[0.3em] text-accentBlue italic">Lic. Guido M. Operuk</span>
-      </div>
 
-      <div className="flex-1 text-center md:text-left space-y-6 relative z-10">
-        <div className="space-y-2">
-          <h4 className="text-xs font-black text-accentBlue uppercase tracking-[0.5em]">El Profesional Detrás</h4>
-          <h3 className="text-3xl md:text-5xl font-black text-white uppercase italic tracking-tighter leading-none">Pasión, Ciencia <br/> & Compromiso.</h3>
-        </div>
-        
-        <p className="text-slate-400 text-lg font-medium leading-relaxed max-w-xl italic">
-          "Mi enfoque no se basa solo en dietas, sino en sistemas de alimentación optimizados para la biología y el rendimiento humano."
-        </p>
-        
-        <div className="flex flex-wrap gap-6 justify-center md:justify-start pt-4 items-center">
-            <div className="flex gap-4">
-                <a href="https://www.instagram.com/lic.guidooperuk/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-white/5 hover:bg-accentBlue text-white rounded-xl flex items-center justify-center transition-all border border-white/10 shadow-lg">
-                    <Instagram className="w-5 h-5" />
-                </a>
-                <a href="mailto:guido@email.com" className="w-10 h-10 bg-white/5 hover:bg-accentBlue text-white rounded-xl flex items-center justify-center transition-all border border-white/10 shadow-lg">
-                    <Mail className="w-5 h-5" />
-                </a>
+        {/* Content */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.1 }}
+          className="space-y-6"
+        >
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="w-2 h-2 rounded-full bg-[#3b82f6]" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#a7abb2]">LA MISIÓN</span>
             </div>
-            <a href="/sobre-mi" className="text-[10px] font-black uppercase tracking-[0.4em] text-accentBlue hover:text-white flex items-center gap-3 transition-colors group/btn">
-                Ver perfil completo <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-2 transition-transform" />
+            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight leading-[0.9] text-white mb-6">
+              EVOLUCIÓN,<br />
+              CIENCIA &<br />
+              <span className="text-[#3b82f6]">RESULTADOS</span>
+            </h2>
+            <p className="text-sm text-[#a7abb2] border-l border-[#3b82f6]/30 pl-5 italic font-medium leading-relaxed">
+              "Especialista en nutrición deportiva avanzada. Mi enfoque combina la bioquímica aplicada con la practicidad necesaria en el campo de entrenamiento."
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 pt-4">
+            <a href="https://www.instagram.com/lic.guidooperuk/" target="_blank" rel="noopener noreferrer"
+              className="w-10 h-10 bg-[#1a2027] hover:bg-[#3b82f6] text-[#a7abb2] hover:text-white rounded-sm flex items-center justify-center border border-[#2a3040] transition-all duration-300">
+              <Instagram className="w-4 h-4" />
             </a>
-        </div>
+            <a href="mailto:guido@email.com"
+              className="w-10 h-10 bg-[#1a2027] hover:bg-[#3b82f6] text-[#a7abb2] hover:text-white rounded-sm flex items-center justify-center border border-[#2a3040] transition-all duration-300">
+              <Mail className="w-4 h-4" />
+            </a>
+            <Link href="/sobre-mi"
+              className="flex items-center gap-2 font-bold text-[10px] tracking-[0.2em] uppercase text-[#3b82f6] hover:text-white transition-all group ml-4">
+              PERFIL COMPLETO <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+        </motion.div>
       </div>
-    </SpotlightCard>
+    </section>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar as CalendarIcon, User, Mail, Phone, CheckCircle2, ChevronRight, ChevronLeft, CreditCard, Clock } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
@@ -71,8 +71,8 @@ function WizardProgress({ step }: { step: number }) {
               <motion.div
                 animate={{
                   scale: isActive ? 1.15 : 1,
-                  backgroundColor: isCompleted ? '#22c55e' : isActive ? '#3b82f6' : 'rgba(255,255,255,0.05)',
-                  borderColor: isCompleted ? '#22c55e' : isActive ? '#3b82f6' : 'rgba(255,255,255,0.1)',
+                  backgroundColor: isCompleted ? '#3b82f6' : isActive ? '#3b82f6' : 'rgba(255,255,255,0.05)',
+                  borderColor: isCompleted ? '#3b82f6' : isActive ? '#3b82f6' : 'rgba(255,255,255,0.1)',
                   boxShadow: isActive ? '0 0 20px rgba(59,130,246,0.6)' : 'none',
                 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 25 }}
@@ -104,6 +104,7 @@ const TurneroModerno = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+  const [sessionId] = useState(() => typeof window !== 'undefined' ? (window as any).crypto?.randomUUID() : 'ssr-session');
   const [loading, setLoading] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
@@ -112,22 +113,121 @@ const TurneroModerno = () => {
     '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'
   ];
 
-  const handleNext = () => {
+  const nextMonths = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: 6 }).map((_, i) => {
+      const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+      return {
+        id: d.getMonth(),
+        year: d.getFullYear(),
+        name: format(d, 'MMMM', { locale: es }),
+        date: d
+      };
+    });
+  }, []);
+
+  const daysInMonth = useMemo(() => {
+    if (!date) return [];
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    return Array.from({ length: totalDays }).map((_, i) => {
+      return new Date(year, month, i + 1);
+    });
+  }, [date]);
+
+  const handleNext = async () => {
     if (step === 1) {
-      // Simulate fetching availability
-      setLoadingSlots(true);
-      setTimeout(() => setLoadingSlots(false), 1200);
+      if (!date || !selectedTime) { /* wait, selectedTime is in step 2 */ }
+      setStep(2);
+      return;
     }
+
+    if (step === 2) {
+      if (!date || !selectedTime) return;
+      setLoadingSlots(true);
+      try {
+        const res = await fetch('/api/appointments/lock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            fecha: format(date, 'yyyy-MM-dd'), 
+            hora: selectedTime, 
+            sessionId 
+          }),
+        });
+        if (!res.ok) {
+           const err = await res.json();
+           alert(err.error || 'Error al bloquear turno');
+           return;
+        }
+        setStep(3);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingSlots(false);
+      }
+      return;
+    }
+
     setStep((s) => Math.min(s + 1, 4));
   };
+
   const handleBack = () => setStep((s) => Math.max(s - 1, 1));
 
   const handleConfirm = async () => {
     setLoading(true);
-    setTimeout(() => {
+    try {
+      // 1. Create the Reservation Draft
+      const reserveRes = await fetch('/api/appointments/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData, // name, email, phone
+          fecha: format(date!, 'yyyy-MM-dd'),
+          hora: selectedTime,
+          sessionId
+        }),
+      });
+
+      if (!reserveRes.ok) {
+        const err = await reserveRes.json();
+        alert(err.error || 'Error al crear reserva');
+        setLoading(false);
+        return;
+      }
+
+      const { reservaId } = await reserveRes.json();
+
+      // 2. Initiate Checkout
+      const checkoutRes = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          date: format(date!, 'yyyy-MM-dd'),
+          reservaId,
+          monto: 5000 // Seña
+        }),
+      });
+
+      if (!checkoutRes.ok) {
+        const err = await checkoutRes.json();
+        alert(err.error || 'Error en pasarela de pago');
+        setLoading(false);
+        return;
+      }
+
+      const { url } = await checkoutRes.json();
+      
+      // 3. Redirect to Simulation / Payment
+      window.location.href = url;
+
+    } catch (error) {
+      console.error('Checkout error:', error);
       setLoading(false);
-      setStep(5);
-    }, 1500);
+    }
   };
 
   const inputStyles = "w-full px-5 py-4 rounded-2xl border-2 border-white/5 focus:border-accentBlue focus:outline-none transition-all duration-300 bg-white/5 text-white placeholder:text-white/20";
@@ -150,7 +250,7 @@ const TurneroModerno = () => {
       <div className="p-10 relative z-10">
         <AnimatePresence mode="wait">
 
-          {/* STEP 1 — Fecha (Rediseñado Elite) */}
+          {/* STEP 1 — Fecha (Rediseñado Avanzado) */}
           {step === 1 && (
             <motion.div
               key="step1"
@@ -163,23 +263,18 @@ const TurneroModerno = () => {
                 <h4 className="text-4xl font-black mb-3 italic tracking-tight uppercase leading-none">
                   Elige tu <span className="text-accentBlue not-italic">Momento.</span>
                 </h4>
-                <p className="text-white/30 text-[10px] font-black uppercase tracking-[0.4em]">Protocolo de Reserva Elite</p>
+                <p className="text-white/30 text-[10px] font-black uppercase tracking-[0.4em]">Protocolo de Reserva Avanzado</p>
               </div>
 
               {/* ── CUSTOM MONTH SELECTOR ── */}
               <div className="flex justify-center gap-8 mb-12 border-b border-white/5 pb-6 w-full overflow-x-auto no-scrollbar">
-                {[
-                  { id: 2, name: 'Marzo' },
-                  { id: 3, name: 'Abril' },
-                  { id: 4, name: 'Mayo' }
-                ].map((m) => {
-                  const isSelected = date?.getMonth() === m.id;
+                {nextMonths.map((m) => {
+                  const isSelected = date?.getMonth() === m.id && date?.getFullYear() === m.year;
                   return (
                     <button
-                      key={m.id}
+                      key={`${m.year}-${m.id}`}
                       onClick={() => {
-                        const newDate = new Date();
-                        newDate.setMonth(m.id);
+                        const newDate = new Date(m.year, m.id, 1);
                         setDate(newDate);
                       }}
                       className={clsx(
@@ -201,12 +296,14 @@ const TurneroModerno = () => {
 
               {/* ── CUSTOM DAY GRID ── */}
               <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 w-full mb-12">
-                {[...Array(30)].map((_, i) => {
-                  const day = i + 1;
-                  const d = new Date(2026, date?.getMonth() || 2, day);
-                  const isToday = day === 19; // Simulate today
-                  const isPast = day < 19 && date?.getMonth() === 2;
-                  const isSelected = date?.getDate() === day;
+                {daysInMonth.map((d, i) => {
+                  const day = d.getDate();
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  
+                  const isPast = d < today;
+                  const isToday = d.getTime() === today.getTime();
+                  const isSelected = date?.getDate() === day && date?.getMonth() === d.getMonth();
                   const dayName = format(d, 'EEE', { locale: es });
 
                   return (
@@ -256,7 +353,7 @@ const TurneroModerno = () => {
                   className="w-full bg-white text-darkNavy font-black px-12 py-5 rounded-full flex items-center justify-center space-x-3 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 shadow-[0_30px_60px_rgba(255,255,255,0.1)] relative overflow-hidden group"
                 >
                   <div className="absolute inset-x-0 bottom-0 h-1 bg-accentBlue/20 transform translate-y-full group-hover:translate-y-0 transition-transform" />
-                  <span className="uppercase tracking-[0.2em] text-[11px]">Personalizar Horario</span>
+                  <span className="uppercase tracking-[0.2em] text-[11px]">Siguiente Paso</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -398,7 +495,7 @@ const TurneroModerno = () => {
                     <span className="block text-white/30 text-[9px] font-black uppercase tracking-[0.1em] mb-1">Seña Requerida</span>
                     <span className="text-4xl font-black text-white tracking-tighter">$5.000</span>
                   </div>
-                  <div className="bg-green-500/10 text-green-400 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-green-500/20">
+                  <div className="bg-[#3b82f6]/10 text-[#3b82f6] px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-[#3b82f6]/20">
                     Garantizado
                   </div>
                 </div>
@@ -434,7 +531,7 @@ const TurneroModerno = () => {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.2 }}
-                className="w-28 h-28 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto mb-10 shadow-[0_0_30px_rgba(34,197,94,0.2)] border border-green-500/20"
+                className="w-28 h-28 bg-[#3b82f6]/10 text-[#3b82f6] rounded-full flex items-center justify-center mx-auto mb-10 shadow-[0_0_30px_rgba(59,130,246,0.2)] border border-[#3b82f6]/20"
               >
                 <CheckCircle2 className="w-14 h-14" />
               </motion.div>

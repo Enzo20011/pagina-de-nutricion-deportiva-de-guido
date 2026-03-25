@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Paciente from '@/models/Paciente';
 import { pacienteSchema } from '@/lib/validations/paciente';
+import { getValidSession, unauthorizedResponse } from '@/lib/protectApi';
+import { apiSuccess, apiError } from '@/lib/api-response';
 
 interface Params {
   params: { id: string };
@@ -11,13 +13,16 @@ interface Params {
  * Get a single patient by ID (even deleted ones, for recovery purposes).
  */
 export async function GET(_req: Request, { params }: Params) {
+  const session = await getValidSession();
+  if (!session) return unauthorizedResponse();
+
   try {
     await dbConnect();
     const paciente = await (Paciente as any).findById(params.id);
-    if (!paciente) return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 });
-    return NextResponse.json(paciente);
+    if (!paciente) return apiError('Paciente no encontrado', 404);
+    return apiSuccess(paciente);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiError(error.message, 500);
   }
 }
 
@@ -25,6 +30,9 @@ export async function GET(_req: Request, { params }: Params) {
  * PATCH /api/pacientes/[id]
  */
 export async function PATCH(req: Request, { params }: Params) {
+  const session = await getValidSession();
+  if (!session) return unauthorizedResponse();
+
   try {
     await dbConnect();
     const body = await req.json();
@@ -36,18 +44,15 @@ export async function PATCH(req: Request, { params }: Params) {
         { isDeleted: false },
         { new: true }
       );
-      if (!updated) return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 });
-      return NextResponse.json({ message: 'Paciente restaurado exitosamente', paciente: updated });
+      if (!updated) return apiError('Paciente no encontrado', 404);
+      return apiSuccess(updated, undefined, 200);
     }
 
     // 2. Regular update with PARTIAL VALIDATION
     // We use .partial() because PATCH usually only sends changed fields
     const validation = pacienteSchema.partial().safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        { error: 'Datos de actualización inválidos', details: validation.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return apiError('Datos de actualización inválidos', 400, validation.error.flatten().fieldErrors);
     }
 
     const safeData = validation.data;
@@ -57,10 +62,10 @@ export async function PATCH(req: Request, { params }: Params) {
       { $set: safeData },
       { new: true, runValidators: true }
     );
-    if (!updated) return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 });
-    return NextResponse.json(updated);
+    if (!updated) return apiError('Paciente no encontrado', 404);
+    return apiSuccess(updated);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiError(error.message, 500);
   }
 }
 
@@ -72,6 +77,9 @@ export async function PATCH(req: Request, { params }: Params) {
  * For permanent deletion, a manual MongoDB operation is required.
  */
 export async function DELETE(_req: Request, { params }: Params) {
+  const session = await getValidSession();
+  if (!session) return unauthorizedResponse();
+
   try {
     await dbConnect();
 
@@ -82,15 +90,15 @@ export async function DELETE(_req: Request, { params }: Params) {
     );
 
     if (!updated) {
-      return NextResponse.json({ error: 'Paciente no encontrado' }, { status: 404 });
+      return apiError('Paciente no encontrado', 404);
     }
 
-    return NextResponse.json({ 
+    return apiSuccess({ 
       message: 'Paciente archivado (soft delete). Los datos clínicos se mantienen intactos.',
       id: params.id,
     });
   } catch (error: any) {
     console.error('Error en soft delete de paciente:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiError(error.message, 500);
   }
 }
