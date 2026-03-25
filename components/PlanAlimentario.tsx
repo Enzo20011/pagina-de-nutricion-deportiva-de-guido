@@ -28,12 +28,13 @@ import { exportarDietaLazy } from '@/utils/exportPdfAction';
 interface FoodItem {
   id: string;
   nombre: string;
-  kcal: number;
+  calorias: number;
   proteinas: number;
-  carbos: number;
+  carbohidratos: number;
   grasas: number;
   gramos: number;
-  origen: 'USDA' | 'Nutrinfo';
+  origen: 'LOCAL' | 'USDA' | 'CUSTOM';
+  idExterno?: string;
 }
 
 interface Meal {
@@ -48,12 +49,12 @@ interface Meal {
 }
 
 const FOOD_DATABASE: Omit<FoodItem, 'gramos' | 'id'>[] = [
-  { nombre: 'Pechuga de Pollo (Cruda)', kcal: 165, proteinas: 31, carbos: 0, grasas: 3.6, origen: 'USDA' },
-  { nombre: 'Arroz Integral Cocido', kcal: 111, proteinas: 2.6, carbos: 23, grasas: 0.9, origen: 'USDA' },
-  { nombre: 'Palta (Aguacate) Haas', kcal: 160, proteinas: 2, carbos: 8.5, grasas: 14.7, origen: 'USDA' },
-  { nombre: 'Yogur Ser Vainilla', kcal: 45, proteinas: 3.5, carbos: 7.2, grasas: 0.1, origen: 'Nutrinfo' },
-  { nombre: 'Galletitas Traviata', kcal: 420, proteinas: 10, carbos: 68, grasas: 12, origen: 'Nutrinfo' },
-  { nombre: 'Queso Casancrem Light', kcal: 120, proteinas: 9, carbos: 4.8, grasas: 6.8, origen: 'Nutrinfo' },
+  { nombre: 'Pechuga de Pollo (Cruda)', calorias: 165, proteinas: 31, carbohidratos: 0, grasas: 3.6, origen: 'LOCAL' },
+  { nombre: 'Arroz Integral Cocido', calorias: 111, proteinas: 2.6, carbohidratos: 23, grasas: 0.9, origen: 'LOCAL' },
+  { nombre: 'Palta (Aguacate) Haas', calorias: 160, proteinas: 2, carbohidratos: 8.5, grasas: 14.7, origen: 'LOCAL' },
+  { nombre: 'Yogur Ser Vainilla', calorias: 45, proteinas: 3.5, carbohidratos: 7.2, grasas: 0.1, origen: 'LOCAL' },
+  { nombre: 'Galletitas Traviata', calorias: 420, proteinas: 10, carbohidratos: 68, grasas: 12, origen: 'LOCAL' },
+  { nombre: 'Queso Casancrem Light', calorias: 120, proteinas: 9, carbohidratos: 4.8, grasas: 6.8, origen: 'LOCAL' },
 ];
 
 export default function PlanAlimentario({ 
@@ -166,9 +167,9 @@ export default function PlanAlimentario({
   const totals = useMemo(() => {
     return meals.reduce((acc, meal) => {
       meal.items.forEach(item => {
-        acc.kcal += (item.kcal * item.gramos) / 100;
+        acc.kcal += (item.calorias * item.gramos) / 100;
         acc.p += (item.proteinas * item.gramos) / 100;
-        acc.c += (item.carbos * item.gramos) / 100;
+        acc.c += (item.carbohidratos * item.gramos) / 100;
         acc.g += (item.grasas * item.gramos) / 100;
       });
       return acc;
@@ -251,8 +252,9 @@ export default function PlanAlimentario({
     const newFood: FoodItem = {
       ...baseFood,
       id: Math.random().toString(),
-      gramos: baseFood.porcionBaseGramos || 100,
-      carbos: baseFood.carbohidratos !== undefined ? baseFood.carbohidratos : baseFood.carbos,
+      gramos: 100,
+      calorias: baseFood.calorias || 0,
+      carbohidratos: baseFood.carbohidratos || 0,
     };
     setMeals(meals.map(m => m.id === mealId ? { ...m, items: [...m.items, newFood] } : m));
     setSearchQuery('');
@@ -383,7 +385,7 @@ export default function PlanAlimentario({
                              {food.origen}
                            </span>
                         </div>
-                        <span className="text-[10px] font-bold text-white/20 group-hover:text-white transition-all duration-700">{food.kcal} <span className="text-[8px] opacity-40">KCAL</span></span>
+                        <span className="text-[10px] font-bold text-white/20 group-hover:text-white transition-all duration-700">{food.calorias} <span className="text-[8px] opacity-40">KCAL</span></span>
                      </div>
                      <p className="text-white font-bold uppercase tracking-tight text-[12px] mb-6 group-hover:text-[#3b82f6] transition-all duration-700 truncate w-full">{food.nombre}</p>
                      <div className="flex gap-6 text-[9px] font-bold uppercase tracking-widest text-white/10 group-hover:text-white/30 transition-all duration-700">
@@ -472,7 +474,7 @@ export default function PlanAlimentario({
                         </div>
                         <div className="flex items-center justify-between gap-8 w-full pt-4 border-t border-white/5">
                            <div className="text-left">
-                              <p className="text-lg font-bold text-white tracking-tight leading-none">{Math.round((item.kcal * item.gramos) / 100)}</p>
+                              <p className="text-lg font-bold text-white tracking-tight leading-none">{Math.round((item.calorias * item.gramos) / 100)}</p>
                               <p className="text-[8px] font-bold text-white/10 uppercase tracking-widest mt-1">KCAL</p>
                            </div>
                            <button 

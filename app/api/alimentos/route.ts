@@ -31,15 +31,15 @@ export async function GET(req: Request) {
     }
 
     // Buscamos en local (MongoDB)
-    // Filtramos por fuente específica si no es 'ALL' ni 'USDA'
+    // Filtramos por origen específico si no es 'ALL' ni 'USDA'
     if (categoria && categoria !== 'ALL' && categoria !== 'USDA') {
-      query.fuente = categoria;
+      query.origen = categoria === 'ARGENFOODS' || categoria === 'Nutrinfo' ? 'LOCAL' : categoria;
     }
 
     const localAlimentos = await (Alimento as any).find(query).limit(30).lean();
     const formattedLocal = localAlimentos.map((a: any) => ({
       ...a,
-      origen: a.fuente || 'Nutrinfo'
+      origen: a.origen || 'LOCAL'
     }));
 
     // Combinación Híbrida Inteligente (Prioridad Local)

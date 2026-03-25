@@ -1,25 +1,30 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, models } from 'mongoose';
 
 export interface IAlimento extends Document {
   nombre: string;
-  categoria: string;
-  kcal: number;
+  calorias: number;
   proteinas: number;
-  grasas: number;
   carbohidratos: number;
-  porcionBaseGramos: number;
-  fuente?: string;
+  grasas: number;
+  origen: 'LOCAL' | 'USDA' | 'CUSTOM';
+  idExterno?: string;
 }
 
-const AlimentoSchema: Schema = new Schema({
-  nombre: { type: String, required: true, index: true },
-  categoria: { type: String, required: true },
-  kcal: { type: Number, required: true },
+const alimentoSchema = new Schema({
+  nombre: { type: String, required: true },
+  calorias: { type: Number, required: true },
   proteinas: { type: Number, required: true },
-  grasas: { type: Number, required: true },
   carbohidratos: { type: Number, required: true },
-  porcionBaseGramos: { type: Number, default: 100 },
-  fuente: { type: String, default: 'Nutrinfo', index: true },
+  grasas: { type: Number, required: true },
+  origen: { 
+    type: String, 
+    enum: ['LOCAL', 'USDA', 'CUSTOM'], 
+    default: 'CUSTOM' 
+  },
+  idExterno: { type: String, required: false }
 });
 
-export default mongoose.models.Alimento || mongoose.model<IAlimento>('Alimento', AlimentoSchema);
+alimentoSchema.index({ nombre: 'text' });
+
+const Alimento = models.Alimento || mongoose.model<IAlimento>('Alimento', alimentoSchema);
+export default Alimento;
