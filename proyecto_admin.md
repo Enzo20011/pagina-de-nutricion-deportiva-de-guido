@@ -40,3 +40,4 @@ El sistema se encuentra **completamente funcional** y listo para su uso clínico
 ---
 > [!IMPORTANT]
 > Este panel es de acceso restringido mediante NextAuth.
+> Para la gestión de datos maestros de alimentos nacionales, consultar la [Guía de Inyección ARGENFOODS](file:///c:/Users/enzul/OneDrive/Escritorio/guido/guia_inyeccion_argenfoods.md).
