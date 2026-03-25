@@ -88,7 +88,7 @@ export default function PlanAlimentario({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeMealId, setActiveMealId] = useState<string | null>(null);
-  const [filterSource, setFilterSource] = useState<'ALL' | 'USDA' | 'Nutrinfo' | 'ARGENFOODS'>('ALL');
+  const [filterSource, setFilterSource] = useState<'ALL' | 'USDA' | 'ARGENFOODS'>('ALL');
   const [numComidas, setNumComidas] = useState<number>(4);
 
   // 1. Fetch initial data
@@ -241,9 +241,27 @@ export default function PlanAlimentario({
     queryKey: ['alimentos', debouncedSearch, filterSource],
     queryFn: async () => {
       if (debouncedSearch.length < 2) return { data: [] };
-      const res = await fetch(`/api/alimentos?q=${debouncedSearch}&categoria=${filterSource}`);
-      if (!res.ok) throw new Error('Error buscando alimentos');
-      return res.json();
+      
+      // Caso 1: Solo USDA
+      if (filterSource === 'USDA') {
+        const res = await fetch(`/api/alimentos/usda?q=${debouncedSearch}`);
+        const data = await res.json();
+        return { data: Array.isArray(data) ? data : [] };
+      }
+
+      // Caso 2: Local o Híbrido (Cascada)
+      const resLocal = await fetch(`/api/alimentos?q=${debouncedSearch}&categoria=${filterSource === 'ALL' ? 'LOCAL' : filterSource}`);
+      const dataLocal = await resLocal.json();
+      const localItems = dataLocal.data || [];
+
+      if (localItems.length > 0 || filterSource !== 'ALL') {
+        return { data: localItems };
+      }
+
+      // Caso 3: Fallback a USDA si local está vacío y estamos en modo 'ALL'
+      const resUSDA = await fetch(`/api/alimentos/usda?q=${debouncedSearch}`);
+      const dataUSDA = await resUSDA.json();
+      return { data: Array.isArray(dataUSDA) ? dataUSDA : [] };
     },
     enabled: debouncedSearch.length >= 2
   });
@@ -310,7 +328,7 @@ export default function PlanAlimentario({
                />
             </div>
             <div className="flex gap-2 bg-[#0a0f14] p-2 rounded-sm border border-white/5 shadow-xl">
-               {['ALL', 'ARGENFOODS', 'Nutrinfo', 'USDA'].map(s => (
+               {['ALL', 'ARGENFOODS', 'USDA'].map(s => (
                  <button 
                    key={s}
                    onClick={() => setFilterSource(s as any)}
@@ -319,7 +337,7 @@ export default function PlanAlimentario({
                      filterSource === s ? 'bg-[#3b82f6] text-white shadow-xl' : 'text-white/20 hover:text-white hover:bg-white/5'
                    )}
                  >
-                   {s}
+                   {s === 'ALL' ? 'TODOS' : s}
                  </button>
                ))}
             </div>

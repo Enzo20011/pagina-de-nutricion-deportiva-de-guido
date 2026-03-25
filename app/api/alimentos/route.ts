@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     // Buscamos en local (MongoDB)
     // Filtramos por origen específico si no es 'ALL' ni 'USDA'
     if (categoria && categoria !== 'ALL' && categoria !== 'USDA') {
-      query.origen = categoria === 'ARGENFOODS' || categoria === 'Nutrinfo' ? 'LOCAL' : categoria;
+      query.origen = categoria === 'ARGENFOODS' ? 'LOCAL' : categoria;
     }
 
     const localAlimentos = await (Alimento as any).find(query).limit(30).lean();
