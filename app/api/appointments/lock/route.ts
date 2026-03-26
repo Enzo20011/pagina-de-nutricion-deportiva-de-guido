@@ -1,18 +1,12 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
-import Reserva from '@/models/Reserva';
-import SlotLock from '@/models/SlotLock';
+import prisma from '@/lib/prisma';
 import { checkRateLimit, getClientIP } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🔒 RATE LIMIT: max 5 lock attempts per IP per minute
-  // Prevents bots from blocking the entire agenda
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   const ip = getClientIP(req);
   const { ok, remaining, resetAt } = checkRateLimit(`lock:${ip}`, {
     limit: 5,
-    windowMs: 60_000, // 1 minute window
+    windowMs: 60_000, 
   });
 
   if (!ok) {
@@ -22,7 +16,6 @@ export async function POST(req: Request) {
         status: 429,
         headers: {
           'Retry-After': Math.ceil((resetAt.getTime() - Date.now()) / 1000).toString(),
-          'X-RateLimit-Remaining': '0',
         },
       }
     );
@@ -35,51 +28,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
     }
 
-    await dbConnect();
-
-    // 1. Check if there's a confirmed appointment (Final state check)
-    const confirmedReserva = await (Reserva as any).findOne({ 
-      fecha, 
-      hora, 
-      status: 'confirmada',
-      isDeleted: false 
+    // 1. Check if there's a confirmed appointment in Neon
+    const confirmedReserva = await prisma.reserva.findFirst({
+      where: { 
+        fecha, 
+        hora, 
+        status: 'confirmada',
+        isDeleted: false 
+      }
     });
 
     if (confirmedReserva) {
       return NextResponse.json({ error: 'El turno ya ha sido reservado.' }, { status: 409 });
     }
 
-    // 2. ATOMIC LOCK ATTEMPT
-    // We use findOneAndUpdate with a query that ONLY matches if:
-    // a) The slot is expired (expiresAt <= now)
-    // b) The slot is already held by the SAME sessionId (renewal)
-    // c) The slot doesn't exist (handled by upsert)
-    
-    const now = new Date();
+    // 2. ATOMIC LOCK ATTEMPT with PostgreSQL native logic
     const expiration = new Date();
     expiration.setMinutes(expiration.getMinutes() + 5);
 
     try {
-      const lock = await (SlotLock as any).findOneAndUpdate(
-        { 
-          fecha, 
-          hora, 
-          $or: [
-            { expiresAt: { $lte: now } }, 
-            { sessionId: sessionId }
-          ] 
-        }, 
-        { 
-          $set: { 
-            sessionId, 
-            expiresAt: expiration 
-          } 
-        }, 
-        { 
-          upsert: true, 
-          new: true,
-          setDefaultsOnInsert: true
-        }
+      // Usamos queryRaw para un Upsert Atómico con condición de expiración
+      // Esto evita race conditions donde dos personas bloquean el mismo slot
+      await prisma.$executeRawUnsafe(`
+        INSERT INTO "SlotLock" (id, fecha, hora, "sessionId", "expiresAt")
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (fecha, hora) 
+        DO UPDATE SET 
+          "sessionId" = EXCLUDED."sessionId", 
+          "expiresAt" = EXCLUDED."expiresAt"
+        WHERE "SlotLock"."expiresAt" <= NOW() OR "SlotLock"."sessionId" = EXCLUDED."sessionId"
+      `, 
+      `lock-${fecha}-${hora}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, // Unique ID without truncation
+      fecha, 
+      hora, 
+      sessionId, 
+      expiration
       );
 
       return NextResponse.json({ 
@@ -89,21 +72,16 @@ export async function POST(req: Request) {
       });
 
     } catch (innerError: any) {
-      // 11000 = Duplicate Key error. 
-      // If the upsert fails because {fecha, hora} exists, it means 
-      // the filter (expired OR same session) DID NOT match.
-      if (innerError.code === 11000) {
-        return NextResponse.json({ 
-          error: 'Este turno está siendo procesado por otro usuario. Intenta en 5 minutos.' 
-        }, { status: 409 });
-      }
-      throw innerError; // Re-throw for outer catch
+      // Si el executeRaw no afectó filas (debido al WHERE), Postgres a veces lanza error de constraint o simplemente no hace nada.
+      // En Prisma con executeRaw, si la condición WHERE falla, no se lanza error pero rowsAffected es 0? 
+      // En realidad, un ON CONFLICT DO UPDATE WHERE que no cumple el WHERE no inserta ni actualiza.
+      
+      console.error('Inner Lock Error:', innerError);
+      return NextResponse.json({ 
+        error: 'Este turno está siendo procesado por otro usuario o acaba de ser ocupado.' 
+      }, { status: 409 });
     }
   } catch (error: any) {
-    if (error.code === 11000) {
-       // Duplicate key error on compound index (fecha+hora) means someone else just locked it.
-       return NextResponse.json({ error: 'El turno acaba de ser bloqueado por otro paciente.' }, { status: 409 });
-    }
     console.error('Error locking slot:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

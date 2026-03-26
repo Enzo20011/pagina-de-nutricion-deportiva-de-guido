@@ -74,34 +74,34 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
             <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#a7abb2] mt-2">Protocolo de Intervención Clínica</p>
           </div>
           <div className="text-right">
-            <p className="text-lg font-bold uppercase tracking-widest">Expediente: {paciente?.nombre} {paciente?.apellido}</p>
+            <p className="text-lg font-bold uppercase tracking-widest">Expediente: {paciente?.data?.nombre} {paciente?.data?.apellido}</p>
             <p className="text-[10px] font-black text-slate-400 mt-2 uppercase tracking-widest">Sincronización: {new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
           </div>
         </div>
       </div>
 
       {/* STRATEGIC CONSULTATION HEADER */}
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 bg-[#0a0f14] p-8 rounded-sm border border-white/5 shadow-xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/[0.01] rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform duration-1000" />
-        
-        <div className="flex flex-col md:flex-row md:items-center gap-12 relative z-10">
-          <Link href="/admin/pacientes" className="w-14 h-14 bg-white/5 rounded-sm flex items-center justify-center text-white/20 hover:text-white hover:border-white/10 border border-white/5 transition-all duration-700 shadow-xl group/back">
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-[#0a0f14] p-4 sm:p-8 rounded-sm border border-white/5 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/[0.01] rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 md:gap-8 relative z-10">
+          <Link href="/admin/pacientes" className="w-11 h-11 min-h-[44px] bg-white/5 rounded-sm flex items-center justify-center text-white/20 hover:text-white hover:border-white/10 border border-white/5 transition-all duration-75 shadow-xl group/back shrink-0">
              <ChevronLeft className="w-5 h-5 group-hover/back:-translate-x-1 transition-transform" />
           </Link>
-          <div className="flex items-center gap-8">
-            <div className="w-20 h-20 bg-[#3b82f6] rounded-sm flex items-center justify-center text-white shadow-xl group relative overflow-hidden transition-all duration-700">
-               <User className="w-10 h-10 relative z-10" />
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 sm:w-20 sm:h-20 bg-[#3b82f6] rounded-sm flex items-center justify-center text-white shadow-xl shrink-0 relative overflow-hidden">
+               <User className="w-7 h-7 sm:w-10 sm:h-10 relative z-10" />
             </div>
-            <div className="space-y-4">
+            <div className="space-y-2 min-w-0">
               <div className="flex items-center gap-4 text-[#3b82f6]/60 font-bold uppercase text-[9px] tracking-[0.4em]">
                 SINCRONIZACIÓN ACTIVA
               </div>
-               <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight uppercase leading-none">{paciente?.nombre} <span className="text-white/20">{paciente?.apellido}</span></h1>
-              <div className="flex flex-wrap items-center gap-8 mt-4">
-                <p className="text-[10px] text-white/20 font-bold uppercase tracking-[0.2em] flex items-center gap-3">
-                   <Calendar className="w-4 h-4 opacity-40" /> {new Date(paciente?.createdAt || Date.now()).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase()} <span className="w-1 h-1 rounded-full bg-white/10" /> {paciente?.status?.toUpperCase() || 'ACTIVO'}
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight uppercase leading-none break-words line-clamp-2">{paciente?.data?.nombre} <span className="text-white/20">{paciente?.data?.apellido}</span></h1>
+              <div className="flex flex-wrap items-center gap-4 mt-2">
+                <p className="text-[10px] text-white/20 font-bold uppercase tracking-[0.2em] flex items-center gap-2">
+                   <Calendar className="w-3 h-3 opacity-40" /> {new Date(paciente?.data?.createdAt || Date.now()).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase()} <span className="w-1 h-1 rounded-full bg-white/10" /> {paciente?.data?.status?.toUpperCase() || 'ACTIVO'}
                 </p>
-                 <button 
+                 <button
                   onClick={async () => {
                     if (isExporting) return;
                     setIsExporting(true);
@@ -116,7 +116,7 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
                   }}
                   disabled={isExporting}
                   className={clsx(
-                    "bg-white px-6 py-3 rounded-sm text-[9px] font-bold uppercase tracking-[0.2em] text-[#0a0f14] transition-all duration-700 flex items-center gap-3 shadow-xl",
+                    "bg-white px-5 py-3 min-h-[44px] rounded-sm text-[9px] font-bold uppercase tracking-[0.2em] text-[#0a0f14] transition-all duration-75 flex items-center gap-3 shadow-xl",
                     isExporting ? "opacity-50 cursor-not-allowed" : "hover:bg-white/90"
                   )}
                 >
@@ -125,7 +125,7 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
                   ) : (
                     <FileText className="w-4 h-4" />
                   )}
-                  {isExporting ? "Generando..." : "Exportar PDF"}
+                  {isExporting ? "Generando..." : "PDF"}
                 </button>
               </div>
             </div>
@@ -133,28 +133,28 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
         </div>
 
         {/* TOP LEVEL NAVIGATION TABS */}
-        <div className="flex bg-[#070C14]/60 p-1.5 rounded-sm border border-white/5 relative z-10 shadow-inner backdrop-blur-3xl mt-8 lg:mt-0 items-center w-fit max-w-full overflow-x-auto scrollbar-hide shrink-0">
+        <div className="flex bg-[#070C14]/60 p-1.5 rounded-sm border border-white/5 relative z-10 shadow-inner backdrop-blur-3xl mt-4 lg:mt-0 items-center w-full lg:w-fit max-w-full overflow-x-auto scrollbar-hide shrink-0 gap-0.5">
           {[
-            { id: 'anamnesis', label: 'Historial', icon: ClipboardList, hasData: !!anamnesis },
-            { id: 'antropometria', label: 'Biometría', icon: Ruler, hasData: !!antropometria },
-            { id: 'dieta', label: 'Plan Nutricional', icon: Utensils, hasData: !!dieta },
-            { id: 'evolucion', label: 'Evolución', icon: TrendingUp, hasData: true },
+            { id: 'anamnesis', label: 'Historial', shortLabel: 'Hist.', icon: ClipboardList, hasData: !!anamnesis },
+            { id: 'antropometria', label: 'Biometría', shortLabel: 'Bio.', icon: Ruler, hasData: !!antropometria },
+            { id: 'dieta', label: 'Plan Nutricional', shortLabel: 'Plan', icon: Utensils, hasData: !!dieta },
+            { id: 'evolucion', label: 'Evolución', shortLabel: 'Evol.', icon: TrendingUp, hasData: true },
           ].map((tab) => (
-            <button 
+            <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={clsx(
-                "px-4 py-2 rounded-sm text-[9px] font-bold uppercase tracking-[0.2em] flex items-center gap-3 transition-all duration-700 relative group/tab shrink-0",
-                activeTab === tab.id 
-                ? 'bg-[#3b82f6] text-white shadow-xl' 
+                "flex-1 lg:flex-none px-3 sm:px-4 py-3 min-h-[44px] rounded-sm text-[9px] font-bold uppercase tracking-[0.15em] flex items-center justify-center gap-2 transition-all duration-75 relative group/tab shrink-0",
+                activeTab === tab.id
+                ? 'bg-[#3b82f6] text-white shadow-xl'
                 : 'text-white/20 hover:text-white hover:bg-white/5'
               )}
             >
-              <tab.icon className={clsx("w-3.5 h-3.5 transition-transform duration-700", activeTab === tab.id ? "scale-110" : "opacity-30 group-hover/tab:opacity-100")} />
+              <tab.icon className={clsx("w-3.5 h-3.5 shrink-0 transition-transform duration-75", activeTab === tab.id ? "scale-110" : "opacity-30 group-hover/tab:opacity-100")} />
               <span className="hidden sm:inline whitespace-nowrap">{tab.label}</span>
-              {/* Strategic Data Indicator */}
+              <span className="sm:hidden whitespace-nowrap">{tab.shortLabel}</span>
               <div className={clsx(
-                "w-1 h-1 rounded-full transition-all duration-700",
+                "w-1 h-1 rounded-full transition-all duration-75 shrink-0",
                 tab.hasData ? 'bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'bg-white/5'
               )} />
             </button>
@@ -163,46 +163,40 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
       </header>
 
       {/* DYNAMIC PRECISION CONTENT AREA */}
-      <motion.main 
-        key={activeTab}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="relative min-h-[600px]"
-      >
-        <div className="bg-[#0e1419] rounded-sm border border-white/5 p-6 shadow-xl overflow-hidden min-h-[600px] relative">
-           <div className="bg-[#0a0f14]/40 rounded-sm p-6 lg:p-10 min-h-[500px] shadow-inner border border-white/5">
-             <div className={activeTab === 'anamnesis' ? 'block' : 'hidden'}>
-               <PanelClinico 
-                 pacienteId={params.id} 
-                 onSync={setAnamnesis} 
+      <main className="relative min-h-[600px]">
+        <div className="bg-[#0e1419] rounded-sm border border-white/5 p-3 sm:p-6 shadow-xl overflow-hidden min-h-[600px] relative">
+           <div className="bg-[#0a0f14]/40 rounded-sm p-3 sm:p-6 lg:p-10 min-h-[500px] shadow-inner border border-white/5">
+             {activeTab === 'anamnesis' && (
+               <PanelClinico
+                 pacienteId={params.id}
+                 onSync={setAnamnesis}
                  pacienteInitialData={paciente?.data}
                />
-             </div>
-             <div className={activeTab === 'antropometria' ? 'block' : 'hidden'}>
-               <PanelAntropometria 
-                 pacienteId={params.id} 
-                 onSync={setAntropometria} 
+             )}
+             {activeTab === 'antropometria' && (
+               <PanelAntropometria
+                 pacienteId={params.id}
+                 onSync={setAntropometria}
                  pacienteInitialData={paciente?.data}
                />
-             </div>
-             <div className={activeTab === 'dieta' ? 'block' : 'hidden'}>
-               <PlanAlimentario 
-                pacienteId={params.id} 
-                onSync={setDieta} 
+             )}
+             {activeTab === 'dieta' && (
+               <PlanAlimentario
+                pacienteId={params.id}
+                onSync={setDieta}
                 anamnesisData={anamnesis}
                />
-             </div>
-             <div className={activeTab === 'evolucion' ? 'block' : 'hidden'}>
-               <DashboardEvolucion 
-                pacienteId={params.id} 
+             )}
+             {activeTab === 'evolucion' && (
+               <DashboardEvolucion
+                pacienteId={params.id}
                 paciente={paciente || {}}
                 sessionData={consultaData}
                />
-             </div>
+             )}
            </div>
         </div>
-      </motion.main>
+      </main>
 
     </div>
   );

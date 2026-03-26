@@ -5,7 +5,7 @@ import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { Lock, User, ArrowRight, Sparkles } from 'lucide-react';
+import { Lock, User, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -19,114 +19,124 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    const result = await signIn('credentials', {
-      email,
-      password,
-      callbackUrl: '/admin',
-    });
+    try {
+      const result = await signIn('credentials', {
+        email,
+        password,
+        callbackUrl: '/admin',
+        redirect: false
+      });
 
-    if (result?.error) {
-      setError('Error Bio-Métrico: ' + result.error);
+      if (result?.error) {
+        setError('Credenciales no autorizadas por el sistema.');
+        setLoading(false);
+      } else {
+        router.push('/admin');
+      }
+    } catch (err) {
+      setError('Error de conexión con el servidor.');
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0f14] flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden">
-      {/* Dot grid background */}
-      <div className="absolute inset-0 pointer-events-none opacity-20"
-        style={{ backgroundImage: `radial-gradient(circle, rgba(67,72,78,0.5) 1px, transparent 1px)`, backgroundSize: '20px 20px' }} />
-      {/* Neon glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse, rgba(0,253,193,0.05) 0%, transparent 70%)' }} />
-      
-      {/* Branding Header */}
-      <div className="flex flex-col items-center mb-16 relative z-10">
-        <div className="w-20 h-20 bg-[#1a2027] rounded-sm overflow-hidden flex items-center justify-center mb-8 border border-[#2a3040] p-2">
-           <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
-        </div>
-        <div className="text-center space-y-2">
-            <h1 className="font-heading font-bold text-4xl text-[#eaeef6] tracking-tight uppercase">
-              ACCESO <span className="text-[#aaffdc]" style={{ textShadow: '0 0 30px rgba(170,255,220,0.3)' }}>PORTAL</span>
-            </h1>
-            <p className="font-label text-[10px] uppercase tracking-[0.25em] text-[#a7abb2]">Elite Nutrition Management System</p>
-        </div>
-      </div>
-
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-12 bg-[#0B1120]/60 border border-white/5 backdrop-blur-3xl p-12 md:p-16 rounded-[4rem] shadow-3xl w-full max-w-lg z-10 relative overflow-hidden group"
+    <div className="min-h-screen bg-[#070c14] flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-hidden">
+      {/* Fondo propio del login — independiente del layout público */}
+      <div className="absolute top-[-20%] left-[-20%] w-[600px] h-[600px] bg-[#3b82f6]/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-[#1e40af]/5 rounded-full blur-[120px] pointer-events-none" />
+      {/* Glassmorphism Card */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-md relative z-10"
       >
-        {/* Scanning decoration logic */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-y-1 group-hover:translate-y-0 transition-transform duration-1000" />
-
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.4em] italic flex items-center gap-3">
-                <User className="w-3.5 h-3.5" /> Expediente Profesional_
-            </label>
-            <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="SISTEMA_OPERUK@CONTROL.COM"
-              className="w-full px-8 py-6 rounded-2xl bg-white/5 border border-white/5 focus:border-white/20 focus:outline-none text-white placeholder:text-white/5 font-black text-sm uppercase tracking-widest transition-all duration-500 italic"
-              autoFocus
-              required
-            />
+        {/* Logo and Header */}
+        <div className="flex flex-col items-center mb-10">
+          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-6 shadow-2xl border border-white/20 p-2.5 transition-transform hover:scale-105 duration-500">
+            <Image src="/logo.png" alt="Logo Guido Operuk" width={48} height={48} className="w-full h-full object-contain" priority />
           </div>
-
-          <div className="space-y-4">
-            <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.4em] italic flex items-center gap-3">
-                <Lock className="w-3.5 h-3.5" /> Clave de Seguridad_
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••••"
-              className="w-full px-8 py-6 rounded-2xl bg-white/5 border border-white/5 focus:border-white/20 focus:outline-none text-white placeholder:text-white/5 font-black text-sm uppercase tracking-widest transition-all duration-500 italic"
-              required
-            />
+          <div className="text-center">
+            <h1 className="text-2xl font-black uppercase tracking-tighter text-white flex items-center gap-2 justify-center">
+              ADMIN <span className="text-[#3b82f6]">PORTAL</span>
+            </h1>
+            <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-[#a7abb2] mt-2 opacity-50">SISTEMA INTEGRAL DE GESTIÓN NUTRICIONAL</p>
           </div>
         </div>
 
-        {error && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-red-500 font-black text-[10px] uppercase tracking-widest text-center bg-red-500/5 border border-red-500/20 rounded-2xl py-5 px-6 italic"
-          >
-            {error}
-          </motion.div>
-        )}
+        {/* Form Container */}
+        <div className="bg-[#0B1120]/40 backdrop-blur-2xl border border-white/5 p-10 rounded-sm shadow-2xl relative overflow-hidden">
+          {/* Top accent line */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#3b82f6]/40 to-transparent" />
 
-        <button
-          type="submit"
-          className="w-full flex items-center justify-center gap-6 px-10 py-7 rounded-[2rem] bg-white text-[#1B365D] font-black text-sm uppercase tracking-[0.4em] shadow-3xl hover:shadow-[0_0_60px_rgba(255,255,255,0.1)] transition-all duration-700 disabled:opacity-20 disabled:cursor-not-allowed group/btn italic relative overflow-hidden"
-          disabled={loading}
-        >
-          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-[#1B365D]/10 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000" />
-          {loading ? (
-            <span className="flex items-center gap-4">
-              <Sparkles className="animate-spin w-5 h-5" />
-              Sincronizando_
-            </span>
-          ) : (
-            <>
-              Ingresar Protocolo_
-              <ArrowRight className="w-5 h-5 group-hover/btn:translate-x-2 transition-transform duration-500" />
-            </>
-          )}
-        </button>
-      </form>
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-[#a7abb2] uppercase tracking-widest flex items-center gap-2">
+                <User className="w-3 h-3 text-[#3b82f6]" /> Identificación Profesional
+              </label>
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="usuario@guidooperuk.com"
+                className="w-full px-5 py-4 bg-white/[0.03] border border-white/10 rounded-sm focus:border-[#3b82f6]/50 focus:bg-white/[0.05] outline-none text-white font-medium text-base transition-all placeholder:text-white/10"
+                required
+              />
+            </div>
 
-      {/* Footer Info Terminals */}
-      <div className="mt-16 flex gap-12 text-[8px] font-black uppercase tracking-[0.5em] text-white/10 italic">
-          <span>Encrypted_AES256</span>
-          <span className="text-white/5">|</span>
-          <span>Elite_System_Terminal</span>
-      </div>
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-[#a7abb2] uppercase tracking-widest flex items-center gap-2">
+                <Lock className="w-3 h-3 text-[#3b82f6]" /> Clave de Seguridad
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••"
+                className="w-full px-5 py-4 bg-white/[0.03] border border-white/10 rounded-sm focus:border-[#3b82f6]/50 focus:bg-white/[0.05] outline-none text-white font-medium text-base transition-all placeholder:text-white/10"
+                required
+              />
+            </div>
+
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="p-4 bg-red-500/5 border border-red-500/20 rounded-sm"
+              >
+                <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest text-center">{error}</p>
+              </motion.div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-5 bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold text-xs uppercase tracking-[0.3em] rounded-sm transition-all shadow-[0_0_30px_rgba(59,130,246,0.15)] flex items-center justify-center gap-4 group"
+            >
+              {loading ? (
+                <Sparkles className="animate-spin w-4 h-4" />
+              ) : (
+                <>
+                  INGRESAR AL SISTEMA
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Footer Info */}
+        <div className="mt-10 flex items-center justify-center gap-6 opacity-20 group">
+          <div className="flex items-center gap-2 text-[8px] font-bold uppercase tracking-[0.4em] text-white">
+            <ShieldCheck className="w-3 h-3" />
+            CONEXIÓN ENCRIPTADA
+          </div>
+          <div className="w-1 h-1 bg-white/30 rounded-full" />
+          <div className="text-[8px] font-bold uppercase tracking-[0.4em] text-white">
+            V 2.1.0
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }

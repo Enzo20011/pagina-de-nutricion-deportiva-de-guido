@@ -77,49 +77,51 @@ export default function HomePage() {
           </p>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="flex items-center gap-4 w-full lg:w-auto"
+          className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto"
         >
           <div className="relative group flex-1 lg:w-[320px] lg:flex-none">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#a7abb2]/40 group-focus-within:text-[#3b82f6] transition-colors" />
-            <input 
-              type="text" 
-              placeholder="Buscar paciente..." 
+            <input
+              type="text"
+              placeholder="Buscar paciente..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               onFocus={() => setShowSuggestions(search.length > 1)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-              className="pl-11 pr-4 py-3 bg-[#0e1419] border border-[#1f262e] rounded-sm focus:border-[#3b82f6]/50 outline-none w-full transition-all font-label uppercase tracking-widest text-[10px] text-white placeholder:text-[#a7abb2]/20"
+              className="pl-11 pr-4 py-3 bg-[#0e1419] border border-[#1f262e] rounded-sm focus:border-[#3b82f6]/50 outline-none w-full transition-all font-label uppercase tracking-widest text-base md:text-[10px] text-white placeholder:text-[#a7abb2]/20"
               aria-label="Buscar paciente"
               autoComplete="off"
             />
             {showSuggestions && suggestions.length > 0 && (
               <ul className="absolute left-0 top-full mt-2 w-full bg-[#0e1419] border border-[#1f262e] rounded-sm shadow-2xl z-30 overflow-hidden">
                 {suggestions.map((s, i) => (
-                  <li key={i} className="px-5 py-3 text-[#a7abb2] hover:bg-[#1a2027] hover:text-[#3b82f6] cursor-pointer text-[9px] font-label font-bold uppercase tracking-widest transition-colors border-b border-[#1f262e] last:border-0" onMouseDown={() => { setSearch(s); setShowSuggestions(false); }}>
+                  <li key={i} className="px-5 py-4 text-[#a7abb2] hover:bg-[#1a2027] hover:text-[#3b82f6] cursor-pointer text-sm md:text-[9px] font-label font-bold uppercase tracking-widest transition-colors border-b border-[#1f262e] last:border-0 min-h-[44px] flex items-center" onMouseDown={() => { setSearch(s); setShowSuggestions(false); }}>
                     {s}
                   </li>
                 ))}
               </ul>
             )}
           </div>
-          <motion.button
-            whileHover={{ y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            className="shrink-0 flex items-center gap-3 px-6 py-3 rounded-sm bg-[#3b82f6] text-white text-[10px] font-label font-bold uppercase tracking-[0.2em] shadow-lg shadow-[#3b82f6]/10 hover:bg-[#3b82f6]/90 transition-all"
-          >
-            <Plus className="w-4 h-4" /> Nuevo Registro
-          </motion.button>
-          {notif > 0 && (
-            <div className="relative shrink-0">
-              <div className="w-11 h-11 bg-[#0e1419] border border-[#1f262e] rounded-sm flex items-center justify-center">
-                <Activity className="w-4 h-4 text-[#a7abb2]/40" />
+          <div className="flex items-center gap-3">
+            <motion.button
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-6 py-3 min-h-[44px] rounded-sm bg-[#3b82f6] text-white text-[10px] font-label font-bold uppercase tracking-[0.2em] shadow-lg shadow-[#3b82f6]/10 hover:bg-[#3b82f6]/90 transition-all"
+            >
+              <Plus className="w-4 h-4" /> Nuevo Registro
+            </motion.button>
+            {notif > 0 && (
+              <div className="relative shrink-0" aria-label={`${notif} notificaciones nuevas`}>
+                <div className="w-11 h-11 min-h-[44px] bg-[#0e1419] border border-[#1f262e] rounded-sm flex items-center justify-center">
+                  <Activity className="w-4 h-4 text-[#a7abb2]/40" aria-hidden="true" />
+                </div>
+                <span className="absolute -top-1 -right-1 bg-[#3b82f6] text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#0a0f14]">{notif}</span>
               </div>
-              <span className="absolute -top-1 -right-1 bg-[#3b82f6] text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#0a0f14]">{notif}</span>
-            </div>
-          )}
+            )}
+          </div>
         </motion.div>
       </header>
 
@@ -136,10 +138,9 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: i * 0.05, duration: 0.5 }}
             whileHover={{ y: -5 }}
             className={clsx(
-              "rounded-sm border p-4 md:p-5 transition-all duration-300 relative overflow-hidden group h-full flex flex-col justify-between",
+              "rounded-sm border p-4 md:p-5 transition-all duration-75 relative overflow-hidden group h-full flex flex-col justify-between",
               stat.accent 
                 ? "bg-[#3b82f6] border-[#3b82f6] text-white" 
                 : "bg-[#0e1419] border-[#1f262e] text-[#eaeef6] hover:border-[#3b82f6]/30"
@@ -223,13 +224,13 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-5 py-3 rounded-sm border border-[#1f262e] text-[9px] font-label font-bold uppercase tracking-widest text-[#a7abb2] hover:text-[#eaeef6] hover:bg-[#1a2027] transition-all">
+                    <button className="flex items-center gap-2 px-5 py-3 min-h-[44px] rounded-sm border border-[#1f262e] text-[9px] font-label font-bold uppercase tracking-widest text-[#a7abb2] hover:text-[#eaeef6] hover:bg-[#1a2027] transition-all">
                       <FileText className="w-3.5 h-3.5" /> Ficha
                     </button>
                     <button className={clsx(
-                      "px-6 py-3 rounded-sm text-[9px] font-label font-bold tracking-widest uppercase transition-all flex items-center gap-2",
-                      session.status === 'Activa' 
-                        ? "bg-[#3b82f6] text-white hover:bg-[#3b82f6]/90 shadow-lg shadow-[#3b82f6]/10" 
+                      "px-6 py-3 min-h-[44px] rounded-sm text-[9px] font-label font-bold tracking-widest uppercase transition-all flex items-center gap-2",
+                      session.status === 'Activa'
+                        ? "bg-[#3b82f6] text-white hover:bg-[#3b82f6]/90 shadow-lg shadow-[#3b82f6]/10"
                         : "bg-[#1f262e] text-[#43484e] border border-[#1a2027]"
                     )}>
                       {session.status === 'Activa' ? <><Play className="w-3.5 h-3.5" /> Iniciar</> : 'Pendiente'}
@@ -245,7 +246,7 @@ export default function HomePage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white p-10 rounded-sm text-[#0a0f14] shadow-2xl relative overflow-hidden flex flex-col justify-between h-full"
+          className="bg-white p-6 md:p-10 rounded-sm text-[#0a0f14] shadow-2xl relative overflow-hidden flex flex-col justify-between h-full"
         >
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-10">
@@ -286,7 +287,8 @@ export default function HomePage() {
       <div className="pt-20 text-center">
         <div className="inline-flex items-center gap-3 px-6 py-3 bg-[#0e1419] border border-[#1f262e] rounded-sm">
            <div className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
-           <p className="text-[#a7abb2] font-label font-bold uppercase tracking-[0.3em] text-[8px]">Sistema de Sincronización Profesional Activo</p>
+           <p className="text-[#a7abb2] font-label font-bold uppercase tracking-[0.3em] text-[8px] hidden sm:block">Sistema de Sincronización Profesional Activo</p>
+           <p className="text-[#a7abb2] font-label font-bold uppercase tracking-[0.2em] text-[8px] sm:hidden">Sincronización Activa</p>
         </div>
       </div>
 

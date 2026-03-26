@@ -67,12 +67,12 @@ export default function ServiciosSection({ onBookingClick = () => {} }: { onBook
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight leading-[0.9] text-white hover:text-[#3b82f6] transition-colors mb-6">
+            <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tight leading-[0.9] text-white hover:text-[#3b82f6] transition-colors mb-6">
               SERVICIOS DE<br />
               <span className="text-[#3b82f6]">ALTO NIVEL</span>
-            </h1>
+            </h2>
             <p className="body-text max-w-xl">
               Ciencia aplicada a cada objetivo. Planes diseñados con precisión profesional para resultados medibles.
             </p>
@@ -92,7 +92,7 @@ export default function ServiciosSection({ onBookingClick = () => {} }: { onBook
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1, duration: 0.8 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
                   className="relative group h-full"
                 >
                   <TiltCard className="h-full">

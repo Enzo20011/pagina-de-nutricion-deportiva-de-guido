@@ -37,7 +37,7 @@ export default function ModalRegistroPago({ onClose, onSuccess }: Props) {
       try {
         const res = await fetch('/api/pacientes');
         const data = await res.json();
-        setPacientes(data);
+        setPacientes(data?.data || []);
       } catch (err) {
         console.error('Error fetching patients:', err);
       }
@@ -114,12 +114,12 @@ export default function ModalRegistroPago({ onClose, onSuccess }: Props) {
                {busqueda && filteredPacientes.length > 0 && !form.pacienteId && (
                  <div className="absolute top-full left-0 right-0 mt-4 bg-darkNavy border border-white/10 rounded-3xl p-4 shadow-2xl z-50 max-h-60 overflow-y-auto overflow-hidden">
                     {filteredPacientes.slice(0, 5).map(p => (
-                      <button 
-                        key={p._id}
+                      <button
+                        key={p.id}
                         type="button"
                         onClick={() => {
-                          setForm({ ...form, pacienteId: p._id });
-                          setBusqueda(p.nombre);
+                          setForm({ ...form, pacienteId: p.id });
+                          setBusqueda(`${p.nombre} ${p.apellido || ''}`);
                         }}
                         className="w-full text-left p-4 hover:bg-accentBlue/10 rounded-2xl text-white font-bold transition-all border border-transparent hover:border-accentBlue/20"
                       >

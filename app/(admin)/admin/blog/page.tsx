@@ -19,7 +19,7 @@ import { DashboardSkeleton } from '@/components/Skeleton';
 import toast from 'react-hot-toast';
 
 interface Post {
-  _id: string;
+  id: string;
   titulo: string;
   slug: string;
   categoria: string;
@@ -103,7 +103,7 @@ export default function BlogAdminPage() {
           placeholder="FILTRAR POR AUDITORÍA DE TÍTULOS O SEGMENTOS..." 
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="pl-16 pr-8 py-5 bg-[#0B1120]/40 border border-white/5 rounded-2xl focus:border-white/20 outline-none w-full text-[10px] font-black tracking-[0.2em] text-white placeholder:text-white/10 shadow-inner uppercase transition-all"
+          className="pl-16 pr-8 py-5 bg-[#0B1120]/40 border border-white/5 rounded-2xl focus:border-white/20 outline-none w-full text-base md:text-[10px] font-black tracking-[0.2em] text-white placeholder:text-white/10 shadow-inner uppercase transition-all"
         />
       </div>
 
@@ -123,8 +123,8 @@ export default function BlogAdminPage() {
             <tbody className="divide-y divide-white/5">
               <AnimatePresence>
                 {filteredPosts.map((post) => (
-                  <motion.tr 
-                    key={post._id}
+                  <motion.tr
+                    key={post.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -167,13 +167,13 @@ export default function BlogAdminPage() {
                             <ExternalLink className="w-4 h-4" />
                           </button>
                         </Link>
-                        <Link href={`/admin/blog/editar/${post._id}`}>
+                        <Link href={`/admin/blog/editar/${post.id}`}>
                           <button className="p-3.5 rounded-xl bg-white/5 hover:bg-white text-white/20 hover:text-[#1B365D] border border-white/5 transition-all shadow-xl">
                             <Edit2 className="w-4 h-4" />
                           </button>
                         </Link>
                         <button 
-                          onClick={() => handleDelete(post._id)}
+                          onClick={() => handleDelete(post.id)}
                           className="p-3.5 rounded-xl bg-white/5 hover:bg-rose-500/20 text-white/20 hover:text-rose-400 border border-white/5 transition-all shadow-xl"
                         >
                           <Trash2 className="w-4 h-4" />

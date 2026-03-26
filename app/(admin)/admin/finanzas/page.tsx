@@ -91,7 +91,7 @@ export default function FinanzasPage() {
             <input 
               type="text" 
               placeholder="Filtrar reporte..." 
-              className="pl-11 pr-4 py-3 bg-[#0e1419] border border-[#1f262e] rounded-sm focus:border-[#3b82f6]/50 outline-none w-full transition-all font-label uppercase tracking-widest text-[10px] text-white placeholder:text-[#a7abb2]/20"
+              className="pl-11 pr-4 py-3 bg-[#0e1419] border border-[#1f262e] rounded-sm focus:border-[#3b82f6]/50 outline-none w-full transition-all font-label uppercase tracking-widest text-base md:text-[10px] text-white placeholder:text-[#a7abb2]/20"
             />
           </div>
           <motion.button

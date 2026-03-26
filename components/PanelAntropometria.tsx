@@ -195,7 +195,7 @@ export default function PanelAntropometria({
     return () => clearTimeout(timer);
   }, [peso, altura, pliegues, imc, grasaPct, comp, isValid, pacienteId, onSync]);
 
-  const inputStyles = "w-full p-5 bg-[#0a0f14]/60 border border-white/5 focus:border-[#3b82f6]/30 rounded-sm outline-none transition-all duration-700 font-bold uppercase text-[10px] tracking-[0.2em] text-white placeholder:text-white/5 shadow-xl";
+  const inputStyles = "w-full p-5 bg-[#0a0f14]/60 border border-white/5 focus:border-[#3b82f6]/30 rounded-sm outline-none transition-all duration-75 font-bold uppercase text-[10px] tracking-[0.2em] text-white placeholder:text-white/5 shadow-xl";
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 text-white">
@@ -204,7 +204,7 @@ export default function PanelAntropometria({
       <div className="xl:col-span-8 space-y-12">
         <header className="flex items-center gap-8 bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl group overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#3b82f6]/5 rounded-full blur-[100px] -mr-32 -mt-32" />
-          <div className="w-16 h-16 bg-[#3b82f6] rounded-sm flex items-center justify-center transition-all duration-700 shadow-xl relative z-10">
+          <div className="w-16 h-16 bg-[#3b82f6] rounded-sm flex items-center justify-center transition-all duration-75 shadow-xl relative z-10">
              <Ruler className="w-8 h-8 text-white" />
           </div>
           <div className="relative z-10">
@@ -226,23 +226,35 @@ export default function PanelAntropometria({
                 </div>
                 <h3 className="font-bold uppercase tracking-[0.4em] text-[10px] text-white/10 text-white/20">MÉTRICAS FUNDAMENTALES</h3>
               </div>
-              <div className="bg-[#0a0f14] px-6 py-2.5 rounded-sm border border-white/5 flex items-center gap-6 shadow-xl transition-all duration-700">
+              <div className="bg-[#0a0f14] px-6 py-2.5 rounded-sm border border-white/5 flex items-center gap-6 shadow-xl transition-all duration-75">
                 <span className="text-[9px] font-bold text-white/10 uppercase tracking-[0.2em] leading-none">STATUS:</span>
                 <span className="text-xl font-bold text-white tracking-tight leading-none uppercase">{clasificarIMC(imc)}</span>
               </div>
             </div>
 
             <div className="space-y-4">
-              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-4">Peso (KG)</label>
-              <input type="number" {...register('peso', { valueAsNumber: true })} className={inputStyles} />
+              <label htmlFor="peso" className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-4">Peso (KG)</label>
+              <input 
+                id="peso"
+                type="number" 
+                {...register('peso', { valueAsNumber: true })} 
+                className={inputStyles} 
+                aria-label="Ingresar peso en kilogramos"
+              />
             </div>
             <div className="space-y-4">
-              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-4">Estatura (CM)</label>
-              <input type="number" {...register('altura', { valueAsNumber: true })} className={inputStyles} />
+              <label htmlFor="altura" className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-4">Estatura (CM)</label>
+              <input 
+                id="altura"
+                type="number" 
+                {...register('altura', { valueAsNumber: true })} 
+                className={inputStyles} 
+                aria-label="Ingresar estatura en centímetros"
+              />
             </div>
-            <div className="space-y-4 bg-[#0a0f14] p-6 rounded-sm border border-white/5 text-center flex flex-col justify-center shadow-xl group/bmi transition-all duration-700 relative overflow-hidden">
-              <span className="text-[9px] font-bold text-white/10 uppercase tracking-[0.4em] mb-4 leading-none group-hover/bmi:text-white transition-all duration-700 relative z-10">IMC</span>
-              <span className="text-4xl font-bold text-white tracking-tight relative z-10">{imc} <span className="text-[9px] text-white/10 block mt-4 font-bold tracking-[0.2em] uppercase">VALOR CALCULADO</span></span>
+            <div className="space-y-4 bg-[#0a0f14] p-6 rounded-sm border border-white/5 text-center flex flex-col justify-center shadow-xl group/bmi transition-all duration-75 relative overflow-hidden" aria-live="polite">
+              <span className="text-[9px] font-bold text-white/10 uppercase tracking-[0.4em] mb-4 leading-none group-hover/bmi:text-white transition-all duration-75 relative z-10" id="label-imc">IMC</span>
+              <span className="text-4xl font-bold text-white tracking-tight relative z-10" aria-labelledby="label-imc">{imc} <span className="text-[9px] text-white/10 block mt-4 font-bold tracking-[0.2em] uppercase">VALOR CALCULADO</span></span>
             </div>
 
             {/* Skinfolds Tactical Protocol */}
@@ -254,14 +266,20 @@ export default function PanelAntropometria({
             </div>
 
             {[
-              { label: 'Tríceps', key: 'pliegues.triceps' },
-              { label: 'Subescapular', key: 'pliegues.subescapular' },
-              { label: 'Suprailíaco', key: 'pliegues.suprailiaco' },
-              { label: 'Abdominal', key: 'pliegues.abdominal' }
+              { label: 'Tríceps', key: 'pliegues.triceps', id: 'triceps' },
+              { label: 'Subescapular', key: 'pliegues.subescapular', id: 'subescapular' },
+              { label: 'Suprailíaco', key: 'pliegues.suprailiaco', id: 'suprailiaco' },
+              { label: 'Abdominal', key: 'pliegues.abdominal', id: 'abdominal' }
             ].map(f => (
-              <div key={f.key} className="space-y-4 group/fold">
-                <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-4 group-hover/fold:text-white transition-all duration-700">{f.label}</label>
-                <input type="number" {...register(f.key as any, { valueAsNumber: true })} className="w-full p-5 bg-[#0a0f14] border border-white/5 rounded-sm outline-none text-xl font-bold text-white focus:border-[#3b82f6]/30 transition-all duration-700 shadow-xl tracking-tight" />
+              <div key={f.key} className="space-y-2 group/fold">
+                <label htmlFor={f.id} className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-4 group-hover/fold:text-white transition-all duration-75">{f.label}</label>
+                <input 
+                  id={f.id}
+                  type="number" 
+                  {...register(f.key as any, { valueAsNumber: true })} 
+                  className="w-full p-5 bg-[#0a0f14] border border-white/5 rounded-sm outline-none text-xl font-bold text-white focus:border-[#3b82f6]/30 focus:ring-1 focus:ring-[#3b82f6]/20 transition-all duration-75 shadow-xl tracking-tight" 
+                  aria-label={`Ingresar pliegue ${f.label} en milímetros`}
+                />
               </div>
             ))}
 
@@ -283,7 +301,7 @@ export default function PanelAntropometria({
             <div className="relative group/grasa">
               <div className="flex mb-8 items-end justify-between">
                 <div className="space-y-2">
-                  <span className="text-[11px] font-bold uppercase tracking-[0.4em] text-white/10 block mb-3 leading-none group-hover/grasa:text-white transition-all duration-700">GRASA (FAULKNER)</span>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.4em] text-white/10 block mb-3 leading-none group-hover/grasa:text-white transition-all duration-75">GRASA (FAULKNER)</span>
                   <span className="text-2xl font-bold uppercase text-white leading-none tracking-tight">
                     PORCENTAJE
                   </span>
@@ -294,7 +312,14 @@ export default function PanelAntropometria({
                   </span>
                 </div>
               </div>
-              <div className="overflow-hidden h-3 mb-12 bg-[#070C14] rounded-full shadow-inner relative transition-all duration-700 border border-white/5">
+              <div 
+                className="overflow-hidden h-3 mb-12 bg-[#070C14] rounded-full shadow-inner relative transition-all duration-75 border border-white/5"
+                role="progressbar"
+                aria-valuenow={grasaPct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Porcentaje de grasa corporal calculado"
+              >
                 <motion.div 
                   layout
                   initial={{ width: 0 }}
@@ -308,7 +333,7 @@ export default function PanelAntropometria({
               <div className="p-6 bg-[#0a0f14] rounded-sm border border-white/5 text-center flex flex-col items-center justify-center space-y-4 shadow-xl relative overflow-hidden group/magra">
                 <p className="text-[9px] font-bold text-white/5 uppercase tracking-[0.4em] leading-none mb-2 italic relative z-10">Masa Magra</p>
                 <div className="flex items-center gap-6 relative z-10">
-                  <Zap className="w-8 h-8 text-[#3b82f6]/50 group-hover/magra:text-[#3b82f6] transition-all duration-700" />
+                  <Zap className="w-8 h-8 text-[#3b82f6]/50 group-hover/magra:text-[#3b82f6] transition-all duration-75" />
                   <p className="text-2xl font-bold text-white tracking-tight leading-none">{comp.masaMagraKg} <span className="text-xl opacity-10 ml-2">KG</span></p>
                 </div>
               </div>
@@ -319,7 +344,7 @@ export default function PanelAntropometria({
               </div>
             </div>
 
-            <div className="bg-white/5 p-8 rounded-sm text-white/20 flex items-start gap-6 border border-white/5 relative group/info hover:border-white/10 transition-all duration-700">
+            <div className="bg-white/5 p-8 rounded-sm text-white/20 flex items-start gap-6 border border-white/5 relative group/info hover:border-white/10 transition-all duration-75">
               <Info className="w-8 h-8 shrink-0 text-[#3b82f6]/40" />
               <p className="text-[10px] leading-relaxed font-bold uppercase tracking-widest italic">
                 Cálculos validados. Interpretación profesional basada en valores antropométricos estandarizados.
@@ -338,7 +363,7 @@ export default function PanelAntropometria({
                }}
                disabled={saveMutation.isPending}
                className={clsx(
-                 "w-full py-6 rounded-sm font-bold uppercase text-[11px] tracking-[0.3em] transition-all duration-700 flex items-center justify-center gap-4 shadow-2xl relative overflow-hidden group/save",
+                 "w-full py-6 rounded-sm font-bold uppercase text-[11px] tracking-[0.3em] transition-all duration-75 flex items-center justify-center gap-4 shadow-2xl relative overflow-hidden group/save",
                  saveMutation.isPending ? "bg-white/5 text-white/20" : "bg-white text-[#0a0f14] hover:bg-white/90"
                )}
             >
@@ -350,7 +375,7 @@ export default function PanelAntropometria({
                )}
                {saveMutation.isPending ? 'Sincronizando...' : 'Guardar Biometría'}
             </button>
-            <div id="biometria-success" className="text-center text-[10px] font-bold text-emerald-400 uppercase tracking-widest opacity-0 transition-opacity duration-700">
+            <div id="biometria-success" className="text-center text-[10px] font-bold text-emerald-400 uppercase tracking-widest opacity-0 transition-opacity duration-75">
                ✓ Mediciones guardadas correctamente
             </div>
           </div>

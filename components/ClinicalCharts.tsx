@@ -19,6 +19,12 @@ interface ChartProps {
 }
 
 export default function ClinicalCharts({ data }: ChartProps) {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   if (!data || data.length === 0) {
     return (
       <div className="h-[300px] flex items-center justify-center bg-white/5 rounded-3xl border border-dashed border-white/10">

@@ -1,74 +1,83 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
+import prisma from '@/lib/prisma';
 import { getValidSession, unauthorizedResponse } from '@/lib/protectApi';
-import mongoose from 'mongoose';
-import fs from 'fs';
-
-function log(msg: string) {
-  const logPath = 'c:/Users/enzul/OneDrive/Escritorio/guido/tmp_api_log.txt';
-  const timestamp = new Date().toISOString();
-  fs.appendFileSync(logPath, `[${timestamp}] BIOMETRIA_FINAL: ${msg}\n`);
-}
 
 export async function GET(request: Request) {
-  log('GET START');
   try {
     const session = await getValidSession();
     if (!session) return unauthorizedResponse();
     
-    await dbConnect();
     const { searchParams } = new URL(request.url);
     const pId = searchParams.get('pacienteId');
-    log(`GET PACIENTE=${pId}`);
+    if (!pId) return NextResponse.json({ error: 'pacienteId requerido' }, { status: 400 });
 
-    const cleanId = String(pId).trim();
-    if (!/^[0-9a-fA-F]{24}$/.test(cleanId)) {
-        return NextResponse.json({ error: 'Formato de ID inválido' }, { status: 400 });
-    }
-    const pacienteObjectId = new mongoose.Types.ObjectId(cleanId);
-
-    const Antropometria = (await import('@/models/Antropometria')).default;
-    const data = await (Antropometria as any).find({ pacienteId: pacienteObjectId }).sort({ createdAt: 1 });
+    const data = await prisma.antropometria.findMany({
+      where: { pacienteId: String(pId) },
+      orderBy: { createdAt: 'asc' }
+    });
     return NextResponse.json({ data });
   } catch(e: any) {
-    log(`GET CRASH: ${e.message}`);
+    console.error('Biometria GET Error:', e);
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
-  log('POST START');
   try {
     const session = await getValidSession();
-    if (!session) { log('401'); return unauthorizedResponse(); }
+    if (!session) return unauthorizedResponse();
     
-    await dbConnect();
     const body = await request.json();
-    log(`POST BODY FOR ${body.pacienteId}`);
-
     const { antropometriaSchema } = await import('@/schemas/antropometriaSchema');
     const validation = antropometriaSchema.safeParse(body);
+    
     if (!validation.success) {
-      log('V-FAIL');
-      return NextResponse.json({ error: 'Validación fallida' }, { status: 400 });
+      return NextResponse.json({ 
+        error: 'Validación fallida', 
+        details: validation.error.flatten().fieldErrors 
+      }, { status: 400 });
     }
 
-    const Antropometria = (await import('@/models/Antropometria')).default;
     const { pacienteId: rawId, ...data } = validation.data;
-    const pId = new mongoose.Types.ObjectId(rawId);
+    const pId = String(rawId);
+    
     const startOfDay = new Date();
-    startOfDay.setHours(0,0,0,0);
+    startOfDay.setHours(0, 0, 0, 0);
 
-    const doc = await (Antropometria as any).findOneAndUpdate(
-      { pacienteId: pId, createdAt: { $gte: startOfDay } },
-      { pacienteId: pId, ...data },
-      { upsert: true, new: true, runValidators: false }
-    );
+    const existing = await prisma.antropometria.findFirst({
+      where: {
+        pacienteId: pId,
+        createdAt: { gte: startOfDay }
+      }
+    });
 
-    log(`POST SUCCESS: ${doc._id}`);
+    const finalData = {
+      peso: Number(data.peso),
+      altura: Number(data.altura),
+      pliegues: data.pliegues || {},
+      perimetros: data.perimetros || {},
+      resultados: data.resultados || {},
+    };
+
+    let doc: any;
+
+    if (existing) {
+      doc = await prisma.antropometria.update({
+        where: { id: existing.id },
+        data: finalData
+      });
+    } else {
+      doc = await prisma.antropometria.create({
+        data: {
+          pacienteId: pId,
+          ...finalData
+        }
+      });
+    }
+
     return NextResponse.json({ data: doc });
   } catch(e: any) {
-    log(`POST CRASH: ${e.message}\n${e.stack}`);
+    console.error('Biometria POST Error:', e);
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }

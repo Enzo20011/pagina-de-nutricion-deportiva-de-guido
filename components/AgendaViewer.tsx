@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { 
   format, 
   addMonths, 
@@ -72,41 +73,41 @@ export default function AgendaViewer() {
       
       {/* STRATEGIC CALENDAR CORE */}
       <div className="xl:col-span-8 bg-[#0e1419] rounded-sm border border-[#1f262e] overflow-hidden shadow-xl relative">
-        <header className="p-6 md:p-8 border-b border-[#1f262e] flex flex-col md:flex-row md:items-center justify-between gap-8 bg-[#141a20]/40 relative z-10">
-          <div className="flex items-center gap-6">
-            <div className="w-14 h-14 bg-[#3b82f6] text-white rounded-sm flex items-center justify-center shadow-lg shadow-[#3b82f6]/20">
-              <CalendarIcon className="w-7 h-7" />
+        <header className="p-4 md:p-8 border-b border-[#1f262e] flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-8 bg-[#141a20]/40 relative z-10">
+          <div className="flex items-center gap-4 md:gap-6">
+            <div className="w-10 h-10 md:w-14 md:h-14 bg-[#3b82f6] text-white rounded-sm flex items-center justify-center shadow-lg shadow-[#3b82f6]/20 shrink-0">
+              <CalendarIcon className="w-5 h-5 md:w-7 md:h-7" />
             </div>
             <div>
-              <h3 className="text-2xl font-heading font-black text-white uppercase tracking-tight leading-none">
+              <h3 className="text-xl md:text-2xl font-heading font-black text-white uppercase tracking-tight leading-none">
                 {format(currentDate, 'MMMM', { locale: es })} <span className="text-[#3b82f6] capitalize">{format(currentDate, 'yyyy')}</span>
               </h3>
-              <p className="text-[9px] font-label font-bold tracking-[0.2em] text-[#a7abb2] uppercase mt-2">Gestión de Turnos</p>
+              <p className="text-[7px] md:text-[9px] font-label font-bold tracking-[0.2em] text-[#a7abb2] uppercase mt-1 md:mt-2">Gestión de Turnos</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={prevMonth} className="w-10 h-10 bg-[#1f262e] hover:bg-[#3b82f6] text-white rounded-sm transition-all border border-[#1a2027] flex items-center justify-center">
-              <ChevronLeft className="w-5 h-5" />
+          <div className="flex gap-2 justify-center md:justify-end">
+            <button onClick={prevMonth} className="w-9 h-9 md:w-10 md:h-10 bg-[#1f262e] hover:bg-[#3b82f6] text-white rounded-sm transition-all border border-[#1a2027] flex items-center justify-center">
+              <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
             </button>
-            <button onClick={() => setCurrentDate(new Date())} className="px-6 h-10 bg-[#3b82f6] text-white rounded-sm text-[9px] font-label font-bold uppercase tracking-widest hover:bg-[#3b82f6]/90 transition-all shadow-md">
+            <button onClick={() => setCurrentDate(new Date())} className="flex-1 md:flex-none px-4 md:px-6 h-9 md:h-10 bg-[#3b82f6] text-white rounded-sm text-[8px] md:text-[9px] font-label font-bold uppercase tracking-widest hover:bg-[#3b82f6]/90 transition-all shadow-md">
               Hoy
             </button>
-            <button onClick={nextMonth} className="w-10 h-10 bg-[#1f262e] hover:bg-[#3b82f6] text-white rounded-sm transition-all border border-[#1a2027] flex items-center justify-center">
-              <ChevronRight className="w-5 h-5" />
+            <button onClick={nextMonth} className="w-9 h-9 md:w-10 md:h-10 bg-[#1f262e] hover:bg-[#3b82f6] text-white rounded-sm transition-all border border-[#1a2027] flex items-center justify-center">
+              <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           </div>
         </header>
 
-        <div className="p-5 md:p-6">
+        <div className="p-3 md:p-6">
           {/* Days Operational Header */}
-          <div className="grid grid-cols-7 mb-6">
+          <div className="grid grid-cols-7 mb-4 md:mb-6">
             {['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'].map((day) => (
-              <div key={day} className="text-center text-[9px] font-label font-bold uppercase tracking-widest text-[#a7abb2]/40">{day}</div>
+              <div key={day} className="text-center text-[7px] md:text-[9px] font-label font-bold uppercase tracking-[0.1em] md:tracking-widest text-[#a7abb2]/40">{day}</div>
             ))}
           </div>
 
           {/* Precision Grid Days */}
-          <div className="grid grid-cols-7 gap-1 md:gap-2">
+          <div className="grid grid-cols-7 gap-0.5 md:gap-2">
             {calendarDays.map((day, i) => {
               const confirmedCount = appointments.filter((a: any) => isSameDay(parseISO(a.fecha), day) && a.status === 'confirmada').length;
               const isSelected = isSameDay(day, selectedDay);
@@ -118,7 +119,7 @@ export default function AgendaViewer() {
                   key={i}
                   onClick={() => setSelectedDay(day)}
                   className={clsx(
-                    "relative aspect-square rounded-sm border transition-all duration-300 flex flex-col items-center justify-center gap-2 group/day",
+                    "relative aspect-square rounded-sm border transition-all duration-300 flex flex-col items-center justify-center gap-1 md:gap-2 group/day",
                     isCurrMonth ? "cursor-pointer" : "opacity-5 pointer-events-none",
                     isSelected 
                       ? "bg-[#3b82f6] border-[#3b82f6] shadow-lg shadow-[#3b82f6]/20" 
@@ -127,14 +128,14 @@ export default function AgendaViewer() {
                   )}
                 >
                   <span className={clsx(
-                    "text-lg font-heading font-black tracking-tighter leading-none",
+                    "text-sm md:text-lg font-heading font-black tracking-tighter leading-none",
                     isSelected ? "text-white" : isTodayDay ? "text-[#3b82f6]" : "text-[#eaeef6]"
                   )}>{format(day, 'd')}</span>
                   
                   {confirmedCount > 0 && (
-                     <div className="flex gap-1">
+                     <div className="flex gap-0.5 md:gap-1">
                         {Array.from({ length: Math.min(confirmedCount, 3) }).map((_, dotIdx) => (
-                           <div key={dotIdx} className={clsx("w-1 h-1 rounded-full", isSelected ? "bg-white" : "bg-[#3b82f6]")} />
+                           <div key={dotIdx} className={clsx("w-0.5 h-0.5 md:w-1 md:h-1 rounded-full", isSelected ? "bg-white" : "bg-[#3b82f6]")} />
                         ))}
                      </div>
                   )}
@@ -202,9 +203,9 @@ export default function AgendaViewer() {
                         <Phone className="w-3.5 h-3.5" /> {app.telefono}
                       </div>
                     </div>
-                    <button className="w-10 h-10 bg-[#1f262e] hover:bg-[#3b82f6] text-[#a7abb2] hover:text-white rounded-sm transition-all flex items-center justify-center border border-[#1a2027]">
+                    <Link href="/admin/consulta" className="w-10 h-10 bg-[#1f262e] hover:bg-[#3b82f6] text-[#a7abb2] hover:text-white rounded-sm transition-all flex items-center justify-center border border-[#1a2027]">
                        <ArrowUpRight className="w-5 h-5" />
-                    </button>
+                    </Link>
                   </div>
                 </div>
               ))

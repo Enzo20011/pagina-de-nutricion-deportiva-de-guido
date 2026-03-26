@@ -45,6 +45,12 @@ const ACT_DESC = [
 ];
 
 export default function CalculadoraMetabolica() {
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [data, setData] = useState({
     peso: 70,
     altura: 170,
@@ -263,8 +269,9 @@ export default function CalculadoraMetabolica() {
                </div>
                         {/* Central Chart */}
                <div className="flex flex-col items-center justify-center py-2">
-                  <div className="w-full h-[180px] relative">
-                    <ResponsiveContainer width="100%" height="100%">
+                  <div className="w-full h-[180px] relative" style={{ minHeight: '180px' }}>
+                    {mounted && (
+                      <ResponsiveContainer width="100%" height="100%" debounce={1}>
                       <BarChart data={chartData} margin={{ top: 10, right: 10, left: 40, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f262e" opacity={0.5} />
                         <XAxis 
@@ -302,6 +309,7 @@ export default function CalculadoraMetabolica() {
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
+                    )}
                   </div>
                   <h3 className="font-label text-[9px] font-bold uppercase tracking-[0.4em] text-[#3b82f6] mt-4 mb-3">Objetivos calóricos_</h3>
                </div>

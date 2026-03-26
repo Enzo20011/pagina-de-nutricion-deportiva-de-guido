@@ -54,7 +54,7 @@ export default function ConsultaIndexPage() {
             placeholder="Buscar paciente por nombre o apellido..." 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full bg-[#0a0f14] p-6 pl-16 rounded-sm border border-white/5 focus:border-[#3b82f6]/30 outline-none transition-all font-bold uppercase tracking-widest text-[10px] text-white placeholder:text-white/5 shadow-xl"
+            className="w-full bg-[#0a0f14] p-6 pl-16 rounded-sm border border-white/5 focus:border-[#3b82f6]/30 outline-none transition-all font-bold uppercase tracking-widest text-base md:text-[10px] text-white placeholder:text-white/5 shadow-xl"
           />
         </div>
         

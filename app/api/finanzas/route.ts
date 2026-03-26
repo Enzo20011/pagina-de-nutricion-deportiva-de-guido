@@ -1,20 +1,51 @@
 import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 import { manualPaymentSchema } from '@/lib/validations/finance';
 import { getValidSession, unauthorizedResponse } from '@/lib/protectApi';
 
 export async function GET() {
   const session = await getValidSession();
   if (!session) return unauthorizedResponse();
-  // ... (GET logic) ...
-  return NextResponse.json({
-    totalMes: 342500,
-    mpTotal: 128000,
-    efectivoTotal: 214500,
-    movimientos: [
-      { id: '1', paciente: 'Juan Pérez', monto: 2500, metodo: 'Mercado Pago', estado: 'Pagado', fecha: 'Hoy, 10:30', concepto: 'Seña Turno' },
-      { id: '2', paciente: 'María López', monto: 15000, metodo: 'Efectivo', estado: 'Pagado', fecha: 'Hoy, 12:45', concepto: 'Consulta Completa' },
-    ]
-  });
+
+  try {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const ingresos = await prisma.ingreso.findMany({
+      where: { fecha: { gte: startOfMonth } },
+      include: { paciente: { select: { nombre: true, apellido: true } } },
+      orderBy: { fecha: 'desc' }
+    });
+
+    const totalMes = ingresos.reduce((acc, curr) => acc + curr.monto, 0);
+    const mpTotal = ingresos
+      .filter(i => i.metodo.includes('Mercado Pago'))
+      .reduce((acc, curr) => acc + curr.monto, 0);
+    const efectivoTotal = ingresos
+      .filter(i => i.metodo.includes('Efectivo'))
+      .reduce((acc, curr) => acc + curr.monto, 0);
+
+    const movimientos = ingresos.map(i => ({
+      id: i.id,
+      paciente: i.paciente ? `${i.paciente.nombre} ${i.paciente.apellido}` : 'Vaca', // Fallback or generic
+      monto: i.monto,
+      metodo: i.metodo,
+      estado: i.estado,
+      fecha: i.fecha.toLocaleDateString(),
+      concepto: i.concepto
+    }));
+
+    return NextResponse.json({
+      totalMes,
+      mpTotal,
+      efectivoTotal,
+      movimientos
+    });
+  } catch (error: any) {
+    console.error('Finanzas GET Error:', error);
+    return NextResponse.json({ error: 'Error fetching finance data' }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
@@ -23,18 +54,30 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    
-    // SERVER-SIDE ZOD VALIDATION
     const validation = manualPaymentSchema.safeParse(body);
+    
     if (!validation.success) {
-      return NextResponse.json(
-        { error: 'Datos de finanzas inválidos', details: validation.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return NextResponse.json({ 
+        error: 'Datos inválidos', 
+        details: validation.error.flatten().fieldErrors 
+      }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, message: "Ingreso registrado (Simulado)", data: validation.data });
-  } catch (error) {
+    const { pacienteId, ...data } = validation.data;
+
+    const nuevoIngreso = await prisma.ingreso.create({
+      data: {
+        ...data,
+        pacienteId: pacienteId || null,
+        monto: Number(data.monto),
+        fecha: new Date(),
+        estado: 'Pagado', // Por defecto para carga manual
+      }
+    });
+
+    return NextResponse.json({ success: true, data: nuevoIngreso });
+  } catch (error: any) {
+    console.error('Finanzas POST Error:', error);
     return NextResponse.json({ error: "Error registrando ingreso" }, { status: 500 });
   }
 }

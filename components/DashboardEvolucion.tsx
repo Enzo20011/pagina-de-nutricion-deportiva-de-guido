@@ -36,6 +36,11 @@ export default function DashboardEvolucion({
   paciente: any, 
   sessionData: any 
 }) {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Query DB History
   const { data: historialDb, isLoading } = useQuery({
@@ -144,9 +149,9 @@ export default function DashboardEvolucion({
           </div>
         </div>
 
-        <div className="h-[350px] w-full relative z-10">
-          {historial.length > 1 && historial[0].fecha !== 'Sin Datos' ? (
-            <ResponsiveContainer width="100%" height="100%">
+        <div className="h-[350px] w-full relative z-10" style={{ minHeight: '350px' }}>
+          {mounted && historial.length > 1 && historial[0].fecha !== 'Sin Datos' ? (
+            <ResponsiveContainer width="100%" height="100%" debounce={1}>
               <LineChart data={historial}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis 
@@ -210,6 +215,10 @@ export default function DashboardEvolucion({
                 <Legend verticalAlign="top" height={36} iconType="circle" />
               </LineChart>
             </ResponsiveContainer>
+          ) : !mounted ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />
+            </div>
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center space-y-6 text-center px-8">
                <div className="w-24 h-24 bg-white/5 rounded-[2.5rem] flex items-center justify-center border border-white/5">

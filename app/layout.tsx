@@ -1,28 +1,24 @@
-import Link from "next/link";
 import { Space_Grotesk, Inter, Manrope } from 'next/font/google';
 import './globals.css';
 import AuthProvider from '@/components/SessionProvider';
 import QueryProvider from '@/components/providers/QueryProvider';
-import Footer from '@/components/Footer';
-import AnimatedBackground from '@/components/AnimatedBackground';
-import PageLoader from '@/components/PageLoader';
 
-const spaceGrotesk = Space_Grotesk({ 
-  subsets: ['latin'], 
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
   variable: '--font-space-grotesk',
-  weight: ['300', '400', '500', '600', '700']
+  weight: ['400', '600', '700']
 });
 
-const inter = Inter({ 
-  subsets: ['latin'], 
+const inter = Inter({
+  subsets: ['latin'],
   variable: '--font-inter',
-  weight: ['300', '400', '500', '600', '700']
+  weight: ['400', '500', '700']
 });
 
-const manrope = Manrope({ 
-  subsets: ['latin'], 
+const manrope = Manrope({
+  subsets: ['latin'],
   variable: '--font-manrope',
-  weight: ['300', '400', '500', '600', '700', '800']
+  weight: ['400', '600', '800']
 });
 
 export const metadata = {
@@ -72,8 +68,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning={true}>
       <body className={`${spaceGrotesk.variable} ${inter.variable} ${manrope.variable} font-sans bg-[#0a0f14] text-[#eaeef6] min-h-screen relative`}>
-        <AnimatedBackground />
-        {/* Navbar pública eliminada del layout global. Usar solo en layout público si se requiere. */}
         <AuthProvider>
           <QueryProvider>
             {children}

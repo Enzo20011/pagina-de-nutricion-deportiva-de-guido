@@ -13,10 +13,9 @@ export default function SobreMiSection({ onBookingClick = () => {} }: { onBookin
     <div className="bg-[#0a0f14]">
       {/* Hero */}
       <section className="relative py-16 px-8 overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none opacity-20"
-          style={{ backgroundImage: DOT_GRID, backgroundSize: "20px 20px" }} />
-        <div className="absolute top-0 right-0 w-[700px] h-[700px] pointer-events-none"
-          style={{ background: "radial-gradient(ellipse, rgba(59,130,246,0.05) 0%, transparent 70%)" }} />
+        <div className="dot-grid-overlay opacity-10" />
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] pointer-events-none opacity-30"
+          style={{ background: "radial-gradient(ellipse, rgba(59,130,246,0.1) 0%, transparent 70%)" }} />
 
         <div className="max-w-[1200px] mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           
@@ -25,15 +24,15 @@ export default function SobreMiSection({ onBookingClick = () => {} }: { onBookin
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
             >
 
-              <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight leading-[0.9] text-white mb-4">
+              <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tight leading-[0.9] text-white mb-4">
                 GUIDO<br />
                 <span className="text-[#3b82f6]">OPERUK</span>
-              </h1>
+              </h2>
               <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#a7abb2]/60 mb-8">
-                LICENCIADO EN NUTRICIÓN · ESPECIALISTA EN RENDIMIENTO
+                LICENCIADO EN NUTRICIÓN · ESPECIALISTA EN RENDIMIENTO · MP 778
               </p>
 
               <div className="border-l border-[#3b82f6]/30 pl-5 mb-8 space-y-4">
@@ -56,6 +55,7 @@ export default function SobreMiSection({ onBookingClick = () => {} }: { onBookin
                   whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(59,130,246,0.2)" }}
                   whileTap={{ scale: 0.95 }}
                   onClick={onBookingClick}
+                  aria-label="Agendar consulta nutricional ahora"
                   className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#eaeef6] hover:bg-[#3b82f6] hover:text-white transition-all duration-300 bg-[#1a2027] border border-[#2a3040] px-6 py-3 rounded-sm shadow-xl">
                   AGENDAR CONSULTA <ArrowUpRight className="w-4 h-4" />
                 </motion.button>
@@ -63,6 +63,7 @@ export default function SobreMiSection({ onBookingClick = () => {} }: { onBookin
                   whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(193, 53, 132, 0.2)" }}
                   whileTap={{ scale: 0.95 }}
                   href="https://www.instagram.com/lic.guidooperuk/" target="_blank" rel="noopener noreferrer"
+                  aria-label="Seguir al Lic. Guido Operuk en Instagram"
                   className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#a7abb2] hover:text-white transition-all duration-300 bg-transparent border border-[#2a3040] px-6 py-3 rounded-sm">
                   <Instagram className="w-4 h-4" /> Instagram
                 </motion.a>
@@ -73,7 +74,7 @@ export default function SobreMiSection({ onBookingClick = () => {} }: { onBookin
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="relative group pr-4"
             >
               <TiltCard>
@@ -82,7 +83,7 @@ export default function SobreMiSection({ onBookingClick = () => {} }: { onBookin
                   
                   <Image 
                     src="/guido.jpg"
-                    alt="Lic. Guido Operuk"
+                    alt="Lic. Guido Operuk - Especialista en Nutrición Deportiva y Clínica"
                     fill
                     className="object-cover object-center transition-all duration-1000 group-hover:scale-105"
                   />
@@ -97,20 +98,6 @@ export default function SobreMiSection({ onBookingClick = () => {} }: { onBookin
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="bg-[#0e1419] py-16 px-8 border-t border-[#1f262e]">
-        <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
-          <div>
-            <h2 className="text-3xl font-black uppercase tracking-tight text-[#eaeef6] mb-2">TRABAJEMOS JUNTOS</h2>
-            <p className="text-sm font-medium text-[#a7abb2]">Encontremos juntos tu mejor versión sustentable.</p>
-          </div>
-          <button onClick={onBookingClick}
-            className="px-10 py-4 rounded-sm font-bold text-[11px] tracking-[0.2em] uppercase hover:shadow-[0_0_40px_rgba(59,130,246,0.3)] transition-shadow duration-500"
-            style={{ background: "linear-gradient(135deg, #3b82f6, #2563eb)", color: "#ffffff" }}>
-            AGENDAR CONSULTA
-          </button>
-        </div>
-      </section>
     </div>
   );
 }

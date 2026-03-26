@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
-import Reserva from '@/models/Reserva';
+import prisma from '@/lib/prisma';
 import { getValidSession, unauthorizedResponse } from '@/lib/protectApi';
 
 export async function GET(request: Request) {
@@ -11,18 +10,22 @@ export async function GET(request: Request) {
   const start = searchParams.get('start'); // YYYY-MM-DD
   const end = searchParams.get('end');     // YYYY-MM-DD
 
-  await dbConnect();
-
   try {
-    const query: any = { isDeleted: false };
+    const where: any = { isDeleted: false };
     
     if (start && end) {
-      query.fecha = { $gte: start, $lte: end };
+      where.fecha = { gte: start, lte: end };
     } else if (start) {
-      query.fecha = { $gte: start };
+      where.fecha = { gte: start };
     }
 
-    const appointments = await (Reserva as any).find(query).sort({ fecha: 1, hora: 1 });
+    const appointments = await prisma.reserva.findMany({
+      where,
+      orderBy: [
+        { fecha: 'asc' },
+        { hora: 'asc' }
+      ]
+    });
     
     return NextResponse.json({ 
       data: appointments,

@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
-import Ingreso from '@/models/Ingreso';
-import Reserva from '@/models/Reserva';
-import { EstadoPago } from '@/models/Ingreso';
+import prisma from '@/lib/prisma';
+import { EstadoPago } from '@/types/finance';
 import { sendPaymentConfirmation } from '@/lib/email';
 
 /**
@@ -11,7 +9,7 @@ import { sendPaymentConfirmation } from '@/lib/email';
  */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  
+
   // Real Mercado Pago Query Params
   const status = searchParams.get('status') || searchParams.get('collection_status');
   const reservaId = searchParams.get('reserva_id') || searchParams.get('external_reference');
@@ -24,35 +22,34 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL('/?error=missing_payment_data', req.url));
   }
 
-  await dbConnect();
-
   try {
     if (status === 'approved' || status === 'success') {
       // 1. Confirm the Financial Entry
-      const ingreso = await (Ingreso as any).findOneAndUpdate(
-        { 
-          $or: [
-            { mpPreferenceId: preferenceId },
-            { referenciaExterna: reservaId }
-          ]
+      const ingreso = await prisma.ingreso.updateMany({
+        where: {
+          OR: [
+            { mpPreferenceId: preferenceId ?? undefined },
+            { referenciaExterna: reservaId },
+          ],
         },
-        { 
+        data: {
           estado: EstadoPago.PAGADO,
-          turnoId: paymentId || undefined // Store the actual payment ID from MP
+          turnoId: paymentId || undefined,
         },
-        { new: true }
-      );
+      });
 
       // 2. Confirm the Reservation
-      const reserva = await (Reserva as any).findByIdAndUpdate(
-        reservaId,
-        { status: 'confirmada' },
-        { new: true }
-      );
-      
-      if (reserva && reserva.email) {
-        // 3. Send Confirmation Email (Mock for now)
-        await sendPaymentConfirmation(reserva.email, ingreso?.monto || 5000);
+      const reserva = await prisma.reserva.update({
+        where: { id: reservaId },
+        data: { status: 'confirmada' },
+      });
+
+      if (reserva?.email) {
+        // 3. Send Confirmation Email
+        const ingresoData = await prisma.ingreso.findFirst({
+          where: { referenciaExterna: reservaId },
+        });
+        await sendPaymentConfirmation(reserva.email, ingresoData?.monto || 5000);
       }
 
       return NextResponse.redirect(new URL(`/success?booking=confirmed&reserva=${reservaId}`, req.url));

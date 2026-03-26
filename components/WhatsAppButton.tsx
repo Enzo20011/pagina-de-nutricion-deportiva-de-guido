@@ -6,11 +6,13 @@ import { motion } from 'framer-motion';
 interface WhatsAppButtonProps {
   phoneNumber?: string;
   message?: string;
+  raised?: boolean;
 }
 
 export default function WhatsAppButton({
   phoneNumber = "5493764152484",
   message = "Hola Guido! Quisiera realizar una consulta sobre nutrición.",
+  raised = false,
 }: WhatsAppButtonProps) {
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
@@ -24,7 +26,7 @@ export default function WhatsAppButton({
       transition={{ delay: 1.2, duration: 0.55, type: "spring", stiffness: 260, damping: 16 }}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
-      className="fixed bottom-6 right-6 z-[60] flex items-center justify-center group outline-none"
+      className={`fixed right-6 z-[60] flex items-center justify-center group outline-none transition-[bottom] duration-300 ${raised ? 'bottom-24 md:bottom-6' : 'bottom-6'}`}
       aria-label="Contactar por WhatsApp"
     >
       {/* Background Pulse Aura */}

@@ -30,7 +30,7 @@ export default function ScientificAvales() {
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
+                transition={{ duration: 0.2 }}
                 className="bg-[#0e1419] p-6 group hover:bg-[#141a20] transition-colors duration-500 relative"
               >
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#3b82f6] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

@@ -242,26 +242,10 @@ export default function PlanAlimentario({
     queryFn: async () => {
       if (debouncedSearch.length < 2) return { data: [] };
       
-      // Caso 1: Solo USDA
-      if (filterSource === 'USDA') {
-        const res = await fetch(`/api/alimentos/usda?q=${debouncedSearch}`);
-        const data = await res.json();
-        return { data: Array.isArray(data) ? data : [] };
-      }
-
-      // Caso 2: Local o Híbrido (Cascada)
-      const resLocal = await fetch(`/api/alimentos?q=${debouncedSearch}&categoria=${filterSource === 'ALL' ? 'LOCAL' : filterSource}`);
-      const dataLocal = await resLocal.json();
-      const localItems = dataLocal.data || [];
-
-      if (localItems.length > 0 || filterSource !== 'ALL') {
-        return { data: localItems };
-      }
-
-      // Caso 3: Fallback a USDA si local está vacío y estamos en modo 'ALL'
-      const resUSDA = await fetch(`/api/alimentos/usda?q=${debouncedSearch}`);
-      const dataUSDA = await resUSDA.json();
-      return { data: Array.isArray(dataUSDA) ? dataUSDA : [] };
+      // Llamada única al endpoint híbrido del servidor
+      const res = await fetch(`/api/alimentos?q=${debouncedSearch}&categoria=${filterSource}`);
+      const data = await res.json();
+      return { data: data.data || [] };
     },
     enabled: debouncedSearch.length >= 2
   });
@@ -296,7 +280,7 @@ export default function PlanAlimentario({
       {/* ADVISORY BAR */}
       <div className="xl:col-span-12">
         <div className="bg-white/5 border border-white/10 p-4 rounded-sm flex items-center gap-6 group relative">
-          <div className="w-12 h-12 bg-[#3b82f6] rounded-sm flex items-center justify-center text-white shadow-xl group-hover:rotate-6 transition-transform duration-700">
+          <div className="w-12 h-12 bg-[#3b82f6] rounded-sm flex items-center justify-center text-white shadow-xl group-hover:rotate-6 transition-transform duration-75">
             <Info className="w-6 h-6" />
           </div>
           <div className="flex-1">
@@ -318,13 +302,15 @@ export default function PlanAlimentario({
            
            <div className="flex flex-col md:flex-row gap-8">
             <div className="flex-1 relative group/search">
-               <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-white/10 group-focus-within/search:text-[#3b82f6]/40 transition-all duration-700" />
+               <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-white/10 group-focus-within/search:text-[#3b82f6]/40 transition-all duration-75" />
                <input 
+                 id="food-search"
                  type="text" 
                  placeholder="Buscar alimentos..." 
                  value={searchQuery}
                  onChange={e => setSearchQuery(e.target.value)}
-                 className="w-full bg-[#0a0f14] pl-16 pr-6 py-4 rounded-sm outline-none border border-white/5 focus:border-[#3b82f6]/30 transition-all duration-700 font-bold text-white placeholder:text-white/5 shadow-inner uppercase tracking-widest text-[10px]"
+                 className="w-full bg-[#0a0f14] pl-16 pr-6 py-4 rounded-sm outline-none border border-white/5 focus:border-[#3b82f6]/30 transition-all duration-75 font-bold text-white placeholder:text-white/5 shadow-inner uppercase tracking-widest text-[10px]"
+                 aria-label="Buscar alimentos en la base de datos nutricional"
                />
             </div>
             <div className="flex gap-2 bg-[#0a0f14] p-2 rounded-sm border border-white/5 shadow-xl">
@@ -332,8 +318,10 @@ export default function PlanAlimentario({
                  <button 
                    key={s}
                    onClick={() => setFilterSource(s as any)}
+                   aria-pressed={filterSource === s}
+                   aria-label={`Filtrar por fuente: ${s === 'ALL' ? 'Todas' : s}`}
                    className={clsx(
-                     "px-4 py-2 rounded-sm text-[9px] font-bold uppercase tracking-widest transition-all duration-700",
+                     "px-4 py-2 rounded-sm text-[9px] font-bold uppercase tracking-widest transition-all duration-75",
                      filterSource === s ? 'bg-[#3b82f6] text-white shadow-xl' : 'text-white/20 hover:text-white hover:bg-white/5'
                    )}
                  >
@@ -353,7 +341,7 @@ export default function PlanAlimentario({
                  <button
                    onClick={() => numComidas > 1 && handleNumComidasChange(numComidas - 1)}
                    disabled={numComidas <= 1}
-                   className="w-10 h-10 rounded-sm hover:bg-white/5 transition-all duration-700 flex items-center justify-center text-white/20 hover:text-white disabled:opacity-0"
+                   className="w-10 h-10 rounded-sm hover:bg-white/5 transition-all duration-75 flex items-center justify-center text-white/20 hover:text-white disabled:opacity-0"
                  >
                    <Minus className="w-4 h-4" />
                  </button>
@@ -363,7 +351,8 @@ export default function PlanAlimentario({
                  <button
                    onClick={() => numComidas < 9 && handleNumComidasChange(numComidas + 1)}
                    disabled={numComidas >= 9}
-                   className="w-10 h-10 rounded-sm hover:bg-white/5 transition-all duration-700 flex items-center justify-center text-white/20 hover:text-white disabled:opacity-0"
+                   aria-label="Aumentar número de ingestas"
+                   className="w-10 h-10 rounded-sm hover:bg-white/5 transition-all duration-75 flex items-center justify-center text-white/20 hover:text-white disabled:opacity-0"
                  >
                    <Plus className="w-4 h-4" />
                  </button>
@@ -391,7 +380,7 @@ export default function PlanAlimentario({
                     disabled={!activeMealId}
                     onClick={() => activeMealId && addFood(activeMealId, food)}
                     className={clsx(
-                      "flex flex-col p-5 rounded-sm border transition-all duration-700 text-left group relative",
+                      "flex flex-col p-5 rounded-sm border transition-all duration-75 text-left group relative",
                       activeMealId 
                         ? 'bg-[#0a0f14] border-white/5 hover:border-[#3b82f6]/30 shadow-xl' 
                         : 'opacity-20 cursor-not-allowed bg-transparent border-transparent'
@@ -411,10 +400,10 @@ export default function PlanAlimentario({
                              {food.origen}
                            </span>
                         </div>
-                        <span className="text-[10px] font-bold text-white/20 group-hover:text-white transition-all duration-700">{food.calorias} <span className="text-[8px] opacity-40">KCAL</span></span>
+                        <span className="text-[10px] font-bold text-white/20 group-hover:text-white transition-all duration-75">{food.calorias} <span className="text-[8px] opacity-40">KCAL</span></span>
                      </div>
-                     <p className="text-white font-bold uppercase tracking-tight text-[12px] mb-6 group-hover:text-[#3b82f6] transition-all duration-700 truncate w-full">{food.nombre}</p>
-                     <div className="flex gap-6 text-[9px] font-bold uppercase tracking-widest text-white/10 group-hover:text-white/30 transition-all duration-700">
+                     <p className="text-white font-bold uppercase tracking-tight text-[12px] mb-6 group-hover:text-[#3b82f6] transition-all duration-75 truncate w-full">{food.nombre}</p>
+                     <div className="flex gap-6 text-[9px] font-bold uppercase tracking-widest text-white/10 group-hover:text-white/30 transition-all duration-75">
                         <div>P: {food.proteinas}g</div>
                         <div>C: {food.carbohidratos !== undefined ? food.carbohidratos : food.carbos}g</div>
                         <div>G: {food.grasas}g</div>
@@ -435,18 +424,23 @@ export default function PlanAlimentario({
            {meals.map(meal => (
              <div 
                key={meal.id} 
-              onClick={() => setActiveMealId(meal.id)}
-              className={clsx(
-                "bg-[#0e1419] rounded-sm border transition-all duration-1000 cursor-pointer overflow-hidden group relative",
-                activeMealId === meal.id 
-                 ? 'border-[#3b82f6]/30 shadow-xl' 
-                 : 'border-white/5 shadow-lg hover:border-white/10'
-              )}
+               onClick={() => setActiveMealId(meal.id)}
+               role="button"
+               tabIndex={0}
+               aria-label={`Seleccionar ingesta: ${meal.nombre}`}
+               aria-current={activeMealId === meal.id}
+               onKeyDown={e => e.key === 'Enter' && setActiveMealId(meal.id)}
+               className={clsx(
+                 "bg-[#0e1419] rounded-sm border transition-all duration-1000 cursor-pointer overflow-hidden group relative outline-none focus-within:ring-2 focus-within:ring-[#3b82f6]/50",
+                 activeMealId === meal.id 
+                  ? 'border-[#3b82f6]/30 shadow-xl' 
+                  : 'border-white/5 shadow-lg hover:border-white/10'
+               )}
             >
                <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-[#0a0f14]/40 relative z-10">
                   <div className="flex items-center gap-4">
                      <div className={clsx(
-                       "w-10 h-10 rounded-sm flex items-center justify-center transition-all duration-700 border",
+                       "w-10 h-10 rounded-sm flex items-center justify-center transition-all duration-75 border",
                        activeMealId === meal.id ? 'bg-[#3b82f6] text-white border-[#3b82f6] shadow-xl' : 'bg-[#0a0f14] border-white/5 text-white/10'
                      )}>
                         <Utensils className="w-5 h-5" />
@@ -456,7 +450,7 @@ export default function PlanAlimentario({
                         type="text"
                         value={meal.nombre}
                         onChange={e => setMeals(meals.map(m => m.id === meal.id ? { ...m, nombre: e.target.value } : m))}
-                        className="text-[14px] font-bold text-white uppercase tracking-tight bg-transparent outline-none border-b border-transparent focus:border-white/20 w-full min-w-[140px] placeholder:text-white/10 transition-all duration-700"
+                        className="text-[14px] font-bold text-white uppercase tracking-tight bg-transparent outline-none border-b border-transparent focus:border-white/20 w-full min-w-[140px] placeholder:text-white/10 transition-all duration-75"
                         placeholder="Nombre Ingesta"
                       />
                      </div>
@@ -477,23 +471,24 @@ export default function PlanAlimentario({
 
                 <div className="p-6 space-y-4 relative z-10">
                    {meal.items.map(item => (
-                     <div key={item.id} className="flex flex-col items-start justify-between p-4 bg-[#0a0f14] rounded-sm border border-white/5 group/item transition-all duration-700 hover:bg-[#0e1419] gap-4 shadow-inner">
+                     <div key={item.id} className="flex flex-col items-start justify-between p-4 bg-[#0a0f14] rounded-sm border border-white/5 group/item transition-all duration-75 hover:bg-[#0e1419] gap-4 shadow-inner">
                         <div className="flex flex-1 items-center gap-4 w-full">
                            <div className="w-8 h-8 bg-white/5 rounded-sm flex items-center justify-center border border-white/10 shrink-0">
-                              <CheckCircle2 className="w-4 h-4 text-white/20 group-hover/item:text-[#3b82f6] transition-all duration-700" />
+                              <CheckCircle2 className="w-4 h-4 text-white/20 group-hover/item:text-[#3b82f6] transition-all duration-75" />
                            </div>
                            <div className="flex-1 min-w-0">
                               <p className="font-bold text-white uppercase text-[12px] tracking-tight truncate">{item.nombre}</p>
                               <div className="flex items-center gap-3 mt-2">
-                                 <input 
-                                   type="number" 
-                                   value={item.gramos} 
-                                   onChange={e => {
-                                      const newGrams = +e.target.value;
-                                      setMeals(meals.map(m => m.id === meal.id ? { ...m, items: m.items.map(i => i.id === item.id ? { ...i, gramos: newGrams } : i) } : m));
-                                   }}
-                                   className="w-16 bg-[#0a0f14] border border-white/5 text-[10px] font-bold text-white outline-none focus:border-[#3b82f6]/30 p-1.5 rounded-sm text-center transition-all duration-700"
-                                 />
+                                  <input 
+                                    type="number" 
+                                    value={item.gramos} 
+                                    onChange={e => {
+                                       const newGrams = +e.target.value;
+                                       setMeals(meals.map(m => m.id === meal.id ? { ...m, items: m.items.map(i => i.id === item.id ? { ...i, gramos: newGrams } : i) } : m));
+                                    }}
+                                    aria-label={`Cantidad en gramos para ${item.nombre}`}
+                                    className="w-16 bg-[#0a0f14] border border-white/5 text-[10px] font-bold text-white outline-none focus:border-[#3b82f6]/30 p-1.5 rounded-sm text-center transition-all duration-75"
+                                  />
                                  <span className="text-[9px] font-bold text-white/10 uppercase tracking-widest">G</span>
                               </div>
                            </div>
@@ -503,12 +498,13 @@ export default function PlanAlimentario({
                               <p className="text-lg font-bold text-white tracking-tight leading-none">{Math.round((item.calorias * item.gramos) / 100)}</p>
                               <p className="text-[8px] font-bold text-white/10 uppercase tracking-widest mt-1">KCAL</p>
                            </div>
-                           <button 
-                             onClick={(e) => { e.stopPropagation(); removeFood(meal.id, item.id); }}
-                             className="p-3 bg-white/5 text-white/10 hover:bg-red-500/20 hover:text-red-400 rounded-sm transition-all duration-700 border border-white/5"
-                           >
-                             <Trash2 className="w-4 h-4" />
-                           </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); removeFood(meal.id, item.id); }}
+                              aria-label={`Eliminar ${item.nombre} de ${meal.nombre}`}
+                              className="p-3 bg-white/5 text-white/10 hover:bg-red-500/20 hover:text-red-400 rounded-sm transition-all duration-75 border border-white/5"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                         </div>
                      </div>
                    ))}
@@ -541,14 +537,21 @@ export default function PlanAlimentario({
                        <h4 className="text-4xl font-bold text-white tracking-tight">{Math.round(totals.kcal)}</h4>
                        <span className="text-xl font-bold text-white/10 tracking-tight">/{targetKcal}</span>
                     </div>
-                    <div className="w-full h-2.5 bg-[#0e1419] rounded-full overflow-hidden shadow-inner border border-white/5 relative">
+                     <div 
+                       className="w-full h-2.5 bg-[#0e1419] rounded-full overflow-hidden shadow-inner border border-white/5 relative"
+                       role="progressbar"
+                       aria-valuenow={Math.round((totals.kcal / targetKcal) * 100)}
+                       aria-valuemin={0}
+                       aria-valuemax={100}
+                       aria-label={`Cumplimiento calórico: ${Math.round((totals.kcal / targetKcal) * 100)}%`}
+                     >
                        <motion.div 
                          initial={{ width: 0 }}
                          animate={{ width: `${Math.min((totals.kcal / targetKcal) * 100, 100)}%` }}
                          transition={{ duration: 1.5, ease: "easeOut" }}
                          className="h-full bg-[#3b82f6] shadow-[0_0_20px_rgba(59,130,246,0.3)] rounded-full"
                        />
-                    </div>
+                     </div>
                  </div>
 
                  <div className="grid grid-cols-1 gap-4">
@@ -557,16 +560,16 @@ export default function PlanAlimentario({
                       { l: 'Carbohidratos', v: totals.c, c: 'bg-white/10', k: 'C' },
                       { l: 'Lípidos', v: totals.g, c: 'bg-white/5', k: 'G' }
                     ].map(m => (
-                      <div key={m.k} className="p-6 bg-[#0a0f14] rounded-sm border border-white/5 flex items-center justify-between hover:border-white/10 transition-all duration-700 group/item shadow-inner">
+                      <div key={m.k} className="p-6 bg-[#0a0f14] rounded-sm border border-white/5 flex items-center justify-between hover:border-white/10 transition-all duration-75 group/item shadow-inner">
                          <div className="flex items-center gap-4">
                             <div className={clsx(
-                               "w-10 h-10 rounded-sm flex items-center justify-center font-bold text-sm shadow-xl transition-all duration-700",
+                               "w-10 h-10 rounded-sm flex items-center justify-center font-bold text-sm shadow-xl transition-all duration-75",
                                m.c,
                                'text-white'
                             )}>
                                {m.k}
                             </div>
-                            <span className="text-[11px] font-bold text-white/10 uppercase tracking-widest group-hover/item:text-white transition-all duration-700">{m.l}</span>
+                            <span className="text-[11px] font-bold text-white/10 uppercase tracking-widest group-hover/item:text-white transition-all duration-75">{m.l}</span>
                          </div>
                          <div className="text-right">
                             <p className="text-2xl font-bold text-white tracking-tight leading-none">{Math.round(m.v)}<span className="text-xs opacity-20 ml-1">G</span></p>
@@ -576,7 +579,7 @@ export default function PlanAlimentario({
                  </div>
               </div>
 
-              <div className="mt-12 p-6 bg-[#0a0f14] border border-white/5 rounded-sm space-y-4 group transition-all duration-700 hover:border-[#3b82f6]/20 relative overflow-hidden">
+              <div className="mt-12 p-6 bg-[#0a0f14] border border-white/5 rounded-sm space-y-4 group transition-all duration-75 hover:border-[#3b82f6]/20 relative overflow-hidden">
                  <div className="flex items-center gap-4 relative z-10">
                     <Sparkles className="w-5 h-5 text-[#3b82f6]/40" />
                     <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest">ESTADO DEL PLAN</p>
@@ -589,7 +592,7 @@ export default function PlanAlimentario({
               </div>
 
                <div className={clsx(
-                  "flex flex-col gap-4 mt-12 transition-all duration-700",
+                  "flex flex-col gap-4 mt-12 transition-all duration-75",
                   saveMutation.isPending ? "opacity-50" : "opacity-100"
                )}>
                   <button 
@@ -607,7 +610,7 @@ export default function PlanAlimentario({
                       }
                     }}
                     disabled={saveMutation.isPending}
-                    className="w-full py-6 bg-white/10 hover:bg-white/20 text-white rounded-sm font-bold uppercase text-[10px] tracking-widest shadow-xl transition-all duration-700 flex items-center justify-center gap-4 border border-white/5 active:scale-95 group/save overflow-hidden relative"
+                    className="w-full py-6 bg-white/10 hover:bg-white/20 text-white rounded-sm font-bold uppercase text-[10px] tracking-widest shadow-xl transition-all duration-75 flex items-center justify-center gap-4 border border-white/5 active:scale-95 group/save overflow-hidden relative"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover/save:translate-x-full transition-transform duration-1000" />
                     {saveMutation.isPending ? (
@@ -617,7 +620,7 @@ export default function PlanAlimentario({
                     )}
                     {saveMutation.isPending ? 'SINCRONIZANDO...' : 'GUARDAR PLAN'}
                   </button>
-                  <div id="dieta-success" className="text-center text-[9px] font-bold text-emerald-400 uppercase tracking-[0.4em] opacity-0 transition-opacity duration-700 leading-none">
+                  <div id="dieta-success" className="text-center text-[9px] font-bold text-emerald-400 uppercase tracking-[0.4em] opacity-0 transition-opacity duration-75 leading-none">
                      ✓ PLAN NUTRICIONAL ASEGURADO
                   </div>
                </div>

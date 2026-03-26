@@ -13,34 +13,41 @@ export interface USDAFood {
 }
 
 export async function searchUSDA(query: string) {
+  if (!query || query.length < 2) return [];
+  
   try {
-    // 1. Traducir búsqueda de ES a EN para mejor precisión en USDA
-    const translatedQuery = await translate(query, { from: 'es', to: 'en' });
+    // 1. Traducir búsqueda solo si contiene caracteres no-ASCII o es español común
+    let translatedQuery = query;
+    try {
+      translatedQuery = await translate(query, { from: 'es', to: 'en' });
+    } catch (e) {
+      console.warn('USDA Query translation failed, using original:', query);
+    }
     
-    const url = `${USDA_BASE_URL}/foods/search?api_key=${USDA_API_KEY}&query=${encodeURIComponent(translatedQuery)}&pageSize=10`;
+    // 2. Query optimizada: Solo alimentos de base (SR Legacy, Survey, Foundation) para evitar "cualquier cosa"
+    const url = `${USDA_BASE_URL}/foods/search?api_key=${USDA_API_KEY}&query=${encodeURIComponent(translatedQuery)}&pageSize=8&dataType=Foundation,SR Legacy,Survey (FNDDS)`;
+    
     const res = await fetch(url);
     if (!res.ok) return [];
 
     const data = await res.json();
     const foods = data.foods || [];
 
+    // 3. Procesamiento en paralelo con traducción condicional
     const processedFoods = await Promise.all(foods.map(async (f: any) => {
-      const nutrients = f.foodNutrients || [];
-      
-      // Helper to find nutrient value
-      const getNutrient = (idOrName: number | string) => {
-        const nut = nutrients.find((n: any) => 
-          n.nutrientId === idOrName || n.nutrientName?.includes(idOrName)
-        );
+      const getNutrient = (id: number) => {
+        const nut = f.foodNutrients?.find((n: any) => n.nutrientId === id);
         return nut ? nut.value : 0;
       };
 
-      // 2. Traducir descripción del alimento al español
+      // Solo traducir si la descripción es larga o compleja, de lo contrario usar original
       let nombreEsp = f.description;
-      try {
-        nombreEsp = await translate(f.description, { from: 'en', to: 'es' });
-      } catch (e) {
-        console.error('Error traduciendo alimento:', e);
+      if (f.description.length > 3) {
+        try {
+          nombreEsp = await translate(f.description, { from: 'en', to: 'es' });
+        } catch (e) {
+          console.warn('Item translation failed:', f.description);
+        }
       }
 
       return {

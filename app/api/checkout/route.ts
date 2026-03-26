@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { checkRateLimit, getClientIP } from '@/lib/rateLimit';
 import { checkoutSchema } from '@/lib/validations/checkout';
-import dbConnect from '@/lib/dbConnect';
-import Ingreso from '@/models/Ingreso';
-import { MetodoPago, EstadoPago, CategoriaPago } from '@/models/Ingreso';
+import prisma from '@/lib/prisma';
+import { MetodoPago, EstadoPago, CategoriaPago } from '@/types/finance';
 import client from '@/lib/mercadoPago';
 import { Preference } from 'mercadopago';
 
@@ -33,11 +32,10 @@ export async function POST(req: Request) {
     }
 
     const { name, email, date, reservaId, monto = 5000 } = validation.data;
-    await dbConnect();
 
     // 1. Create real preference in Mercado Pago
     const preference = new Preference(client);
-    
+
     const response = await preference.create({
       body: {
         items: [
@@ -68,17 +66,19 @@ export async function POST(req: Request) {
     const initPoint = response.init_point;
 
     // 2. Create a PENDING Ingreso in the Finance system
-    await Ingreso.create({
-      concepto: `Reserva de Turno: ${name} (${date})`,
-      monto,
-      metodo: MetodoPago.MERCADOPAGO,
-      estado: EstadoPago.PENDIENTE,
-      categoria: CategoriaPago.CONSULTA,
-      referenciaExterna: reservaId,
-      mpPreferenceId,
+    await prisma.ingreso.create({
+      data: {
+        concepto: `Reserva de Turno: ${name} (${date})`,
+        monto,
+        metodo: MetodoPago.MERCADO_PAGO,
+        estado: EstadoPago.PENDIENTE,
+        categoria: CategoriaPago.CONSULTA,
+        referenciaExterna: reservaId,
+        mpPreferenceId,
+      },
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       url: initPoint,
       prefId: mpPreferenceId,
       status: 'awaiting_payment'

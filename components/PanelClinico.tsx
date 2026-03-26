@@ -238,7 +238,7 @@ export default function PanelClinico({
     saveMutation.mutate({ ...data, isDraft: false });
   };
 
-  const inputStyles = "w-full p-4 bg-[#0a0f14]/60 border border-white/5 focus:border-[#3b82f6]/30 rounded-sm outline-none transition-all duration-700 font-bold uppercase text-[10px] tracking-[0.15em] text-white placeholder:text-white/5 shadow-xl";
+  const inputStyles = "w-full p-4 bg-[#0a0f14]/60 border border-white/5 focus:border-[#3b82f6]/30 rounded-sm outline-none transition-all duration-75 font-bold uppercase text-[10px] tracking-[0.15em] text-white placeholder:text-white/5 shadow-xl";
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 text-white">
@@ -247,7 +247,7 @@ export default function PanelClinico({
       <div className="xl:col-span-7 space-y-12">
         <header className="flex items-center gap-8 bg-[#0e1419] p-6 rounded-sm shadow-xl border border-white/5 group overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#3b82f6]/5 rounded-full blur-[100px] -mr-32 -mt-32" />
-          <div className="w-16 h-16 bg-[#3b82f6] rounded-sm flex items-center justify-center transition-all duration-700 shadow-xl relative z-10">
+          <div className="w-16 h-16 bg-[#3b82f6] rounded-sm flex items-center justify-center transition-all duration-75 shadow-xl relative z-10">
              <ClipboardList className="w-8 h-8 text-white" />
           </div>
           <div className="relative z-10">
@@ -262,43 +262,58 @@ export default function PanelClinico({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
             
             <div className="space-y-4">
-              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Motivo de Consulta</label>
+              <label htmlFor="motivoConsulta" className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Motivo de Consulta</label>
               {/* Persistent Objective Fields */}
-              <input type="hidden" {...register('tipoObjetivo')} />
-              <input type="hidden" {...register('caloriasObjetivo')} />
+              <input type="hidden" {...register('tipoObjetivo')} id="tipoObjetivo-hidden" />
+              <input type="hidden" {...register('caloriasObjetivo')} id="caloriasObjetivo-hidden" />
               
               <textarea 
+                id="motivoConsulta"
                 {...register('motivoConsulta')}
                 className={clsx(inputStyles, "h-32 resize-none py-6")}
                 placeholder="Descripción del cuadro clínico..."
+                aria-label="Motivo de la consulta nutricional"
               />
               {errors.motivoConsulta && <p className="text-red-500 text-[10px] font-black uppercase mt-2 pl-6 italic tracking-widest">{errors.motivoConsulta.message}</p>}
             </div>
 
             <div className="space-y-4">
-              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Entorno / Laboral</label>
+              <label htmlFor="horariosTrabajo" className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Entorno / Laboral</label>
               <textarea 
+                id="horariosTrabajo"
                 {...register('horariosTrabajo')}
                 className={clsx(inputStyles, "h-32 resize-none py-6")}
                 placeholder="Turnos, horarios, nivel de actividad laboral..."
+                aria-label="Descripción del entorno laboral y horarios"
               />
             </div>
 
             {[
-              { label: 'Patologías', key: 'patologias', ph: 'Ninguna' },
-              { label: 'Alergias', key: 'alergiasIntolerancias', ph: 'Sin alergias reportadas' },
-              { label: 'Medicanción', key: 'medicacionActual', ph: 'Uso de fármacos o suplementos' },
+              { label: 'Patologías', key: 'patologias', ph: 'Ninguna', id: 'patologias' },
+              { label: 'Alergias', key: 'alergiasIntolerancias', ph: 'Sin alergias reportadas', id: 'alergias' },
+              { label: 'Medicación', key: 'medicacionActual', ph: 'Uso de fármacos o suplementos', id: 'medicacion' },
             ].map(f => (
               <div key={f.key} className="space-y-4">
-                <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">{f.label}</label>
-                <input {...register(f.key as any)} className={inputStyles} placeholder={f.ph} />
+                <label htmlFor={f.id} className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">{f.label}</label>
+                <input 
+                  id={f.id}
+                  {...register(f.key as any)} 
+                  className={inputStyles} 
+                  placeholder={f.ph} 
+                  aria-label={`Ingresar ${f.label}`}
+                />
                 {(errors as any)[f.key] && <p className="text-red-500 text-[9px] font-black uppercase mt-1 pl-6 italic tracking-widest">{(errors as any)[f.key].message}</p>}
               </div>
             ))}
 
             <div className="space-y-4">
-              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Nivel de Actividad</label>
-              <select {...register('nivelActividad')} className={clsx(inputStyles, "text-white/40 appearance-none")}>
+              <label htmlFor="nivelActividad" className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Nivel de Actividad</label>
+              <select 
+                id="nivelActividad"
+                {...register('nivelActividad')} 
+                className={clsx(inputStyles, "text-white/40 appearance-none")}
+                aria-label="Seleccionar nivel de actividad física diaria"
+              >
                 <option value="Sedentario" className="bg-[#0a0f14] text-white">Sedentario</option>
                 <option value="Ligero" className="bg-[#0a0f14] text-white">Ligero</option>
                 <option value="Moderado" className="bg-[#0a0f14] text-white">Moderado</option>
@@ -308,8 +323,13 @@ export default function PanelClinico({
             </div>
 
             <div className="space-y-4">
-              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Ritmo Intestinal</label>
-              <select {...register('ritmoIntestinal')} className={clsx(inputStyles, "text-white/40 appearance-none")}>
+              <label htmlFor="ritmoIntestinal" className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Ritmo Intestinal</label>
+              <select 
+                id="ritmoIntestinal"
+                {...register('ritmoIntestinal')} 
+                className={clsx(inputStyles, "text-white/40 appearance-none")}
+                aria-label="Seleccionar ritmo intestinal del paciente"
+              >
                 <option value="Normal" className="bg-[#0a0f14] text-white">Normal</option>
                 <option value="Estreñimiento" className="bg-[#0a0f14] text-white">Estreñimiento</option>
                 <option value="Diarrea" className="bg-[#0a0f14] text-white">Diarrea</option>
@@ -318,18 +338,18 @@ export default function PanelClinico({
             </div>
 
             <div className="space-y-4">
-              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Aversiones</label>
-              <input {...register('aversionesAlimentarias')} className={inputStyles} placeholder="Alimentos que rechaza" />
+              <label htmlFor="aversionesAlimentarias" className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Aversiones</label>
+              <input id="aversionesAlimentarias" {...register('aversionesAlimentarias')} className={inputStyles} placeholder="Alimentos que rechaza" aria-label="Ingresar alimentos que el paciente rechaza" />
             </div>
 
             <div className="space-y-4">
-              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Horas de Sueño</label>
-              <input type="number" {...register('horasSueno', { valueAsNumber: true })} className={inputStyles} placeholder="Ej. 8" />
+              <label htmlFor="horasSueno" className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Horas de Sueño</label>
+              <input id="horasSueno" type="number" {...register('horasSueno', { valueAsNumber: true })} className={inputStyles} placeholder="Ej. 8" aria-label="Ingresar horas de sueño por noche" />
             </div>
 
             <div className="space-y-4">
-              <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Nivel de Estrés (1-10)</label>
-              <input type="number" {...register('nivelEstres', { valueAsNumber: true })} className={inputStyles} placeholder="Ej. 5" min={1} max={10} />
+              <label htmlFor="nivelEstres" className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Nivel de Estrés (1-10)</label>
+              <input id="nivelEstres" type="number" {...register('nivelEstres', { valueAsNumber: true })} className={inputStyles} placeholder="Ej. 5" min={1} max={10} aria-label="Ingresar nivel de estrés percibido del 1 al 10" />
             </div>
 
           </div>
@@ -339,7 +359,7 @@ export default function PanelClinico({
               type="submit"
               disabled={saveMutation.isPending}
               className={clsx(
-                "flex items-center gap-4 px-10 py-5 rounded-sm font-bold uppercase text-[11px] tracking-[0.3em] transition-all duration-700 shadow-2xl group/save relative overflow-hidden",
+                "flex items-center gap-4 px-10 py-5 rounded-sm font-bold uppercase text-[11px] tracking-[0.3em] transition-all duration-75 shadow-2xl group/save relative overflow-hidden",
                 saveMutation.isPending 
                   ? "bg-white/5 text-white/20 cursor-wait" 
                   : "bg-white text-[#0a0f14] hover:bg-white/90 active:scale-95"
@@ -374,7 +394,7 @@ export default function PanelClinico({
       <div className="xl:col-span-5 space-y-12">
         <header className="flex items-center gap-8 bg-[#0e1419] p-6 rounded-sm border border-white/5 shadow-xl group overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#3b82f6]/5 rounded-full blur-[100px] -mr-32 -mt-32" />
-          <div className="w-16 h-16 bg-[#3b82f6] rounded-sm flex items-center justify-center transition-all duration-700 shadow-xl relative z-10">
+          <div className="w-16 h-16 bg-[#3b82f6] rounded-sm flex items-center justify-center transition-all duration-75 shadow-xl relative z-10">
              <Calculator className="w-8 h-8 text-white" />
           </div>
           <div className="relative z-10">
@@ -388,19 +408,21 @@ export default function PanelClinico({
           
           <div className="grid grid-cols-2 gap-10 mb-16 relative z-10">
             {[
-               { label: 'SEXO', key: 'sexo', icon: User, type: 'select', options: ['masculino', 'femenino'] },
-               { label: 'ACTIVIDAD', key: 'nivelActividad', icon: Zap, type: 'select', options: ['Sedentario', 'Ligero', 'Moderado', 'Intenso', 'Atleta'] },
-               { label: 'PESO (KG)', key: 'peso', icon: Activity, type: 'number' },
-               { label: 'ALTURA (CM)', key: 'altura', icon: Sparkles, type: 'number' },
-               { label: 'EDAD', key: 'edad', icon: Clock, type: 'number' },
+               { label: 'SEXO', key: 'sexo', icon: User, type: 'select', options: ['masculino', 'femenino'], id: 'calc-sexo' },
+               { label: 'ACTIVIDAD', key: 'nivelActividad', icon: Zap, type: 'select', options: ['Sedentario', 'Ligero', 'Moderado', 'Intenso', 'Atleta'], id: 'calc-actividad' },
+               { label: 'PESO (KG)', key: 'peso', icon: Activity, type: 'number', id: 'calc-peso' },
+               { label: 'ALTURA (CM)', key: 'altura', icon: Sparkles, type: 'number', id: 'calc-altura' },
+               { label: 'EDAD', key: 'edad', icon: Clock, type: 'number', id: 'calc-edad' },
             ].map(item => (
               <div key={item.key} className="space-y-4">
-                <label className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-4">{item.label}</label>
+                <label htmlFor={item.id} className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-4">{item.label}</label>
                 <div className="relative group/input">
                   {item.type === 'select' ? (
                     <select 
+                      id={item.id}
                       {...register(item.key as any)}
                       className="w-full p-4 bg-[#0a0f14]/60 border border-white/5 rounded-sm font-bold text-[10px] uppercase text-white focus:border-[#3b82f6]/30 outline-none shadow-inner tracking-[0.2em] appearance-none cursor-pointer"
+                      aria-label={`Seleccionar ${item.label.toLowerCase()}`}
                     >
                       {item.options?.map(opt => (
                         <option key={opt} value={item.key === 'sexo' ? opt.toLowerCase() : opt} className="bg-[#0a0f14] text-white">
@@ -410,13 +432,15 @@ export default function PanelClinico({
                     </select>
                   ) : (
                     <input 
+                      id={item.id}
                       type="number" 
                       step={item.key === 'edad' ? '1' : '0.1'}
                       {...register(item.key as any, { valueAsNumber: true })}
-                      className="w-full p-4 bg-[#0a0f14]/60 border border-white/5 rounded-sm text-2xl font-bold text-white focus:border-[#3b82f6]/30 outline-none transition-all duration-700 shadow-inner group-hover/input:border-white/10 tracking-tight" 
+                      className="w-full p-4 bg-[#0a0f14]/60 border border-white/5 rounded-sm text-2xl font-bold text-white focus:border-[#3b82f6]/30 outline-none transition-all duration-75 shadow-inner group-hover/input:border-white/10 tracking-tight" 
+                      aria-label={`Ingresar ${item.label.toLowerCase()}`}
                     />
                   )}
-                  <item.icon className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/5 group-focus-within/input:text-[#3b82f6]/40 transition-all duration-700 pointer-events-none" />
+                  <item.icon className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/5 group-focus-within/input:text-[#3b82f6]/40 transition-all duration-75 pointer-events-none" />
                 </div>
               </div>
             ))}
@@ -433,36 +457,38 @@ export default function PanelClinico({
           </div>
 
           <div className="grid grid-cols-3 gap-6 w-full mb-12 relative z-10">
-             {[
+              { [
                { id: 'deficit', label: 'Déficit', val: deficit, color: 'text-red-400', activeBg: 'bg-red-500/10 border-red-500/30', icon: ArrowDown },
                { id: 'mantenimiento', label: 'Mantener', val: mantenimiento, color: 'text-white/20', activeBg: 'bg-white/5 border-white/20', icon: Equal },
                { id: 'superavit', label: 'Superávit', val: superavit, color: 'text-emerald-400', activeBg: 'bg-emerald-500/10 border-emerald-500/30', icon: ArrowUp }
-             ].map((opt, i) => (
-                <button 
-                  key={i} 
-                  type="button"
-                  onClick={() => setValue('tipoObjetivo', opt.id as any)}
-                  className={clsx(
-                    "rounded-sm p-6 flex flex-col items-center justify-center text-center gap-6 shadow-xl group/opt transition-all duration-700 border",
-                    watchedFields.tipoObjetivo === opt.id 
-                      ? opt.activeBg 
-                      : "bg-[#0a0f14]/60 border-white/5 hover:border-white/20"
-                  )}
-                >
-                  <opt.icon className={clsx(
-                    "w-8 h-8 transition-transform duration-700",
-                    watchedFields.tipoObjetivo === opt.id ? opt.color : "text-white/10 group-hover/opt:scale-110"
-                  )} />
-                  <div className="space-y-2">
-                    <span className={clsx(
-                      "text-[9px] font-bold uppercase tracking-[0.4em] transition-colors",
-                      watchedFields.tipoObjetivo === opt.id ? "text-white" : "text-white/10"
-                    )}>{opt.label}</span>
-                    <div className="text-2xl font-bold text-white tracking-tight"><AnimatedNumber value={opt.val} /></div>
-                    <span className="text-[8px] font-bold text-white/10 uppercase tracking-widest leading-none">cal/día</span>
-                  </div>
-                </button>
-             ))}
+              ].map((opt, i) => (
+                 <button 
+                   key={i} 
+                   type="button"
+                   onClick={() => setValue('tipoObjetivo', opt.id as any)}
+                   aria-pressed={watchedFields.tipoObjetivo === opt.id}
+                   aria-label={`Establecer objetivo de ${opt.label}: ${opt.val} calorías por día`}
+                   className={clsx(
+                     "rounded-sm p-6 flex flex-col items-center justify-center text-center gap-6 shadow-xl group/opt transition-all duration-75 border",
+                     watchedFields.tipoObjetivo === opt.id 
+                       ? opt.activeBg 
+                       : "bg-[#0a0f14]/60 border-white/5 hover:border-white/20"
+                   )}
+                 >
+                   <opt.icon className={clsx(
+                     "w-8 h-8 transition-transform duration-75",
+                     watchedFields.tipoObjetivo === opt.id ? opt.color : "text-white/10 group-hover/opt:scale-110"
+                   )} />
+                   <div className="space-y-2">
+                     <span className={clsx(
+                       "text-[9px] font-bold uppercase tracking-[0.4em] transition-colors",
+                       watchedFields.tipoObjetivo === opt.id ? "text-white" : "text-white/10"
+                     )}>{opt.label}</span>
+                     <div className="text-2xl font-bold text-white tracking-tight"><AnimatedNumber value={opt.val} /></div>
+                     <span className="text-[8px] font-bold text-white/10 uppercase tracking-widest leading-none">cal/día</span>
+                   </div>
+                 </button>
+              ))}
           </div>
 
           <div className="space-y-12 relative z-10">
@@ -471,34 +497,41 @@ export default function PanelClinico({
             </h3>
             
             <div className="space-y-8">
-              {[
-                { label: 'Carbohidratos', key: 'carbos', g: macros.carbohidratos, color: 'bg-white shadow-[0_0_30px_rgba(255,255,255,0.2)]' },
-                { label: 'Proteínas', key: 'proteinas', g: macros.proteinas, color: 'bg-[#1B365D] shadow-[0_0_30px_rgba(27,54,93,0.3)] border border-white/10' },
-                { label: 'Grasas', key: 'grasas', g: macros.grasas, color: 'bg-white/5' }
-              ].map((macro) => (
-                <div key={macro.key} className="space-y-4 group cursor-default">
-                  <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.3em]">
-                    <span className="text-white/20 group-hover:text-white transition-all duration-700">{macro.label} ({macrosPct[macro.key as keyof typeof macrosPct]}%)</span>
-                    <span className="text-white text-2xl tracking-tight">{macro.g}g</span>
-                  </div>
-                  <div className="w-full h-2 bg-[#070C14]/80 rounded-full overflow-hidden relative border border-white/5">
-                    <motion.div 
-                      layout
-                      initial={{ width: 0 }}
-                      animate={{ width: `${macrosPct[macro.key as keyof typeof macrosPct]}%` }}
-                      transition={{ type: 'spring', damping: 20, stiffness: 100 }}
-                      className={`h-full ${macro.color} rounded-full`} 
-                    />
-                  </div>
-                </div>
-              ))}
+               {[
+                 { label: 'Carbohidratos', key: 'carbos', g: macros.carbohidratos, color: 'bg-white shadow-[0_0_30px_rgba(255,255,255,0.2)]' },
+                 { label: 'Proteínas', key: 'proteinas', g: macros.proteinas, color: 'bg-[#1B365D] shadow-[0_0_30px_rgba(27,54,93,0.3)] border border-white/10' },
+                 { label: 'Grasas', key: 'grasas', g: macros.grasas, color: 'bg-white/5' }
+               ].map((macro) => (
+                 <div key={macro.key} className="space-y-4 group cursor-default">
+                   <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.3em]">
+                     <span className="text-white/20 group-hover:text-white transition-all duration-75">{macro.label} ({macrosPct[macro.key as keyof typeof macrosPct]}%)</span>
+                     <span className="text-white text-2xl tracking-tight">{macro.g}g</span>
+                   </div>
+                   <div 
+                    className="w-full h-2 bg-[#070C14]/80 rounded-full overflow-hidden relative border border-white/5"
+                    role="progressbar"
+                    aria-valuenow={macrosPct[macro.key as keyof typeof macrosPct]}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`Porcentaje de ${macro.label.toLowerCase()}: ${macrosPct[macro.key as keyof typeof macrosPct]}%`}
+                   >
+                     <motion.div 
+                       layout
+                       initial={{ width: 0 }}
+                       animate={{ width: `${macrosPct[macro.key as keyof typeof macrosPct]}%` }}
+                       transition={{ type: 'spring', damping: 20, stiffness: 100 }}
+                       className={`h-full ${macro.color} rounded-full`} 
+                     />
+                   </div>
+                 </div>
+               ))}
             </div>
 
-            <div className="mt-12 p-8 bg-[#0a0f14]/60 rounded-sm border border-white/5 flex items-start gap-8 group transition-all duration-700">
+            <div className="mt-12 p-8 bg-[#0a0f14]/60 rounded-sm border border-white/5 flex items-start gap-8 group transition-all duration-75">
                <div className="w-10 h-10 bg-white/5 rounded-sm flex items-center justify-center shrink-0">
                   <Info className="w-5 h-5 text-[#3b82f6]/40" />
                </div>
-               <p className="text-[11px] text-white/10 font-bold leading-relaxed uppercase tracking-[0.15em] group-hover:text-white/20 transition-all duration-700">
+               <p className="text-[11px] text-white/10 font-bold leading-relaxed uppercase tracking-[0.15em] group-hover:text-white/20 transition-all duration-75">
                  METODOLOGÍA HARRIS-BENEDICT OPTIMIZADA PARA NUTRICIÓN DEPORTIVA Y CLÍNICA. CÁLCULO DE ALTA PRECISIÓN.
                </p>
             </div>

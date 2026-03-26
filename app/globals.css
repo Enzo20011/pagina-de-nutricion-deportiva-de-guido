@@ -75,8 +75,8 @@
 }
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.2); }
-  50%       { box-shadow: 0 0 40px rgba(59, 130, 246, 0.5), 0 0 80px rgba(59, 130, 246, 0.15); }
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.2)); }
+  50%       { filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); }
 }
 
 @keyframes count-pop {
@@ -209,7 +209,6 @@
   body {
     @apply bg-[#0a0f14] text-[#eaeef6] antialiased;
     font-family: var(--font-space-grotesk), var(--font-inter), sans-serif;
-    selection-color-transparent: rgba(170,255,220,0.2);
   }
 }
 
@@ -246,7 +245,13 @@
   }
   
   .glass-light {
-    @apply bg-white/5 backdrop-blur-xl border border-white/5 shadow-2xl;
+    @apply bg-white/5 backdrop-blur-lg border border-white/5 shadow-2xl;
+  }
+
+  .dot-grid-overlay {
+    @apply absolute inset-0 pointer-events-none opacity-15 will-change-transform;
+    background-image: radial-gradient(circle, rgba(67,72,78,0.4) 1px, transparent 1px);
+    background-size: 20px 20px;
   }
 
   .soft-shadow {

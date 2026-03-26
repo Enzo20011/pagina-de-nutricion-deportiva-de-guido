@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
-import Ingreso from '@/models/Ingreso';
-import { MetodoPago, EstadoPago, CategoriaPago } from '@/types/finance';
+import prisma from '@/lib/prisma';
+import { EstadoPago } from '@/types/finance';
 import { getValidSession, unauthorizedResponse } from '@/lib/protectApi';
 
 // ─── INPUT VALIDATION ─────────────────────────────────────────────────────────
@@ -12,7 +11,6 @@ export async function POST(req: Request) {
   if (!session) return unauthorizedResponse();
 
   try {
-    await dbConnect();
     const rawData = await req.json();
 
     // Zod validation
@@ -30,10 +28,12 @@ export async function POST(req: Request) {
 
     const data = validation.data;
 
-    const nuevoIngreso = await (Ingreso as any).create({
-      ...data,
-      estado: EstadoPago.PAGADO,
-      fecha: data.fecha ? new Date(data.fecha) : new Date(),
+    const nuevoIngreso = await prisma.ingreso.create({
+      data: {
+        ...data,
+        estado: EstadoPago.PAGADO,
+        fecha: data.fecha ? new Date(data.fecha) : new Date(),
+      },
     });
 
     return NextResponse.json(nuevoIngreso, { status: 201 });

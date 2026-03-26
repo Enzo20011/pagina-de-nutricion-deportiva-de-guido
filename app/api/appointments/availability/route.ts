@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
-import Reserva from '@/models/Reserva';
-import SlotLock from '@/models/SlotLock';
+import prisma from '@/lib/prisma';
 
 export async function GET(req: Request) {
   try {
-    await dbConnect();
     const { searchParams } = new URL(req.url);
     const fecha = searchParams.get('fecha');
 
@@ -13,18 +10,24 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Fecha requerida' }, { status: 400 });
     }
 
-    // 1. Get confirmed appointments
-    const confirmedAppointments = await (Reserva as any).find({ 
-      fecha, 
-      status: 'confirmada',
-      isDeleted: false 
-    }).select('hora');
+    // 1. Get confirmed appointments from PostgreSQL
+    const confirmedAppointments = await prisma.reserva.findMany({
+      where: { 
+        fecha, 
+        status: 'confirmada',
+        isDeleted: false 
+      },
+      select: { hora: true }
+    });
 
     // 2. Get active temporary locks
-    const activeLocks = await (SlotLock as any).find({ 
-      fecha,
-      expiresAt: { $gt: new Date() } 
-    }).select('hora');
+    const activeLocks = await prisma.slotLock.findMany({
+      where: { 
+        fecha,
+        expiresAt: { gt: new Date() } 
+      },
+      select: { hora: true }
+    });
 
     const takenSlots = [
       ...confirmedAppointments.map(a => a.hora),
