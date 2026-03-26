@@ -214,21 +214,21 @@ export default function AgendaViewer() {
         </motion.div>
 
         {/* MISSION CRITICAL RECAP */}
-        <div className="bg-white rounded-sm p-10 shadow-2xl relative overflow-hidden group">
+        <div className="bg-[#0e1419] rounded-sm p-10 shadow-2xl relative overflow-hidden group border border-[#1f262e]">
           <div className="relative z-10 space-y-10">
             <div className="space-y-2">
-               <p className="text-[10px] font-label font-bold uppercase tracking-widest text-[#0a0f14]/40">Métricas Mensuales</p>
+               <p className="text-[10px] font-label font-bold uppercase tracking-widest text-[#a7abb2]/40">Métricas Mensuales</p>
                <div className="w-10 h-1 bg-[#3b82f6]/20" />
             </div>
             <div className="space-y-2">
-               <p className="text-4xl font-heading font-black text-[#0a0f14] tracking-tight leading-none">
+               <p className="text-4xl font-heading font-black text-white tracking-tight leading-none">
                   {appointments.filter((a: any) => a.status === 'confirmada').length}
                </p>
-               <p className="text-[10px] font-label font-bold uppercase tracking-[0.2em] text-[#0a0f14]/30">Sesiones Verificadas</p>
+               <p className="text-[10px] font-label font-bold uppercase tracking-[0.2em] text-[#a7abb2]/30">Sesiones Verificadas</p>
             </div>
-            <button className="w-full py-5 bg-[#0a0f14] text-white rounded-sm font-label font-bold uppercase tracking-[0.3em] text-[10px] shadow-xl hover:bg-[#3b82f6] transition-all flex items-center justify-center gap-4 group/btn">
-               Optimizar Calendario <ArrowUpRight className="w-4 h-4 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
-            </button>
+            <Link href="/admin/finanzas" className="w-full py-5 bg-[#3b82f6] text-white rounded-sm font-label font-bold uppercase tracking-[0.3em] text-[10px] shadow-xl hover:bg-[#3b82f6]/90 transition-all flex items-center justify-center gap-4 group/btn">
+               Gestionar Finanzas <ArrowUpRight className="w-4 h-4 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+            </Link>
           </div>
         </div>
       </div>

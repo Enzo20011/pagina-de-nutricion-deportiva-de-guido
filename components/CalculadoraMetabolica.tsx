@@ -314,7 +314,7 @@ export default function CalculadoraMetabolica() {
                   <h3 className="font-label text-[9px] font-bold uppercase tracking-[0.4em] text-[#3b82f6] mt-4 mb-3">Objetivos calóricos_</h3>
                </div>
 
-               <div className="grid grid-cols-3 gap-2 mt-0">
+               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-0">
                  {[
                    { label: 'Perder', val: deficit, icon: ArrowDown, color: 'text-[#ff4d4d]', border: 'border-[#ff4d4d]/10' },
                    { label: 'Mantener', val: mantenimiento, icon: Equal, color: 'text-[#3b82f6]', border: 'border-[#3b82f6]/20' },

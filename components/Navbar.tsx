@@ -131,7 +131,7 @@ const Navbar = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-[#0a0f14]/90 backdrop-blur-3xl flex flex-col pt-32 pb-12 px-10 md:hidden overflow-hidden"
+            className="fixed inset-0 z-[55] bg-[#0a0f14]/90 backdrop-blur-3xl flex flex-col pt-32 pb-12 px-10 md:hidden overflow-hidden"
           >
             {/* Background decorative glow */}
             <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#3b82f6]/10 rounded-full blur-[120px] pointer-events-none" />

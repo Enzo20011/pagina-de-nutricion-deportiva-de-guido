@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { syncAppointmentToCalendar } from '@/lib/googleCalendar';
 
 export async function POST(req: Request) {
   try {
     const { name, email, phone, fecha, hora, sessionId } = await req.json();
+    // Log removed
 
     if (!name || !email || !phone || !fecha || !hora || !sessionId) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
@@ -15,35 +17,27 @@ export async function POST(req: Request) {
     });
     
     if (!lock) {
+      // Log removed
       return NextResponse.json({ error: 'La sesión de reserva ha expirado. Intente nuevamente.' }, { status: 410 });
     }
+    // Log removed
 
-    // 2. Create the Reserva (status: pendiente)
-    const nuevaReserva = await prisma.reserva.create({
-      data: {
-        nombre: name,
-        email,
-        telefono: phone,
-        fecha,
-        hora,
-        status: 'pendiente',
-        isDeleted: false
-      }
+    // 2. Upsert the Reserva — reutiliza si ya existe una pendiente para ese slot
+    const nuevaReserva = await prisma.reserva.upsert({
+      where: { fecha_hora_unique: { fecha, hora } },
+      update: { nombre: name, email, telefono: phone, status: 'pendiente', isDeleted: false },
+      create: { nombre: name, email, telefono: phone, fecha, hora, status: 'pendiente', isDeleted: false },
     });
 
-    // 3. Delete the lock
-    await prisma.slotLock.delete({
-      where: { id: lock.id }
-    });
-
-    // 4. Async Sync to Google Calendar (don't block the response)
-    const { syncAppointmentToCalendar } = await import('@/lib/googleCalendar');
-    syncAppointmentToCalendar({
-      nombre: name,
-      email,
-      telefono: phone,
-      fecha,
-      hora
+    // 3. Delete lock + sync calendar in parallel (don't block response)
+    prisma.slotLock.delete({ where: { id: lock.id } }).catch(() => {});
+    syncAppointmentToCalendar({ 
+      id: nuevaReserva.id, 
+      nombre: name, 
+      email, 
+      telefono: phone, 
+      fecha, 
+      hora 
     }).catch(err => console.error('Silent Calendar Sync Error:', err));
 
     return NextResponse.json({ 

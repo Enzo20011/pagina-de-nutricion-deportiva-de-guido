@@ -44,7 +44,7 @@ export async function GET(req: Request) {
 
       // Filtros adicionales para PostgreSQL (parameterizado para evitar SQL injection)
       const origen = (categoria && categoria !== 'ALL' && categoria !== 'USDA')
-        ? (categoria === 'ARGENFOODS' ? 'LOCAL' : categoria)
+        ? (categoria === 'ARGENFOODS' ? 'ARGENFOODS' : categoria)
         : null;
 
       // Query nativo para soportar el regex de acentos con performance
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
       // Búsqueda sin término (solo filtros)
       const where: any = {};
       if (categoria && categoria !== 'ALL' && categoria !== 'USDA') {
-        where.origen = categoria === 'ARGENFOODS' ? 'LOCAL' : categoria;
+        where.origen = categoria === 'ARGENFOODS' ? 'ARGENFOODS' : categoria;
       }
       localAlimentos = await prisma.alimento.findMany({
         where,

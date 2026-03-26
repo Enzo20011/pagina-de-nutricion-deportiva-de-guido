@@ -18,6 +18,7 @@ const calendarClient = google.calendar({ version: 'v3', auth });
  * Si las credenciales no están configuradas, lo registra en consola (Modo Dev).
  */
 export async function syncAppointmentToCalendar(reserva: {
+  id?: string; // ID de la reserva en Prisma para evitar duplicados
   nombre: string;
   email: string;
   telefono: string;
@@ -34,7 +35,7 @@ export async function syncAppointmentToCalendar(reserva: {
     const startTime = new Date(`${reserva.fecha}T${reserva.hora}:00`);
     const endTime = new Date(startTime.getTime() + (reserva.duracion || 60) * 60000);
 
-    const event = {
+    const eventData = {
       summary: `Nutrición: ${reserva.nombre}`,
       description: `Paciente: ${reserva.nombre}\nEmail: ${reserva.email}\nTel: ${reserva.telefono}`,
       start: {
@@ -46,14 +47,42 @@ export async function syncAppointmentToCalendar(reserva: {
         timeZone: 'America/Argentina/Buenos_Aires',
       },
       status: 'confirmed',
+      extendedProperties: {
+        private: {
+          reservaId: reserva.id || '',
+        },
+      },
     };
 
-    const response = await calendarClient.events.insert({
-      calendarId: CALENDAR_ID,
-      requestBody: event,
-    });
+    // 1. Verificar si ya existe un evento para esta reserva
+    let existingEventId = null;
+    if (reserva.id) {
+      const existing = await calendarClient.events.list({
+        calendarId: CALENDAR_ID,
+        privateExtendedProperty: `reservaId=${reserva.id}`,
+      });
+      if (existing.data.items && existing.data.items.length > 0) {
+        existingEventId = existing.data.items[0].id;
+      }
+    }
 
-    console.log(`✅ Evento creado en Calendar: ${response.data.id}`);
+    let response;
+    if (existingEventId) {
+      console.log(`🔄 Actualizando evento existente en Calendar: ${existingEventId}`);
+      response = await calendarClient.events.update({
+        calendarId: CALENDAR_ID,
+        eventId: existingEventId,
+        requestBody: eventData,
+      });
+    } else {
+      console.log(`🆕 Creando nuevo evento en Calendar...`);
+      response = await calendarClient.events.insert({
+        calendarId: CALENDAR_ID,
+        requestBody: eventData,
+      });
+    }
+
+    console.log(`✅ Sincronización exitosa: ${response.data.id}`);
     return { success: true, googleEventId: response.data.id };
   } catch (error: any) {
     console.error('❌ Error sincronizando con Google Calendar:', error.message);

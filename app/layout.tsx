@@ -2,6 +2,7 @@ import { Space_Grotesk, Inter, Manrope } from 'next/font/google';
 import './globals.css';
 import AuthProvider from '@/components/SessionProvider';
 import QueryProvider from '@/components/providers/QueryProvider';
+import ProgressBarProvider from '@/components/providers/ProgressBarProvider';
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -70,7 +71,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${spaceGrotesk.variable} ${inter.variable} ${manrope.variable} font-sans bg-[#0a0f14] text-[#eaeef6] min-h-screen relative`}>
         <AuthProvider>
           <QueryProvider>
-            {children}
+            <ProgressBarProvider>
+              {children}
+            </ProgressBarProvider>
           </QueryProvider>
         </AuthProvider>
         {/* Footer y WhatsApp solo en landing/público, no en admin */}

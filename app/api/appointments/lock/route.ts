@@ -23,7 +23,8 @@ export async function POST(req: Request) {
 
   try {
     const { fecha, hora, sessionId } = await req.json();
-    
+    // Log removed
+
     if (!fecha || !hora || !sessionId) {
       return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
     }
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
 
     // 2. ATOMIC LOCK ATTEMPT with PostgreSQL native logic
     const expiration = new Date();
-    expiration.setMinutes(expiration.getMinutes() + 5);
+    expiration.setMinutes(expiration.getMinutes() + 15);
 
     try {
       // Usamos queryRaw para un Upsert Atómico con condición de expiración
@@ -65,8 +66,9 @@ export async function POST(req: Request) {
       expiration
       );
 
-      return NextResponse.json({ 
-        message: 'Turno bloqueado temporalmente', 
+      // Log removed
+      return NextResponse.json({
+        message: 'Turno bloqueado temporalmente',
         expiresAt: expiration,
         rateLimitRemaining: remaining,
       });

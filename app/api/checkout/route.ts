@@ -56,9 +56,7 @@ export async function POST(req: Request) {
           failure: `${process.env.NEXTAUTH_URL}/api/checkout/callback?status=failure&reserva_id=${reservaId}`,
           pending: `${process.env.NEXTAUTH_URL}/api/checkout/callback?status=pending&reserva_id=${reservaId}`,
         },
-        auto_return: 'approved',
         external_reference: reservaId,
-        binary_mode: true, // Only allow instant payments (no pending cash/transfer) for auto-confirm
       }
     });
 

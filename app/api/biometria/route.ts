@@ -75,6 +75,21 @@ export async function POST(request: Request) {
       });
     }
 
+    // ACTUALIZAR REGISTRO RAÍZ DEL PACIENTE
+    if (finalData.peso && finalData.altura) {
+      try {
+        await prisma.paciente.update({
+          where: { id: pId },
+          data: {
+            peso: Number(finalData.peso),
+            altura: Number(finalData.altura)
+          }
+        });
+      } catch (e) {
+        console.error('Error actualizando paciente desde biometria:', e);
+      }
+    }
+
     return NextResponse.json({ data: doc });
   } catch(e: any) {
     console.error('Biometria POST Error:', e);

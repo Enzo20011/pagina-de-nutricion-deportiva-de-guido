@@ -64,8 +64,13 @@ export default function EditarPacienteModal({ isOpen, onClose, paciente, onSucce
       return res.json();
     },
     onSuccess: () => {
+      const pId = paciente.id || paciente._id;
       queryClient.invalidateQueries({ queryKey: ['pacientes'] });
-      queryClient.invalidateQueries({ queryKey: ['paciente', paciente._id || paciente.id] });
+      queryClient.invalidateQueries({ queryKey: ['paciente', pId] });
+      queryClient.invalidateQueries({ queryKey: ['anamnesis', pId] });
+      queryClient.invalidateQueries({ queryKey: ['antropometria', pId] });
+      queryClient.invalidateQueries({ queryKey: ['biometria', pId] });
+      
       if (onSuccess) onSuccess();
       onClose();
     },

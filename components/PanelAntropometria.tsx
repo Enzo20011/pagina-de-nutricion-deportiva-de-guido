@@ -9,7 +9,8 @@ import {
   TrendingDown,
   Sparkles,
   Zap,
-  Info
+  Info,
+  CheckCircle2
 } from 'lucide-react';
 import { 
   calcularIMC, 
@@ -25,11 +26,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 export default function PanelAntropometria({ 
   pacienteId, 
   onSync,
-  pacienteInitialData
+  pacienteInitialData,
+  anamnesisData
 }: { 
   pacienteId: string, 
   onSync?: (data: any) => void,
-  pacienteInitialData?: any
+  pacienteInitialData?: any,
+  anamnesisData?: any
 }) {
   const queryClient = useQueryClient();
   const { register, watch, reset, formState: { isValid } } = useForm({
@@ -44,6 +47,11 @@ export default function PanelAntropometria({
         subescapular: 12,
         suprailiaco: 15,
         abdominal: 18,
+        muslo: 15,
+      },
+      perimetros: {
+        cintura: 80,
+        cadera: 95,
       }
     }
   });
@@ -85,7 +93,12 @@ export default function PanelAntropometria({
           subescapular: latest.pliegues?.subescapular || 12,
           suprailiaco: latest.pliegues?.suprailiaco || 15,
           abdominal: latest.pliegues?.abdominal || 18,
+          muslo: latest.pliegues?.muslo || 15,
         },
+        perimetros: {
+          cintura: latest.perimetros?.cintura || 80,
+          cadera: latest.perimetros?.cadera || 95,
+        }
       });
       hasLoadedRef.current = true;
       return;
@@ -109,7 +122,8 @@ export default function PanelAntropometria({
         pacienteId: pacienteId,
         peso: pacienteInitialData.weight || pacienteInitialData.peso || 70,
         altura: pacienteInitialData.height || pacienteInitialData.altura || 170,
-        pliegues: { triceps: 10, subescapular: 12, suprailiaco: 15, abdominal: 18 }
+        pliegues: { triceps: 10, subescapular: 12, suprailiaco: 15, abdominal: 18, muslo: 15 },
+        perimetros: { cintura: 80, cadera: 95 }
       });
       hasLoadedRef.current = true;
     }
@@ -120,9 +134,41 @@ export default function PanelAntropometria({
     hasLoadedRef.current = false;
   }, [pacienteId]);
 
+  // PROACTIVE SYNC: If patient root data changes (e.g. edited in modal), update measurements
+  // Only if form is hydrated and values differ
+  React.useEffect(() => {
+    if (pacienteInitialData && hasLoadedRef.current) {
+        const profilePeso = pacienteInitialData.peso;
+        const profileAltura = pacienteInitialData.altura;
+        
+        if (profilePeso && profilePeso !== peso) {
+            reset({ ...watch(), peso: profilePeso });
+        }
+        if (profileAltura && profileAltura !== altura) {
+            reset({ ...watch(), altura: profileAltura });
+        }
+    }
+  }, [pacienteInitialData?.peso, pacienteInitialData?.altura, reset, watch]);
+
+  // REACTIVE SYNC FROM ANAMNESIS (PANEL CLINICO)
+  // If user edits weight in Clinical tab, it should reflect here instantly
+  React.useEffect(() => {
+    if (anamnesisData) {
+        const { peso: anamPeso, altura: anamAltura } = anamnesisData;
+        
+        if (anamPeso && anamPeso !== peso) {
+            reset({ ...watch(), peso: anamPeso });
+        }
+        if (anamAltura && anamAltura !== altura) {
+            reset({ ...watch(), altura: anamAltura });
+        }
+    }
+  }, [anamnesisData?.peso, anamnesisData?.altura, reset, watch]);
+
   const peso = watch('peso');
   const altura = watch('altura');
   const pliegues = watch('pliegues');
+  const perimetros = watch('perimetros');
   
   const imc = React.useMemo(() => calcularIMC(peso, altura), [peso, altura]);
   const grasaPct = React.useMemo(() => calcularGrasaFaulkner(
@@ -152,6 +198,9 @@ export default function PanelAntropometria({
         else newData.push(res.data);
         return { data: newData };
       });
+      // Invalidate evolutionary history to reflect changes in Dashboard
+      queryClient.invalidateQueries({ queryKey: ['historial-antropometria', pacienteId] });
+      queryClient.invalidateQueries({ queryKey: ['paciente', pacienteId] });
       
       const el = document.getElementById('biometria-success');
       if (el) {
@@ -164,15 +213,17 @@ export default function PanelAntropometria({
   const lastSyncRef = React.useRef<string>('');
 
   React.useEffect(() => {
-    const activeValues = { peso, altura, pliegues };
+    const activeValues = { peso, altura, pliegues, perimetros };
     if (onSync) {
       const syncObj = {
         mediciones: activeValues,
-        imc,
-        clasificacionIMC: clasificarIMC(imc),
-        grasaPct,
-        masaMagraKg: comp.masaMagraKg,
-        masaGordaKg: comp.masaGordaKg
+        resultados: {
+          imc,
+          clasificacionIMC: clasificarIMC(imc),
+          porcentajeGrasa: grasaPct,
+          masaMagraKg: comp.masaMagraKg,
+          masaGordaKg: comp.masaGordaKg
+        }
       };
       
       const syncStr = JSON.stringify(syncObj);
@@ -188,12 +239,13 @@ export default function PanelAntropometria({
           peso,
           altura,
           pliegues,
+          perimetros,
           resultados: { porcentajeGrasa: grasaPct, imc, masaGordaKg: comp.masaGordaKg, masaMagraKg: comp.masaMagraKg }
         });
       }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [peso, altura, pliegues, imc, grasaPct, comp, isValid, pacienteId, onSync]);
+  }, [peso, altura, pliegues, perimetros, imc, grasaPct, comp, isValid, pacienteId, onSync]);
 
   const inputStyles = "w-full p-5 bg-[#0a0f14]/60 border border-white/5 focus:border-[#3b82f6]/30 rounded-sm outline-none transition-all duration-75 font-bold uppercase text-[10px] tracking-[0.2em] text-white placeholder:text-white/5 shadow-xl";
 
@@ -202,16 +254,34 @@ export default function PanelAntropometria({
       
       {/* LEFT SECTION: MEASUREMENTS PROTOCOL */}
       <div className="xl:col-span-8 space-y-12">
-        <header className="flex items-center gap-8 bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl group overflow-hidden relative">
+        <header className="flex flex-col sm:flex-row sm:items-center gap-6 bg-[#0e1419] p-6 rounded-sm border border-white/5 shadow-xl group overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#3b82f6]/5 rounded-full blur-[100px] -mr-32 -mt-32" />
-          <div className="w-16 h-16 bg-[#3b82f6] rounded-sm flex items-center justify-center transition-all duration-75 shadow-xl relative z-10">
+          <div className="w-16 h-16 bg-[#3b82f6] rounded-sm flex items-center justify-center transition-all duration-75 shadow-xl relative z-10 shrink-0">
              <Ruler className="w-8 h-8 text-white" />
           </div>
-          <div className="relative z-10">
-             <h2 className="text-2xl font-bold uppercase tracking-tight leading-none text-white">ANTROPOMETRÍA</h2>
-             <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/20 mt-4">MEDICIONES Y COMPOSICIÓN CORPORAL</p>
-          </div>
-        </header>
+           <div className="relative z-10 flex-1 w-full">
+             <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
+               <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-tight leading-none text-white">ANTROPOMETRÍA</h2>
+               <div className={clsx(
+                 "flex items-center justify-center gap-3 px-3 py-1.5 rounded-sm border transition-all duration-75 uppercase text-[7px] sm:text-[8px] font-black tracking-[0.2em] whitespace-nowrap self-start sm:self-center",
+                 saveMutation.isPending ? "bg-[#3b82f6]/10 border-[#3b82f6]/20 text-[#3b82f6]" : "bg-emerald-500/5 border-emerald-500/10 text-emerald-500/40"
+               )}>
+                 {saveMutation.isPending ? (
+                   <>
+                     <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin" />
+                     Sincronizando...
+                   </>
+                 ) : (
+                   <>
+                     <CheckCircle2 className="w-2 h-2" />
+                     Sincronizado
+                   </>
+                 )}
+               </div>
+             </div>
+             <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-[0.4em] text-white/20 mt-3">MEDICIONES Y COMPOSICIÓN CORPORAL</p>
+           </div>
+         </header>
 
         <div className="bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl relative overflow-hidden group">
            <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/[0.01] rounded-full translate-x-1/2 translate-y-1/2 blur-[120px]" />
@@ -269,7 +339,8 @@ export default function PanelAntropometria({
               { label: 'Tríceps', key: 'pliegues.triceps', id: 'triceps' },
               { label: 'Subescapular', key: 'pliegues.subescapular', id: 'subescapular' },
               { label: 'Suprailíaco', key: 'pliegues.suprailiaco', id: 'suprailiaco' },
-              { label: 'Abdominal', key: 'pliegues.abdominal', id: 'abdominal' }
+              { label: 'Abdominal', key: 'pliegues.abdominal', id: 'abdominal' },
+              { label: 'Muslo', key: 'pliegues.muslo', id: 'muslo' }
             ].map(f => (
               <div key={f.key} className="space-y-2 group/fold">
                 <label htmlFor={f.id} className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-4 group-hover/fold:text-white transition-all duration-75">{f.label}</label>
@@ -279,6 +350,30 @@ export default function PanelAntropometria({
                   {...register(f.key as any, { valueAsNumber: true })} 
                   className="w-full p-5 bg-[#0a0f14] border border-white/5 rounded-sm outline-none text-xl font-bold text-white focus:border-[#3b82f6]/30 focus:ring-1 focus:ring-[#3b82f6]/20 transition-all duration-75 shadow-xl tracking-tight" 
                   aria-label={`Ingresar pliegue ${f.label} en milímetros`}
+                />
+              </div>
+            ))}
+
+            {/* Perimeters Tactical Protocol */}
+            <div className="col-span-full pt-8 pb-6 border-b border-white/5 flex items-center gap-6">
+              <div className="w-10 h-10 bg-white/5 rounded-sm flex items-center justify-center">
+                <Ruler className="w-5 h-5 text-[#3b82f6]/50" />
+              </div>
+              <h3 className="font-bold uppercase tracking-[0.4em] text-[10px] text-white/10">PERÍMETROS (CM)</h3>
+            </div>
+
+            {[
+              { label: 'Cintura', key: 'perimetros.cintura', id: 'cintura' },
+              { label: 'Cadera', key: 'perimetros.cadera', id: 'cadera' }
+            ].map(f => (
+              <div key={f.key} className="space-y-2 group/fold">
+                <label htmlFor={f.id} className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-4 group-hover/fold:text-white transition-all duration-75">{f.label}</label>
+                <input 
+                  id={f.id}
+                  type="number" 
+                  {...register(f.key as any, { valueAsNumber: true })} 
+                  className="w-full p-5 bg-[#0a0f14] border border-white/5 rounded-sm outline-none text-xl font-bold text-white focus:border-[#3b82f6]/30 focus:ring-1 focus:ring-[#3b82f6]/20 transition-all duration-75 shadow-xl tracking-tight" 
+                  aria-label={`Ingresar perímetro ${f.label} en centímetros`}
                 />
               </div>
             ))}
@@ -351,33 +446,6 @@ export default function PanelAntropometria({
               </p>
             </div>
 
-            <button
-               onClick={() => {
-                 saveMutation.mutate({ 
-                   pacienteId,
-                   peso,
-                   altura,
-                   pliegues,
-                   resultados: { porcentajeGrasa: grasaPct, imc, masaGordaKg: comp.masaGordaKg, masaMagraKg: comp.masaMagraKg }
-                 });
-               }}
-               disabled={saveMutation.isPending}
-               className={clsx(
-                 "w-full py-6 rounded-sm font-bold uppercase text-[11px] tracking-[0.3em] transition-all duration-75 flex items-center justify-center gap-4 shadow-2xl relative overflow-hidden group/save",
-                 saveMutation.isPending ? "bg-white/5 text-white/20" : "bg-white text-[#0a0f14] hover:bg-white/90"
-               )}
-            >
-               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/save:translate-x-full transition-transform duration-1000" />
-               {saveMutation.isPending ? (
-                 <div className="w-4 h-4 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />
-               ) : (
-                 <Save className="w-5 h-5" />
-               )}
-               {saveMutation.isPending ? 'Sincronizando...' : 'Guardar Biometría'}
-            </button>
-            <div id="biometria-success" className="text-center text-[10px] font-bold text-emerald-400 uppercase tracking-widest opacity-0 transition-opacity duration-75">
-               ✓ Mediciones guardadas correctamente
-            </div>
           </div>
         </div>
       </div>
@@ -390,4 +458,3 @@ function clsx(...classes: any[]) {
   return classes.filter(Boolean).join(' ');
 }
 
-import { Save } from 'lucide-react';

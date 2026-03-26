@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { usePatientStore } from '@/store/usePatientStore';
 import Toast from './Toast';
 import Loader from './Loader';
@@ -18,8 +18,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Paciente {
-  _id: string;
-  id?: string;
+  id: string;
   nombre: string;
   apellido: string;
   peso?: number;
@@ -42,6 +41,40 @@ export default function BasePacientes() {
    const [showPapelera, setShowPapelera] = useState(false);
    const [showNewPatient, setShowNewPatient] = useState(false);
    const [patientToEdit, setPatientToEdit] = useState<Paciente | null>(null);
+   const [clinicalHistory, setClinicalHistory] = useState<any[]>([]);
+   const [historyLoading, setHistoryLoading] = useState(false);
+
+   const searchParams = useSearchParams();
+   const action = searchParams.get('action');
+   const queryId = searchParams.get('id');
+
+   useEffect(() => {
+     if (action === 'new') {
+       setShowNewPatient(true);
+     }
+     if (queryId) {
+        setSelectedId(queryId);
+     }
+   }, [action, queryId, setSelectedId]);
+
+   // Fetch clinical history on selection
+   useEffect(() => {
+     if (selectedId) {
+        setHistoryLoading(true);
+        fetch(`/api/pacientes/${selectedId}/historial`)
+          .then(res => res.json())
+          .then(data => {
+            setClinicalHistory(data.data || []);
+            setHistoryLoading(false);
+          })
+          .catch(err => {
+            console.error(err);
+            setHistoryLoading(false);
+          });
+     } else {
+        setClinicalHistory([]);
+     }
+   }, [selectedId]);
 
    // Real API fetch with React Query & Server pagination
    const { data, isLoading: loading, isError, error, refetch } = useQuery({
@@ -86,7 +119,7 @@ export default function BasePacientes() {
    const filteredPacientes = statusFilter ? pacientes.filter(p => p.status === statusFilter) : pacientes;
    const pacientesPage = filteredPacientes;
 
-   const selectedPaciente = pacientes.find(p => (p._id || p.id) === selectedId);
+    const selectedPaciente = pacientes.find(p => p.id === selectedId);
 
    return (
        <div className="max-w-[1200px] mx-auto space-y-12 text-white selection:bg-[#3b82f6]/20 p-6 md:p-8 bg-[#0a0f14] min-h-screen">
@@ -198,14 +231,14 @@ export default function BasePacientes() {
                            )}
                           {pacientesPage.map((p, idx) => (
                               <div
-                                key={p._id || p.id}
+                                key={p.id}
                                 className="relative group/card"
                               >
                                 <button
-                                   onClick={() => setSelectedId(p._id || p.id || null)}
+                                   onClick={() => setSelectedId(p.id || null)}
                                    className={clsx(
                                       "w-full p-6 rounded-sm flex items-center justify-between transition-all duration-75 group relative border shadow-xl",
-                                      (selectedId === p._id || selectedId === p.id)
+                                      (selectedId === p.id)
                                         ? 'bg-[#3b82f6] border-[#3b82f6] text-white'
                                         : 'bg-[#0a0f14]/40 border-white/5 hover:border-[#3b82f6]/30 text-white'
                                    )}
@@ -213,11 +246,11 @@ export default function BasePacientes() {
                                    <div className="flex items-center gap-6 relative z-10">
                                         <div className={clsx(
                                            "w-12 h-12 rounded-sm flex items-center justify-center transition-all duration-75 border",
-                                           (selectedId === p._id || selectedId === p.id)
+                                           (selectedId === p.id)
                                              ? 'bg-white/10 border-white/20'
                                              : 'bg-white/5 border-white/5'
                                         )}>
-                                            <User className={clsx("w-6 h-6", (selectedId === p._id || selectedId === p.id) ? 'text-white' : 'text-white/20 group-hover:text-white')} />
+                                            <User className={clsx("w-6 h-6", (selectedId === p.id) ? 'text-white' : 'text-white/20 group-hover:text-white')} />
                                         </div>
                                         <div className="text-left space-y-1">
                                             <p className="font-bold uppercase text-base tracking-tight leading-none">
@@ -226,7 +259,7 @@ export default function BasePacientes() {
                                             <div className="flex items-center gap-3">
                                                <span className={clsx(
                                                  "text-[8px] font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-sm border transition-all duration-75",
-                                                 (selectedId === p._id || selectedId === p.id)
+                                                 (selectedId === p.id)
                                                    ? "bg-white/10 border-white/20 text-white"
                                                    : "bg-white/5 border-white/5 text-white/20"
                                                )}>
@@ -237,7 +270,7 @@ export default function BasePacientes() {
                                    </div>
                                    <div className={clsx(
                                       "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-75",
-                                      (selectedId === p._id || selectedId === p.id)
+                                      (selectedId === p.id)
                                         ? 'opacity-100'
                                         : 'opacity-0 translate-x-2'
                                    )}>
@@ -246,8 +279,8 @@ export default function BasePacientes() {
                                 </button>
                                 <button
                                   className="absolute top-6 right-8 z-20 text-white/5 hover:text-red-500 p-2 rounded-xl transition-all hover:bg-red-500/5 focus:outline-none focus:ring-2 focus:ring-red-500/50"
-                                  disabled={deleting === (p._id || p.id)}
-                                  onClick={(e) => handleSoftDelete(p._id || p.id || '', `${p.nombre} ${p.apellido}`, e)}
+                                   disabled={deleting === p.id}
+                                   onClick={(e) => handleSoftDelete(p.id, `${p.nombre} ${p.apellido}`, e)}
                                   aria-label={`Archivar paciente ${p.nombre} ${p.apellido}`}
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -310,7 +343,7 @@ export default function BasePacientes() {
                           {selectedPaciente.nombre} <span className="opacity-40">{selectedPaciente.apellido}</span>
                         </p>
                         <div className="flex items-center gap-3 md:gap-5 mt-2 md:mt-4">
-                          <span className="px-2 py-1 md:px-4 md:py-1.5 rounded-sm bg-white/5 border border-white/10 text-[7px] md:text-[8px] font-bold uppercase tracking-[0.2em] text-white/40">ID #{selectedPaciente._id?.substring(0,8) || 'N/A'}</span>
+                          <span className="px-2 py-1 md:px-4 md:py-1.5 rounded-sm bg-white/5 border border-white/10 text-[7px] md:text-[8px] font-bold uppercase tracking-[0.2em] text-white/40">ID #{selectedPaciente.id?.substring(0,8) || 'N/A'}</span>
                           <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-[#3b82f6] opacity-40 animate-pulse" />
                           <p className="text-white/20 font-bold text-[7px] md:text-[9px] uppercase tracking-[0.3em]">{selectedPaciente.objetivo || 'PLAN ESTÁNDAR'}</p>
                         </div>
@@ -331,7 +364,7 @@ export default function BasePacientes() {
                     
                     <div className="flex items-center gap-3 md:gap-4 w-full md:w-auto mt-6 md:mt-0 relative z-10">
                       <button
-                        onClick={() => router.push(`/admin/consulta/${selectedPaciente._id || selectedPaciente.id}`)}
+                        onClick={() => router.push(`/admin/consulta/${selectedPaciente.id}`)}
                         className="flex-1 md:flex-none px-6 md:px-8 py-4 rounded-sm bg-[#3b82f6] text-white text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] shadow-xl hover:bg-[#2563eb] transition-all duration-75 flex items-center justify-center gap-3 md:gap-4 group/consult"
                       >
                         NUEVA CONSULTA
@@ -384,24 +417,37 @@ export default function BasePacientes() {
                         </h3>
                       </header>
                       <div className="space-y-4 relative z-10">
-                        {[1, 2].map(i => (
-                          <div
-                            key={i}
-                            className="p-6 bg-[#0a0f14] rounded-sm border border-white/5 flex items-center justify-between group/item hover:border-[#3b82f6]/30 transition-all cursor-pointer shadow-inner"
-                          >
-                            <div className="flex items-center gap-8 relative z-10">
-                              <div className="w-12 h-12 bg-white/5 text-white/20 rounded-sm flex items-center justify-center group-hover/item:text-[#3b82f6] group-hover/item:bg-[#3b82f6]/10 transition-all border border-white/5 font-black">
-                                <ArrowUpRight className="w-5 h-5" />
+                        {historyLoading ? (
+                          <div className="py-10 flex justify-center"><Loader /></div>
+                        ) : clinicalHistory.length === 0 ? (
+                          <div className="py-10 text-center text-[#a7abb2]/20 font-label font-bold uppercase tracking-widest text-[10px]">Sin registros previos</div>
+                        ) : (
+                          clinicalHistory.map((item, i) => (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                if (item.tipo === 'CONSULTA') router.push(`/admin/consulta/${selectedId}`);
+                                if (item.tipo === 'PLAN') router.push(`/admin/pacientes?id=${selectedId}`);
+                              }}
+                              className="w-full p-6 bg-[#0a0f14] rounded-sm border border-white/5 flex items-center justify-between group/item hover:border-[#3b82f6]/30 transition-all cursor-pointer shadow-inner text-left"
+                            >
+                              <div className="flex items-center gap-8 relative z-10 w-full">
+                                <div className={clsx(
+                                  "w-12 h-12 rounded-sm flex items-center justify-center font-black border border-white/5 transition-all text-white/20 group-hover/item:text-white group-hover/item:bg-[#3b82f6] shrink-0",
+                                  item.tipo === 'CONSULTA' ? 'text-[#3b82f6]/40' : item.tipo === 'PLAN' ? 'text-green-500/40' : 'text-purple-500/40'
+                                )}>
+                                  <ArrowUpRight className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-bold text-white uppercase text-base tracking-tight leading-none truncate">{item.titulo}</p>
+                                  <p className="text-[9px] font-bold text-white/10 uppercase tracking-[0.2em] mt-3 flex items-center gap-3">
+                                    {item.detalle} <span className="w-1 h-1 rounded-full bg-[#3b82f6]" /> {new Date(item.fecha).toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }).toUpperCase()}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-bold text-white uppercase text-base tracking-tight leading-none">CONSULTA NUTRICIONAL V{i}</p>
-                                <p className="text-[9px] font-bold text-white/10 uppercase tracking-[0.2em] mt-3 flex items-center gap-3">
-                                  COMPLETO <span className="w-1 h-1 rounded-full bg-[#3b82f6]" /> ENE 2024
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                            </button>
+                          ))
+                        )}
                       </div>
                     </div>
 

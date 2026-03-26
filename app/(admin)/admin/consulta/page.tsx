@@ -1,19 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronRight, User, Sparkles, Activity } from 'lucide-react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
-import Loader from '@/components/Loader';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 
 export default function ConsultaIndexPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  // Debounce: espera 300ms antes de disparar la búsqueda
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['pacientes_lista_maestra', searchQuery],
+    queryKey: ['pacientes_lista_maestra', debouncedSearch],
     queryFn: async () => {
-      const res = await fetch(`/api/pacientes?page=1&limit=50&search=${searchQuery}`);
+      const res = await fetch(`/api/pacientes?page=1&limit=50&search=${debouncedSearch}`);
       if (!res.ok) throw new Error('Error de red');
       return res.json();
     }
@@ -21,7 +29,18 @@ export default function ConsultaIndexPage() {
 
   const pacientes = data?.data || [];
 
-  if (isLoading) return <Loader />;
+  // Prefetch del paciente al hacer hover — cuando el usuario toca el nombre ya está cargado
+  const prefetchPaciente = (id: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ['paciente', id],
+      queryFn: async () => {
+        const res = await fetch(`/api/pacientes/${id}`);
+        if (!res.ok) throw new Error('Error');
+        return res.json();
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+  };
 
   return (
     <div className="max-w-[1200px] mx-auto space-y-12 text-[#eaeef6] selection:bg-white/5 pb-20 p-6 md:p-8">
@@ -41,7 +60,7 @@ export default function ConsultaIndexPage() {
           <Activity className="w-5 h-5 text-[#3b82f6] opacity-40" />
           <div className="flex flex-col">
             <span className="text-[8px] font-bold text-[#a7abb2] uppercase tracking-widest">Registros Totales</span>
-            <span className="text-[11px] font-bold text-white uppercase tracking-widest">{pacientes.length} PACIENTES</span>
+            <span className="text-[11px] font-bold text-white uppercase tracking-widest">{isLoading ? '...' : `${pacientes.length} PACIENTES`}</span>
           </div>
         </div>
       </header>
@@ -49,35 +68,41 @@ export default function ConsultaIndexPage() {
       <div className="space-y-10">
         <div className="relative group max-w-2xl">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-white/10 group-focus-within:text-[#3b82f6] transition-colors" />
-          <input 
-            type="text" 
-            placeholder="Buscar paciente por nombre o apellido..." 
+          <input
+            type="text"
+            placeholder="Buscar paciente por nombre o apellido..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full bg-[#0a0f14] p-6 pl-16 rounded-sm border border-white/5 focus:border-[#3b82f6]/30 outline-none transition-all font-bold uppercase tracking-widest text-base md:text-[10px] text-white placeholder:text-white/5 shadow-xl"
           />
         </div>
-        
-        {pacientes.length === 0 && !isLoading && (
+
+        {isLoading && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-[90px] bg-white/[0.03] rounded-sm border border-white/5 animate-pulse" />
+            ))}
+          </div>
+        )}
+
+        {!isLoading && pacientes.length === 0 && (
           <div className="text-center text-white/20 font-bold uppercase tracking-[0.5em] py-20 text-[10px]">
             No se han encontrado pacientes coincidentes
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {pacientes.map((p: any, i: number) => (
-            <motion.div
-              key={p._id || p.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-            >
-              <Link 
+        {!isLoading && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {pacientes.map((p: any) => (
+              <Link
+                key={p._id || p.id}
                 href={`/admin/consulta/${p._id || p.id}`}
+                onMouseEnter={() => prefetchPaciente(p._id || p.id)}
+                onTouchStart={() => prefetchPaciente(p._id || p.id)}
                 className="flex items-center justify-between p-8 bg-[#0a0f14] rounded-sm border border-white/5 hover:border-[#3b82f6]/30 hover:bg-[#0e1419] transition-all group shadow-xl relative overflow-hidden"
               >
                 <div className="flex items-center gap-6 relative z-10 w-full">
-                  <div className="w-14 h-14 bg-white/5 rounded-sm flex items-center justify-center border border-white/10 group-hover:bg-[#3b82f6] group-hover:text-white transition-all duration-500">
+                  <div className="w-14 h-14 bg-white/5 rounded-sm flex items-center justify-center border border-white/10 group-hover:bg-[#3b82f6] group-hover:text-white transition-all duration-200">
                     <User className="w-6 h-6 opacity-40 group-hover:opacity-100" />
                   </div>
                   <div className="flex-1 space-y-2">
@@ -90,9 +115,9 @@ export default function ConsultaIndexPage() {
                   <ChevronRight className="w-5 h-5" />
                 </div>
               </Link>
-            </motion.div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

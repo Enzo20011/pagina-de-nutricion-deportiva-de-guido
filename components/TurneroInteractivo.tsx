@@ -154,7 +154,14 @@ export default function TurneroInteractivo() {
       }
 
       const data = await resp.json();
-      window.location.href = data.url; 
+
+      // DEV: simular pago aprobado sin pasar por MP
+      if (process.env.NODE_ENV === 'development') {
+        window.location.href = `/api/checkout/callback?status=success&reserva_id=${reservaId}&preference_id=${data.prefId}`;
+        return;
+      }
+
+      window.location.href = data.url;
     } catch (err: any) {
       console.error('Booking Error:', err);
       alert(err.message || 'Ocurrió un error al procesar tu reserva.');
@@ -293,7 +300,7 @@ export default function TurneroInteractivo() {
 
               <button
                 disabled={!selectedDate || !selectedTime || loading}
-                onClick={() => setStep(2)}
+                onClick={handleNextStep}
                 className="w-full mt-10 py-6 bg-[#3b82f6] disabled:bg-[#1f262e] disabled:text-[#43484e] text-white font-bold rounded-sm transition-all shadow-[0_0_40px_rgba(59,130,246,0.1)] hover:shadow-[0_0_60px_rgba(59,130,246,0.3)] eyebrow !text-[10px] flex items-center justify-center gap-4 group overflow-hidden"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>RESERVAR TURNO <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}

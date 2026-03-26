@@ -49,7 +49,7 @@ export default function NuevoPacienteModal({ isOpen, onClose, onSuccess }: Nuevo
     onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ['pacientes'] });
       reset();
-      if (onSuccess) onSuccess(response?.data?._id);
+      if (onSuccess) onSuccess(response?.data?.id);
       onClose();
     },
     onError: (error: Error) => {

@@ -88,6 +88,22 @@ export async function POST(request: Request) {
       });
     }
 
+    // ACTUALIZAR REGISTRO RAÍZ DEL PACIENTE
+    // Solo si no es un borrador y tenemos los datos esenciales
+    if (!isDraft && finalData.peso && finalData.altura) {
+      try {
+        await prisma.paciente.update({
+          where: { id: targetId },
+          data: {
+            peso: Number(finalData.peso),
+            altura: Number(finalData.altura)
+          }
+        });
+      } catch (e) {
+        console.error('Error actualizando paciente desde anamnesis:', e);
+      }
+    }
+
     return NextResponse.json({ 
       message: isDraft ? 'Borrador guardado' : 'Guardado finalizado', 
       data: doc 

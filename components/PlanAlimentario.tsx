@@ -74,7 +74,7 @@ export default function PlanAlimentario({
     { id: '4', nombre: 'Cena', items: [], totalKcal: 0, totalProteins: 0, totalCarbs: 0, totalFats: 0 },
   ]);
   const [targetKcal, setTargetKcal] = useState(2000);
-  const [targetMacros, setTargetMacros] = useState({ p: 30, c: 40, f: 30 });
+  const [targetMacros, setTargetMacros] = useState({ proteinas: 30, carbohidratos: 40, grasas: 30 });
   const [isExporting, setIsExporting] = useState(false);
 
   // Sync calories from clinical panel (Anamnesis)
@@ -124,8 +124,14 @@ export default function PlanAlimentario({
        if (objetivoCalorico && !anamnesisData?.resultados?.get) {
          setTargetKcal(objetivoCalorico);
        }
-       if (macrosObjetivo) setTargetMacros(macrosObjetivo);
-       serverHydratedRef.current = true;
+        if (macrosObjetivo) {
+          setTargetMacros({
+            proteinas: macrosObjetivo.proteinas || macrosObjetivo.p || 30,
+            carbohidratos: macrosObjetivo.carbohidratos || macrosObjetivo.carbos || macrosObjetivo.c || 40,
+            grasas: macrosObjetivo.grasas || macrosObjetivo.lipidos || macrosObjetivo.f || macrosObjetivo.g || 30
+          });
+        }
+        serverHydratedRef.current = true;
     }
   }, [serverData, anamnesisData]);
 
@@ -149,6 +155,7 @@ export default function PlanAlimentario({
     setNumComidas(num);
     const names = getMealNames(num);
     setMeals(prev => {
+      const itemsPerMeal = Math.floor(prev.reduce((acc, m) => acc + m.items.length, 0) / (num || 1));
       return Array.from({ length: num }).map((_, i) => {
         const existingMeal = prev[i];
         return {
@@ -170,7 +177,7 @@ export default function PlanAlimentario({
         const cal = item.calorias ?? (item as any).kcal ?? 0;
         const p = item.proteinas ?? 0;
         const c = item.carbohidratos ?? (item as any).carbos ?? 0;
-        const g = item.grasas ?? 0;
+        const g = item.grasas ?? (item as any).lipidos ?? (item as any).f ?? 0;
         const gr = item.gramos ?? 100;
 
         acc.kcal += (cal * gr) / 100;
@@ -221,7 +228,7 @@ export default function PlanAlimentario({
           macrosObjetivo: targetMacros
         });
       }
-    }, 3000);
+    }, 2000);
     return () => clearTimeout(timer);
   }, [meals, targetKcal, targetMacros, pacienteId]);
 
@@ -264,7 +271,7 @@ export default function PlanAlimentario({
       calorias: baseFood.calorias || baseFood.kcal || 0,
       carbohidratos: baseFood.carbohidratos || baseFood.carbos || 0,
       proteinas: baseFood.proteinas || 0,
-      grasas: baseFood.grasas || 0,
+      grasas: baseFood.grasas || baseFood.lipidos || baseFood.f || 0,
     };
     setMeals(meals.map(m => m.id === mealId ? { ...m, items: [...m.items, newFood] } : m));
     setSearchQuery('');
@@ -403,11 +410,11 @@ export default function PlanAlimentario({
                         <span className="text-[10px] font-bold text-white/20 group-hover:text-white transition-all duration-75">{food.calorias} <span className="text-[8px] opacity-40">KCAL</span></span>
                      </div>
                      <p className="text-white font-bold uppercase tracking-tight text-[12px] mb-6 group-hover:text-[#3b82f6] transition-all duration-75 truncate w-full">{food.nombre}</p>
-                     <div className="flex gap-6 text-[9px] font-bold uppercase tracking-widest text-white/10 group-hover:text-white/30 transition-all duration-75">
-                        <div>P: {food.proteinas}g</div>
-                        <div>C: {food.carbohidratos !== undefined ? food.carbohidratos : food.carbos}g</div>
-                        <div>G: {food.grasas}g</div>
-                     </div>
+                      <div className="flex gap-6 text-[9px] font-bold uppercase tracking-widest text-white/10 group-hover:text-white/30 transition-all duration-75">
+                         <div>P: {food.proteinas}g</div>
+                         <div>C: {food.carbohidratos !== undefined ? food.carbohidratos : (food as any).carbos}g</div>
+                         <div>G: {food.grasas !== undefined ? food.grasas : (food as any).lipidos}g</div>
+                      </div>
                   </button>
                 ))
               )}
@@ -531,14 +538,14 @@ export default function PlanAlimentario({
               </header>
 
               <div className="space-y-12 relative z-10">
-                 <div className="p-8 bg-[#0a0f14] rounded-sm border border-white/5 text-center space-y-6 shadow-inner relative group transition-all duration-1000">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-white/10 leading-none">ENERGÍA CALCULADA</p>
-                    <div className="flex items-baseline justify-center gap-3">
-                       <h4 className="text-4xl font-bold text-white tracking-tight">{Math.round(totals.kcal)}</h4>
-                       <span className="text-xl font-bold text-white/10 tracking-tight">/{targetKcal}</span>
+                 <div className="p-6 sm:p-8 bg-[#0a0f14] rounded-sm border border-white/5 text-center space-y-4 sm:space-y-6 shadow-inner relative group transition-all duration-1000">
+                    <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-widest text-white/10 leading-none">ENERGÍA CALCULADA</p>
+                    <div className="flex items-baseline justify-center gap-2 sm:gap-3">
+                       <h4 className="text-2xl sm:text-4xl font-bold text-white tracking-tight">{Math.round(totals.kcal)}</h4>
+                       <span className="text-lg sm:text-xl font-bold text-white/10 tracking-tight">/{targetKcal}</span>
                     </div>
                      <div 
-                       className="w-full h-2.5 bg-[#0e1419] rounded-full overflow-hidden shadow-inner border border-white/5 relative"
+                       className="w-full h-2 sm:h-2.5 bg-[#0e1419] rounded-full overflow-hidden shadow-inner border border-white/5 relative"
                        role="progressbar"
                        aria-valuenow={Math.round((totals.kcal / targetKcal) * 100)}
                        aria-valuemin={0}
@@ -560,19 +567,19 @@ export default function PlanAlimentario({
                       { l: 'Carbohidratos', v: totals.c, c: 'bg-white/10', k: 'C' },
                       { l: 'Lípidos', v: totals.g, c: 'bg-white/5', k: 'G' }
                     ].map(m => (
-                      <div key={m.k} className="p-6 bg-[#0a0f14] rounded-sm border border-white/5 flex items-center justify-between hover:border-white/10 transition-all duration-75 group/item shadow-inner">
-                         <div className="flex items-center gap-4">
+                      <div key={m.k} className="p-4 sm:p-6 bg-[#0a0f14] rounded-sm border border-white/5 flex items-center justify-between hover:border-white/10 transition-all duration-75 group/item shadow-inner">
+                         <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
                             <div className={clsx(
-                               "w-10 h-10 rounded-sm flex items-center justify-center font-bold text-sm shadow-xl transition-all duration-75",
+                               "w-8 h-8 sm:w-10 sm:h-10 rounded-sm flex items-center justify-center font-bold text-xs sm:text-sm shadow-xl transition-all duration-75 shrink-0",
                                m.c,
                                'text-white'
                             )}>
                                {m.k}
                             </div>
-                            <span className="text-[11px] font-bold text-white/10 uppercase tracking-widest group-hover/item:text-white transition-all duration-75">{m.l}</span>
+                            <span className="text-[9px] sm:text-[11px] font-bold text-white/10 uppercase tracking-widest group-hover/item:text-white transition-all duration-75 truncate">{m.l}</span>
                          </div>
-                         <div className="text-right">
-                            <p className="text-2xl font-bold text-white tracking-tight leading-none">{Math.round(m.v)}<span className="text-xs opacity-20 ml-1">G</span></p>
+                         <div className="text-right shrink-0">
+                            <p className="text-lg sm:text-2xl font-bold text-white tracking-tight leading-none">{Math.round(m.v)}<span className="text-xs opacity-20 ml-1">G</span></p>
                          </div>
                       </div>
                     ))}
@@ -592,36 +599,21 @@ export default function PlanAlimentario({
               </div>
 
                <div className={clsx(
-                  "flex flex-col gap-4 mt-12 transition-all duration-75",
-                  saveMutation.isPending ? "opacity-50" : "opacity-100"
+                  "flex flex-col gap-4 mt-12 transition-all duration-75 text-center",
+                  saveMutation.isPending ? "opacity-100" : "opacity-40"
                )}>
-                  <button 
-                    onClick={() => {
-                      saveMutation.mutate({
-                        pacienteId,
-                        objetivoCalorico: targetKcal,
-                        comidas: meals,
-                        macrosObjetivo: targetMacros
-                      });
-                      const el = document.getElementById('dieta-success');
-                      if (el) {
-                        el.style.opacity = '1';
-                        setTimeout(() => { if (el) el.style.opacity = '0'; }, 3000);
-                      }
-                    }}
-                    disabled={saveMutation.isPending}
-                    className="w-full py-6 bg-white/10 hover:bg-white/20 text-white rounded-sm font-bold uppercase text-[10px] tracking-widest shadow-xl transition-all duration-75 flex items-center justify-center gap-4 border border-white/5 active:scale-95 group/save overflow-hidden relative"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover/save:translate-x-full transition-transform duration-1000" />
+                  <div className="flex items-center justify-center gap-3 text-[9px] font-black uppercase tracking-[0.3em]">
                     {saveMutation.isPending ? (
-                      <div className="w-4 h-4 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />
+                      <>
+                        <div className="w-3 h-3 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />
+                        Sincronizando Cambios...
+                      </>
                     ) : (
-                       <Save className="w-5 h-5 text-[#3b82f6]" />
+                      <>
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                        Plan Nutricional Asegurado
+                      </>
                     )}
-                    {saveMutation.isPending ? 'SINCRONIZANDO...' : 'GUARDAR PLAN'}
-                  </button>
-                  <div id="dieta-success" className="text-center text-[9px] font-bold text-emerald-400 uppercase tracking-[0.4em] opacity-0 transition-opacity duration-75 leading-none">
-                     ✓ PLAN NUTRICIONAL ASEGURADO
                   </div>
                </div>
            </div>

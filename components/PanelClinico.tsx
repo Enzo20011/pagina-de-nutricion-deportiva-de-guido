@@ -33,11 +33,13 @@ import {
 export default function PanelClinico({ 
   pacienteId, 
   onSync,
-  pacienteInitialData
+  pacienteInitialData,
+  antropometriaData
 }: { 
   pacienteId: string, 
   onSync?: (data: any) => void,
-  pacienteInitialData?: any
+  pacienteInitialData?: any,
+  antropometriaData?: any
 }) {
   const queryClient = useQueryClient();
   const [success, setSuccess] = useState(false);
@@ -110,16 +112,20 @@ export default function PanelClinico({
       }
     } else if (pacienteInitialData && !hasLoadedRef.current && !serverData?.data) {
        // Fallback to patient root data if no anamnesis yet
-       reset({
+       const initialValues = {
          ...watchedFields,
          motivoConsulta: pacienteInitialData.objetivo || '',
-         peso: pacienteInitialData.weight || pacienteInitialData.peso || 70,
-         altura: pacienteInitialData.height || pacienteInitialData.altura || 170,
+         peso: pacienteInitialData.peso || 70,
+         altura: pacienteInitialData.altura || 170,
          sexo: pacienteInitialData.sexo || 'masculino',
          edad: pacienteInitialData.fechaNacimiento ? 
                new Date().getFullYear() - new Date(pacienteInitialData.fechaNacimiento).getFullYear() : 30,
-       });
+       };
+       reset(initialValues);
        hasLoadedRef.current = true;
+       
+       // Trigger immediate save for new patients to ensure "Sincronizado" state
+       saveMutation.mutate({ ...initialValues, isDraft: false });
     }
   }, [serverData, reset, pacienteId, pacienteInitialData]);
 
@@ -136,6 +142,43 @@ export default function PanelClinico({
   React.useEffect(() => {
     hasLoadedRef.current = false;
   }, [pacienteId]);
+
+  // PROACTIVE SYNC: If patient root data changes (e.g. edited in modal), update clinical form
+  // ONLY if form is not "locked" or values match previous ones
+  React.useEffect(() => {
+    if (pacienteInitialData && hasLoadedRef.current) {
+        const currentPeso = watchedFields.peso;
+        const currentAltura = watchedFields.altura;
+        
+        // If profile has new data and anamnesis is still at default or matches old profile, update
+        const profilePeso = pacienteInitialData.peso;
+        const profileAltura = pacienteInitialData.altura;
+        
+        if (profilePeso && profilePeso !== currentPeso) {
+            setValue('peso', profilePeso);
+        }
+        if (profileAltura && profileAltura !== currentAltura) {
+            setValue('altura', profileAltura);
+        }
+    }
+  }, [pacienteInitialData?.peso, pacienteInitialData?.altura, setValue]);
+
+  // REACTIVE SYNC FROM BIOMETRY (ANTROPOMETRIA)
+  // If user edits weight in Biometry tab, it should reflect here instantly
+  React.useEffect(() => {
+    if (antropometriaData?.mediciones) {
+        const { peso: antroPeso, altura: antroAltura } = antropometriaData.mediciones;
+        const currentPeso = watchedFields.peso;
+        const currentAltura = watchedFields.altura;
+
+        if (antroPeso && antroPeso !== currentPeso) {
+            setValue('peso', antroPeso);
+        }
+        if (antroAltura && antroAltura !== currentAltura) {
+            setValue('altura', antroAltura);
+        }
+    }
+  }, [antropometriaData?.mediciones?.peso, antropometriaData?.mediciones?.altura, setValue]);
 
   const [macrosPct, setMacrosPct] = useState({ carbos: 50, proteinas: 20, grasas: 30 });
   
@@ -190,6 +233,10 @@ export default function PanelClinico({
       }
       // Uniform structure: always { data: ... }
       queryClient.setQueryData(['anamnesis', pacienteId], { data: res.data });
+      // Invalidate evolutionary history to reflect changes in Dashboard
+      queryClient.invalidateQueries({ queryKey: ['historial-antropometria', pacienteId] });
+      queryClient.invalidateQueries({ queryKey: ['biometria', pacienteId] });
+      queryClient.invalidateQueries({ queryKey: ['paciente', pacienteId] });
     },
     onError: (err: any) => {
        setError(err.message);
@@ -225,10 +272,10 @@ export default function PanelClinico({
     if (!watchedFields.pacienteId) return;
     if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
     autoSaveRef.current = setTimeout(() => {
-      // Validate with draft schema before sending
+      // Validate with draft schema but save as REAL (isDraft: false) to ensure absolute persistence
       const validation = draftAnamnesisSchema.safeParse(watchedFields);
       if (validation.success) {
-        saveMutation.mutate({ ...watchedFields, isDraft: true });
+        saveMutation.mutate({ ...watchedFields, isDraft: false });
       }
     }, 1500);
     return () => { if (autoSaveRef.current) clearTimeout(autoSaveRef.current); };
@@ -245,14 +292,32 @@ export default function PanelClinico({
       
       {/* LEFT SECTION: ANAMNESIS FORM */}
       <div className="xl:col-span-7 space-y-12">
-        <header className="flex items-center gap-8 bg-[#0e1419] p-6 rounded-sm shadow-xl border border-white/5 group overflow-hidden relative">
+        <header className="flex flex-col sm:flex-row sm:items-center gap-6 bg-[#0e1419] p-6 rounded-sm shadow-xl border border-white/5 group overflow-hidden relative">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#3b82f6]/5 rounded-full blur-[100px] -mr-32 -mt-32" />
-          <div className="w-16 h-16 bg-[#3b82f6] rounded-sm flex items-center justify-center transition-all duration-75 shadow-xl relative z-10">
+          <div className="w-16 h-16 bg-[#3b82f6] rounded-sm flex items-center justify-center transition-all duration-75 shadow-xl relative z-10 shrink-0">
              <ClipboardList className="w-8 h-8 text-white" />
           </div>
-          <div className="relative z-10">
-            <h2 className="text-2xl font-bold uppercase tracking-tight leading-none text-white">ANAMNESIS</h2>
-            <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/20 mt-4">ANÁLISIS DE HÁBITOS Y ANTECEDENTES</p>
+           <div className="relative z-10 flex-1 w-full">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
+              <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-tight leading-none text-white">ANAMNESIS</h2>
+              <div className={clsx(
+                "flex items-center justify-center gap-3 px-3 py-1.5 rounded-sm border transition-all duration-75 uppercase text-[7px] sm:text-[8px] font-black tracking-[0.2em] whitespace-nowrap self-start sm:self-center",
+                saveMutation.isPending ? "bg-[#3b82f6]/10 border-[#3b82f6]/20 text-[#3b82f6]" : "bg-emerald-500/5 border-emerald-500/10 text-emerald-500/40"
+              )}>
+                {saveMutation.isPending ? (
+                  <>
+                    <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin" />
+                    Sincronizando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-2 h-2" />
+                    Sincronizado
+                  </>
+                )}
+              </div>
+            </div>
+            <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-[0.4em] text-white/20 mt-3">ANÁLISIS DE HÁBITOS Y ANTECEDENTES</p>
           </div>
         </header>
 
@@ -353,40 +418,6 @@ export default function PanelClinico({
             </div>
 
           </div>
-
-          <div className="flex flex-col md:flex-row items-center gap-8 pt-8 border-t border-white/5 relative z-10">
-            <button 
-              type="submit"
-              disabled={saveMutation.isPending}
-              className={clsx(
-                "flex items-center gap-4 px-10 py-5 rounded-sm font-bold uppercase text-[11px] tracking-[0.3em] transition-all duration-75 shadow-2xl group/save relative overflow-hidden",
-                saveMutation.isPending 
-                  ? "bg-white/5 text-white/20 cursor-wait" 
-                  : "bg-white text-[#0a0f14] hover:bg-white/90 active:scale-95"
-              )}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/save:translate-x-full transition-transform duration-1000" />
-              {saveMutation.isPending ? (
-                <div className="w-4 h-4 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Save className="w-5 h-5" />
-              )}
-              <span className="relative z-10">{saveMutation.isPending ? 'Sincronizando...' : 'Guardar Clínica'}</span>
-            </button>
-
-            <AnimatePresence>
-              {success && (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="inline-flex items-center gap-4 text-emerald-400 font-bold uppercase text-[10px] tracking-[0.2em] bg-emerald-500/10 px-10 py-4 rounded-sm border border-emerald-500/20 shadow-2xl">
-                  <CheckCircle2 className="w-5 h-5 shadow-lg" /> CAMBIOS PERMANENTES GUARDADOS
-                </motion.div>
-              )}
-              {error && (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="inline-flex items-center gap-4 text-red-400 font-bold uppercase text-[10px] tracking-[0.2em] bg-red-500/10 px-10 py-4 rounded-sm border border-red-500/20 shadow-2xl">
-                  <AlertCircle className="w-5 h-5" /> ERROR CRÍTICO: {error}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
         </form>
       </div>
 
@@ -456,7 +487,7 @@ export default function PanelClinico({
              </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-6 w-full mb-12 relative z-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 w-full mb-12 relative z-10">
               { [
                { id: 'deficit', label: 'Déficit', val: deficit, color: 'text-red-400', activeBg: 'bg-red-500/10 border-red-500/30', icon: ArrowDown },
                { id: 'mantenimiento', label: 'Mantener', val: mantenimiento, color: 'text-white/20', activeBg: 'bg-white/5 border-white/20', icon: Equal },
@@ -527,11 +558,11 @@ export default function PanelClinico({
                ))}
             </div>
 
-            <div className="mt-12 p-8 bg-[#0a0f14]/60 rounded-sm border border-white/5 flex items-start gap-8 group transition-all duration-75">
+            <div className="mt-12 p-6 sm:p-8 bg-[#0a0f14]/60 rounded-sm border border-white/5 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-8 group transition-all duration-75 text-center sm:text-left">
                <div className="w-10 h-10 bg-white/5 rounded-sm flex items-center justify-center shrink-0">
                   <Info className="w-5 h-5 text-[#3b82f6]/40" />
                </div>
-               <p className="text-[11px] text-white/10 font-bold leading-relaxed uppercase tracking-[0.15em] group-hover:text-white/20 transition-all duration-75">
+               <p className="text-[9px] sm:text-[11px] text-white/10 font-bold leading-relaxed uppercase tracking-[0.15em] group-hover:text-white/20 transition-all duration-75">
                  METODOLOGÍA HARRIS-BENEDICT OPTIMIZADA PARA NUTRICIÓN DEPORTIVA Y CLÍNICA. CÁLCULO DE ALTA PRECISIÓN.
                </p>
             </div>

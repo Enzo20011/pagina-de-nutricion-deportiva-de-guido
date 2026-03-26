@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Sparkline from '@/components/Sparkline';
 import { 
   Users, 
@@ -14,12 +15,12 @@ import {
   Search,
   Zap,
   FileText,
-  Play
+  Play,
+  User
 } from 'lucide-react';
 import clsx from 'clsx';
 import { DashboardSkeleton } from '@/components/Skeleton';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
 
 export default function HomePage() {
   const [loading, setLoading] = useState(false);
@@ -30,27 +31,51 @@ export default function HomePage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [notif, setNotif] = useState(3);
 
+  const [stats, setStats] = useState<any>(null);
+
   useEffect(() => {
     setMounted(true);
     setFormattedDate(new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }));
+    
+    // Cargar Estadísticas Real
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/admin/dashboard/stats');
+        const data = await res.json();
+        setStats(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
   }, []);
 
-  // Simulación de autocompletado
+  // Búsqueda real de pacientes
   useEffect(() => {
-    if (search.length > 1) {
-      setSuggestions([
-        'Juan Pérez',
-        'María López',
-        'Carlos Ruiz',
-        'Ana García',
-      ].filter(n => n.toLowerCase().includes(search.toLowerCase())));
-      setShowSuggestions(true);
-    } else {
-      setShowSuggestions(false);
-    }
+    const fetchSuggestions = async () => {
+      if (search.length > 1) {
+        try {
+          const res = await fetch(`/api/admin/pacientes/search?q=${search}`);
+          const { data } = await res.json();
+          setSuggestions(data || []);
+          setShowSuggestions(true);
+        } catch (err) {
+          console.error(err);
+        }
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    };
+
+    const timer = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(timer);
   }, [search]);
 
-  if (loading) return (
+  if (loading || !stats) return (
     <div className="p-8 bg-[#0a0f14] min-h-screen">
       <DashboardSkeleton />
     </div>
@@ -73,7 +98,7 @@ export default function HomePage() {
             Resumen de <span className="text-[#3b82f6]">Actividad</span>
           </h1>
           <p className="text-[#a7abb2] font-label uppercase text-[9px] tracking-widest flex items-center gap-2">
-            Próximo paciente: 16:30hs · Juan Díaz
+            Próximo paciente: {stats?.proximoTurno ? `${stats.proximoTurno.hora}hs · ${stats.proximoTurno.nombre}` : 'Sin turnos hoy'}
           </p>
         </motion.div>
 
@@ -96,31 +121,28 @@ export default function HomePage() {
               autoComplete="off"
             />
             {showSuggestions && suggestions.length > 0 && (
-              <ul className="absolute left-0 top-full mt-2 w-full bg-[#0e1419] border border-[#1f262e] rounded-sm shadow-2xl z-30 overflow-hidden">
-                {suggestions.map((s, i) => (
-                  <li key={i} className="px-5 py-4 text-[#a7abb2] hover:bg-[#1a2027] hover:text-[#3b82f6] cursor-pointer text-sm md:text-[9px] font-label font-bold uppercase tracking-widest transition-colors border-b border-[#1f262e] last:border-0 min-h-[44px] flex items-center" onMouseDown={() => { setSearch(s); setShowSuggestions(false); }}>
-                    {s}
-                  </li>
+              <div className="absolute top-full left-0 right-0 mt-2 bg-[#0e1419] border border-[#1f262e] rounded-sm shadow-2xl z-[100] overflow-hidden">
+                {suggestions.map((s: any, i) => (
+                  <Link
+                    key={i}
+                    href={`/admin/pacientes?id=${s.id}`}
+                    className="w-full px-6 py-4 text-left text-white/60 hover:text-white hover:bg-[#3b82f6]/10 transition-all border-b border-[#1f262e] last:border-none flex items-center gap-4 group"
+                    onClick={() => setShowSuggestions(false)}
+                  >
+                    <User className="w-4 h-4 text-[#a7abb2] group-hover:text-[#3b82f6]" />
+                    <span className="text-[10px] font-label font-bold uppercase tracking-widest">{s.name}</span>
+                  </Link>
                 ))}
-              </ul>
+              </div>
             )}
           </div>
           <div className="flex items-center gap-3">
-            <motion.button
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-6 py-3 min-h-[44px] rounded-sm bg-[#3b82f6] text-white text-[10px] font-label font-bold uppercase tracking-[0.2em] shadow-lg shadow-[#3b82f6]/10 hover:bg-[#3b82f6]/90 transition-all"
+            <Link
+              href="/admin/pacientes?action=new"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-6 py-3 min-h-[44px] rounded-sm bg-[#3b82f6] text-white text-[10px] font-label font-bold uppercase tracking-[0.2em] shadow-lg shadow-[#3b82f6]/10 hover:bg-[#3b82f6]/90 transition-all font-bold"
             >
               <Plus className="w-4 h-4" /> Nuevo Registro
-            </motion.button>
-            {notif > 0 && (
-              <div className="relative shrink-0" aria-label={`${notif} notificaciones nuevas`}>
-                <div className="w-11 h-11 min-h-[44px] bg-[#0e1419] border border-[#1f262e] rounded-sm flex items-center justify-center">
-                  <Activity className="w-4 h-4 text-[#a7abb2]/40" aria-hidden="true" />
-                </div>
-                <span className="absolute -top-1 -right-1 bg-[#3b82f6] text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center border-2 border-[#0a0f14]">{notif}</span>
-              </div>
-            )}
+            </Link>
           </div>
         </motion.div>
       </header>
@@ -128,10 +150,10 @@ export default function HomePage() {
       {/* STATS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 md:gap-8">
         {[
-          { label: 'Pacientes Totales', value: 128, growth: '+12%', trend: '+5.2%', trendLabel: 'Eficiencia', icon: Users, accent: false, spark: [110, 115, 120, 128], href: '/admin/pacientes' },
-          { label: 'Agenda de Hoy', value: 8, growth: 'Próximo: 16:30', trend: '+2', trendLabel: 'Sesiones', icon: Calendar, accent: true, spark: [5, 7, 6, 8], href: '/admin/agenda' },
-          { label: 'Estado Sistema', value: 94, growth: 'Operativo', trend: 'ACTIVO', trendLabel: 'Tiempo Real', icon: Zap, accent: false, spark: [80, 85, 90, 94], href: '/admin' },
-          { label: 'Crecimiento', value: 18.2, growth: 'Sostenible', trend: '+3.1%', trendLabel: 'Anual', icon: TrendingUp, accent: false, spark: [10, 12, 15, 18.2], href: '/admin/finanzas' },
+          { label: 'Pacientes Totales', value: stats?.totalPacientes || 0, growth: '+100%', trend: 'Total', trendLabel: 'Actuales', icon: Users, accent: false, spark: [110, 115, 120, stats?.totalPacientes || 0], href: '/admin/pacientes' },
+          { label: 'Agenda de Hoy', value: stats?.agendaHoy || 0, growth: stats?.proximoTurno ? `Prox: ${stats.proximoTurno.hora}` : 'Sin turnos', trend: 'Hoy', trendLabel: 'Turnos', icon: Calendar, accent: true, spark: [5, 7, 6, stats?.agendaHoy || 0], href: '/admin/agenda' },
+          { label: 'Estado Sistema', value: 100, growth: 'Operativo', trend: 'ACTIVO', trendLabel: 'Tiempo Real', icon: Zap, accent: false, spark: [90, 95, 98, 100], href: '/admin' },
+          { label: 'Ingresos Mes', value: `$${stats?.montoMensual?.toLocaleString() || 0}`, growth: 'Confirmados', trend: 'Mensual', trendLabel: 'Pesos', icon: TrendingUp, accent: false, spark: [10, 12, 15, stats?.montoMensual || 0], href: '/admin/finanzas' },
         ].map((stat, i) => (
           <motion.div 
             key={i}
@@ -205,36 +227,57 @@ export default function HomePage() {
           </div>
           
           <div className="grid grid-cols-1 gap-4">
-            {[
-              { id: '1', paciente: 'Juan Díaz', hora: '16:30HS', tipo: 'Control Nutricional', status: 'Activa' },
-              { id: '2', paciente: 'Maria Silva', hora: '17:45HS', tipo: 'Seguimiento Deportivo', status: 'Aceptada' },
-              { id: '3', paciente: 'Carlos Ruiz', hora: '19:00HS', tipo: 'Evaluación Inicial', status: 'Activa' },
-            ].map((session, i) => (
+            {(stats?.proximasSesiones || []).map((session: any, i: number) => (
                 <motion.div 
                   key={i}
                   className="p-6 bg-[#141a20]/40 rounded-sm border border-[#1f262e] flex flex-col sm:flex-row sm:items-center justify-between gap-6 group hover:border-[#3b82f6]/20 transition-all"
                 >
                   <div className="flex items-center gap-5">
                     <div className="w-14 h-14 bg-[#1f262e] text-[#3b82f6] rounded-sm flex items-center justify-center font-heading font-black text-xl border border-[#3b82f6]/10 group-hover:bg-[#3b82f6] group-hover:text-white transition-all duration-300">
-                      {session.paciente.split(' ').map(n => n[0]).join('')}
+                      {session.nombre.split(' ').map((n: string) => n[0]).join('')}
                     </div>
                     <div>
-                      <p className="text-[8px] text-[#a7abb2] font-label font-bold uppercase tracking-widest mb-1">{session.hora} · {session.tipo}</p>
-                      <h4 className="text-xl font-heading font-black text-white tracking-tight uppercase">{session.paciente}</h4>
+                      <p className="text-[8px] text-[#a7abb2] font-label font-bold uppercase tracking-widest mb-1">{session.hora}hs · Turno Sincronizado</p>
+                      <h4 className="text-xl font-heading font-black text-white tracking-tight uppercase">{session.nombre}</h4>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-5 py-3 min-h-[44px] rounded-sm border border-[#1f262e] text-[9px] font-label font-bold uppercase tracking-widest text-[#a7abb2] hover:text-[#eaeef6] hover:bg-[#1a2027] transition-all">
-                      <FileText className="w-3.5 h-3.5" /> Ficha
-                    </button>
-                    <button className={clsx(
-                      "px-6 py-3 min-h-[44px] rounded-sm text-[9px] font-label font-bold tracking-widest uppercase transition-all flex items-center gap-2",
-                      session.status === 'Activa'
-                        ? "bg-[#3b82f6] text-white hover:bg-[#3b82f6]/90 shadow-lg shadow-[#3b82f6]/10"
-                        : "bg-[#1f262e] text-[#43484e] border border-[#1a2027]"
-                    )}>
-                      {session.status === 'Activa' ? <><Play className="w-3.5 h-3.5" /> Iniciar</> : 'Pendiente'}
-                    </button>
+                    {session.pacienteId ? (
+                      <Link
+                        href={`/admin/pacientes?id=${session.pacienteId}`}
+                        className="flex items-center gap-2 px-5 py-3 min-h-[44px] rounded-sm border border-[#1f262e] text-[9px] font-label font-bold uppercase tracking-widest text-[#a7abb2] hover:text-[#eaeef6] hover:bg-[#1a2027] transition-all"
+                      >
+                        <FileText className="w-3.5 h-3.5" /> Ficha
+                      </Link>
+                    ) : (
+                      <span className="flex items-center gap-2 px-5 py-3 min-h-[44px] rounded-sm border border-[#1f262e] text-[9px] font-label font-bold uppercase tracking-widest text-[#43484e] cursor-not-allowed">
+                        <FileText className="w-3.5 h-3.5" /> Ficha
+                      </span>
+                    )}
+                    {session.pacienteId ? (
+                      <Link
+                        href={`/admin/consulta/${session.pacienteId}`}
+                        className="px-6 py-3 min-h-[44px] rounded-sm bg-[#3b82f6] text-white hover:bg-[#3b82f6]/90 shadow-lg shadow-[#3b82f6]/10 text-[9px] font-label font-bold tracking-widest uppercase transition-all flex items-center gap-2"
+                      >
+                        <Play className="w-3.5 h-3.5" /> Iniciar Sesión
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/admin/pacientes?action=new&nombre=${encodeURIComponent(session.nombre)}&email=${encodeURIComponent(session.email)}`}
+                        className="px-6 py-3 min-h-[44px] rounded-sm bg-[#1f262e] text-[#a7abb2] border border-[#3b82f6]/20 hover:bg-[#3b82f6] hover:text-white text-[9px] font-label font-bold tracking-widest uppercase transition-all flex items-center gap-2"
+                        title="Paciente sin ficha registrada — crear ahora"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Crear Ficha
+                      </Link>
+                    )}
+                    {session.pacienteId && (
+                      <Link
+                        href={`/admin/pacientes?id=${session.pacienteId}`}
+                        className="px-6 py-3 min-h-[44px] rounded-sm bg-[#1f262e] text-[#43484e] border border-[#1a2027] text-[9px] font-label font-bold tracking-widest uppercase transition-all flex items-center gap-2"
+                      >
+                        Ver Perfil
+                      </Link>
+                    )}
                   </div>
                 </motion.div>
             ))}
@@ -243,37 +286,37 @@ export default function HomePage() {
 
         {/* QUICK ACTIONS */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-white p-6 md:p-10 rounded-sm text-[#0a0f14] shadow-2xl relative overflow-hidden flex flex-col justify-between h-full"
+          className="bg-[#0e1419] p-6 md:p-10 rounded-sm text-white border border-[#1f262e] relative overflow-hidden flex flex-col justify-between h-full"
         >
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-10">
                 <div className="flex flex-col">
                   <h2 className="text-2xl font-heading font-black tracking-tight uppercase leading-none">Accesos</h2>
-                  <h2 className="text-2xl font-heading font-black tracking-tight uppercase text-[#0a0f14]/30">Rápidos</h2>
+                  <h2 className="text-2xl font-heading font-black tracking-tight uppercase text-white/10">Rápidos</h2>
                 </div>
-                <div className="w-12 h-12 bg-[#0a0f14] text-white rounded-sm flex items-center justify-center">
+                <div className="w-12 h-12 bg-[#3b82f6] text-white rounded-sm flex items-center justify-center shadow-lg shadow-[#3b82f6]/20">
                    <Zap className="w-6 h-6" />
                 </div>
             </div>
 
             <div className="space-y-3">
-                  <Link href="/admin/pacientes/nuevo" className="p-5 bg-[#0a0f14]/5 hover:bg-[#0a0f14] hover:text-white rounded-sm flex items-center gap-5 transition-all group border border-[#0a0f14]/10">
-                    <div className="w-10 h-10 bg-[#0a0f14] text-white rounded-sm flex items-center justify-center group-hover:bg-white group-hover:text-[#0a0f14] transition-all">
+                  <Link href="/admin/pacientes?action=new" className="p-5 bg-white/5 hover:bg-[#3b82f6] hover:text-white rounded-sm flex items-center gap-5 transition-all group border border-white/5">
+                    <div className="w-10 h-10 bg-[#1f262e] text-[#3b82f6] rounded-sm flex items-center justify-center group-hover:bg-white group-hover:text-[#3b82f6] transition-all">
                       <Plus className="w-5 h-5" />
                     </div>
                     <span className="text-[10px] font-label font-bold uppercase tracking-widest">Alta de Paciente</span>
                   </Link>
-                  <Link href="/admin/agenda" className="p-5 bg-[#0a0f14]/5 hover:bg-[#0a0f14] hover:text-white rounded-sm flex items-center gap-5 transition-all group border border-[#0a0f14]/10">
-                    <div className="w-10 h-10 bg-[#0a0f14] text-white rounded-sm flex items-center justify-center group-hover:bg-white group-hover:text-[#0a0f14] transition-all">
+                  <Link href="/admin/agenda" className="p-5 bg-white/5 hover:bg-[#3b82f6] hover:text-white rounded-sm flex items-center gap-5 transition-all group border border-white/5">
+                    <div className="w-10 h-10 bg-[#1f262e] text-[#3b82f6] rounded-sm flex items-center justify-center group-hover:bg-white group-hover:text-[#3b82f6] transition-all">
                       <Calendar className="w-5 h-5" />
                     </div>
                     <span className="text-[10px] font-label font-bold uppercase tracking-widest">Calendario</span>
                   </Link>
-                  <Link href="/admin/finanzas" className="p-5 bg-[#0a0f14]/5 hover:bg-[#0a0f14] hover:text-white rounded-sm flex items-center gap-5 transition-all group border border-[#0a0f14]/10">
-                    <div className="w-10 h-10 bg-[#0a0f14] text-white rounded-sm flex items-center justify-center group-hover:bg-white group-hover:text-[#0a0f14] transition-all">
+                  <Link href="/admin/finanzas" className="p-5 bg-white/5 hover:bg-[#3b82f6] hover:text-white rounded-sm flex items-center gap-5 transition-all group border border-white/5">
+                    <div className="w-10 h-10 bg-[#1f262e] text-[#3b82f6] rounded-sm flex items-center justify-center group-hover:bg-white group-hover:text-[#3b82f6] transition-all">
                       <TrendingUp className="w-5 h-5" />
                     </div>
                     <span className="text-[10px] font-label font-bold uppercase tracking-widest">Ingresos</span>

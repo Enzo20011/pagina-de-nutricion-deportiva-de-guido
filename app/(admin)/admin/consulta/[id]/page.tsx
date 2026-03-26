@@ -58,9 +58,6 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
     }
   });
 
-  // Removing loading block to show UI immediately as per user request
-  // if (isLoading) return <Loader />;
-  // Only show error if finished loading and no patient found
   if (!paciente && !isLoading) return <div className="p-10 text-center text-white font-bold text-xl uppercase tracking-widest">Paciente no encontrado</div>;
 
   return (
@@ -96,10 +93,14 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
               <div className="flex items-center gap-4 text-[#3b82f6]/60 font-bold uppercase text-[9px] tracking-[0.4em]">
                 SINCRONIZACIÓN ACTIVA
               </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight uppercase leading-none break-words line-clamp-2">{paciente?.data?.nombre} <span className="text-white/20">{paciente?.data?.apellido}</span></h1>
+              {isLoading ? (
+                <div className="h-8 w-48 bg-white/5 rounded-sm animate-pulse" />
+              ) : (
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight uppercase leading-none break-words line-clamp-2">{paciente?.data?.nombre} <span className="text-white/20">{paciente?.data?.apellido}</span></h1>
+              )}
               <div className="flex flex-wrap items-center gap-4 mt-2">
                 <p className="text-[10px] text-white/20 font-bold uppercase tracking-[0.2em] flex items-center gap-2">
-                   <Calendar className="w-3 h-3 opacity-40" /> {new Date(paciente?.data?.createdAt || Date.now()).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase()} <span className="w-1 h-1 rounded-full bg-white/10" /> {paciente?.data?.status?.toUpperCase() || 'ACTIVO'}
+                   <Calendar className="w-3 h-3 opacity-40" /> {isLoading ? '...' : new Date(paciente?.data?.createdAt || Date.now()).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase()} <span className="w-1 h-1 rounded-full bg-white/10" /> {paciente?.data?.status?.toUpperCase() || 'ACTIVO'}
                 </p>
                  <button
                   onClick={async () => {
@@ -171,6 +172,7 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
                  pacienteId={params.id}
                  onSync={setAnamnesis}
                  pacienteInitialData={paciente?.data}
+                 antropometriaData={antropometria}
                />
              )}
              {activeTab === 'antropometria' && (
@@ -178,6 +180,7 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
                  pacienteId={params.id}
                  onSync={setAntropometria}
                  pacienteInitialData={paciente?.data}
+                 anamnesisData={anamnesis}
                />
              )}
              {activeTab === 'dieta' && (
