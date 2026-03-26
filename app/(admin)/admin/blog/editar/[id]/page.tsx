@@ -15,7 +15,7 @@ export default function EditBlogPage({ params }: { params: { id: string } }) {
       try {
         const res = await fetch(`/api/blog?admin=true`);
         const data = await res.json();
-        const found = data.find((p: any) => p._id === params.id);
+        const found = data.find((p: any) => p.id === params.id);
         
         if (found) {
           setPost(found);

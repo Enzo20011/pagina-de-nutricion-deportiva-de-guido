@@ -110,8 +110,8 @@ export default function PlanAlimentario({
        if (comidas && comidas.length > 0) {
          const fixedMeals = comidas.map((m: any, i: number) => ({
            ...m,
-           id: m.id || m._id || (i + 1).toString(),
-           items: m.items.map((it: any) => ({ ...it, id: it.id || it._id || Math.random().toString() })),
+           id: m.id || (i + 1).toString(),
+           items: m.items.map((it: any) => ({ ...it, id: it.id || Math.random().toString() })),
            totalKcal: m.totalKcal || 0,
            totalProteins: m.totalProteins || 0,
            totalCarbs: m.totalCarbs || 0,
@@ -383,7 +383,7 @@ export default function PlanAlimentario({
               ) : (
                 searchResults.map((food, i) => (
                   <button 
-                    key={food._id || i}
+                    key={food.id || i}
                     disabled={!activeMealId}
                     onClick={() => activeMealId && addFood(activeMealId, food)}
                     className={clsx(

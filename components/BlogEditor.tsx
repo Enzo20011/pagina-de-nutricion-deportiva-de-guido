@@ -63,7 +63,7 @@ export default function BlogEditor({ initialData, isEditing = false }: BlogEdito
 
     setSaving(true);
     const method = isEditing ? 'PUT' : 'POST';
-    const url = isEditing ? `/api/blog/${initialData._id}` : '/api/blog';
+    const url = isEditing ? `/api/blog/${initialData.id}` : '/api/blog';
 
     try {
       const res = await fetch(url, {

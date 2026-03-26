@@ -95,10 +95,10 @@ export default function ConsultaIndexPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {pacientes.map((p: any) => (
               <Link
-                key={p._id || p.id}
-                href={`/admin/consulta/${p._id || p.id}`}
-                onMouseEnter={() => prefetchPaciente(p._id || p.id)}
-                onTouchStart={() => prefetchPaciente(p._id || p.id)}
+                key={p.id}
+                href={`/admin/consulta/${p.id}`}
+                onMouseEnter={() => prefetchPaciente(p.id)}
+                onTouchStart={() => prefetchPaciente(p.id)}
                 className="flex items-center justify-between p-8 bg-[#0a0f14] rounded-sm border border-white/5 hover:border-[#3b82f6]/30 hover:bg-[#0e1419] transition-all group shadow-xl relative overflow-hidden"
               >
                 <div className="flex items-center gap-6 relative z-10 w-full">

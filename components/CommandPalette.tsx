@@ -45,7 +45,7 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
   }, [router, onClose]);
 
   // All available commands
-  const [patients, setPatients] = useState<{ _id: string; nombre: string; apellido: string; objetivo?: string; status?: string }[]>([]);
+  const [patients, setPatients] = useState<{ id: string; nombre: string; apellido: string; objetivo?: string; status?: string }[]>([]);
   const [loadingPatients, setLoadingPatients] = useState(false);
 
   // Fetch real patients when palette opens
@@ -70,12 +70,12 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
   ];
 
   const patientCommands: CommandItem[] = patients.map(p => ({
-    id: `pac-${p._id}`,
+    id: `pac-${p.id}`,
     title: `${p.nombre} ${p.apellido}`,
     subtitle: p.objetivo ? `${p.status || 'Activo'} · ${p.objetivo}` : p.status || 'Paciente',
     icon: <User className="w-5 h-5 text-blue-300" />,
     badge: 'Paciente',
-    action: () => navigate('/admin/pacientes'),
+    action: () => navigate(`/admin/pacientes?id=${p.id}`),
   }));
 
   const allCommands: CommandItem[] = [...staticCommands, ...patientCommands];

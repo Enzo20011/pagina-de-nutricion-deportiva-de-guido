@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Archive, RotateCcw, X, AlertTriangle, Search, UserX } from 'lucide-react';
 
 interface PacienteArchivado {
-  _id: string;
+  id: string;
   nombre: string;
   apellido: string;
   email?: string;
@@ -52,7 +52,7 @@ export default function PapeleraPacientes({ onClose, onRestored }: Props) {
         body: JSON.stringify({ restore: true }),
       });
       if (res.ok) {
-        setArchivados(prev => prev.filter(p => p._id !== id));
+        setArchivados(prev => prev.filter(p => p.id !== id));
         onRestored();
       }
     } catch (err) {
@@ -144,7 +144,7 @@ export default function PapeleraPacientes({ onClose, onRestored }: Props) {
           ) : (
             filtrados.map(p => (
               <motion.div
-                key={p._id}
+                key={p.id}
                 layout
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -160,12 +160,12 @@ export default function PapeleraPacientes({ onClose, onRestored }: Props) {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleRestore(p._id)}
-                  disabled={restoring === p._id}
+                  onClick={() => handleRestore(p.id)}
+                  disabled={restoring === p.id}
                   className="flex items-center gap-2 px-6 py-3 bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/20 hover:border-amber-400/40 text-amber-400 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50"
                 >
-                  <RotateCcw className={`w-4 h-4 ${restoring === p._id ? 'animate-spin' : ''}`} />
-                  {restoring === p._id ? 'Restaurando...' : 'Restaurar'}
+                  <RotateCcw className={`w-4 h-4 ${restoring === p.id ? 'animate-spin' : ''}`} />
+                  {restoring === p.id ? 'Restaurando...' : 'Restaurar'}
                 </button>
               </motion.div>
             ))
