@@ -67,11 +67,13 @@ export async function POST(req: Request) {
 
     const nuevoIngreso = await prisma.ingreso.create({
       data: {
-        ...data,
-        pacienteId: pacienteId || null,
+        pacienteId: pacienteId || undefined,
         monto: Number(data.monto),
+        metodo: data.metodo || 'Manual',
+        categoria: data.categoria || 'Consulta',
+        concepto: data.concepto || '',
         fecha: new Date(),
-        estado: 'Pagado', // Por defecto para carga manual
+        estado: 'Pagado',
       }
     });
 

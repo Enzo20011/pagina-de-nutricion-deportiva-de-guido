@@ -30,7 +30,11 @@ export async function POST(req: Request) {
 
     const nuevoIngreso = await prisma.ingreso.create({
       data: {
-        ...data,
+        pacienteId: data.pacienteId || undefined,
+        monto: data.monto,
+        metodo: data.metodo,
+        categoria: data.categoria,
+        concepto: data.concepto,
         estado: EstadoPago.PAGADO,
         fecha: data.fecha ? new Date(data.fecha) : new Date(),
       },

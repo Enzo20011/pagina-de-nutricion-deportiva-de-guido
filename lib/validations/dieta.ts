@@ -30,6 +30,7 @@ export const dietaSchema = z.object({
     f: z.number().min(0).max(100),
     c: z.number().min(0).max(100),
   }),
+  fechaInicio: z.string().datetime().optional(),
 });
 
 export type DietaInput = z.infer<typeof dietaSchema>;

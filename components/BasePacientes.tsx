@@ -331,7 +331,7 @@ export default function BasePacientes() {
          <div className="xl:col-span-8">
             <div className="min-h-full">
               {selectedPaciente ? (
-                <div key={selectedPaciente._id || selectedPaciente.id} className="space-y-12">
+                <div key={selectedPaciente.id} className="space-y-12">
                   {/* PATIENT HEADER */}
                   <div className="sticky top-[80px] md:top-[100px] z-30 flex flex-col md:flex-row items-start md:items-center justify-between px-6 py-6 md:px-8 bg-[#0a0f14]/80 backdrop-blur-md border border-white/10 rounded-sm shadow-xl mb-8 group">
                     <div className="flex items-center gap-4 md:gap-8 relative z-10 w-full md:w-auto">

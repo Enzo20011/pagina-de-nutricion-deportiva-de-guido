@@ -59,7 +59,7 @@ export async function syncAppointmentToCalendar(reserva: {
     if (reserva.id) {
       const existing = await calendarClient.events.list({
         calendarId: CALENDAR_ID,
-        privateExtendedProperty: `reservaId=${reserva.id}`,
+        privateExtendedProperty: [`reservaId=${reserva.id}`],
       });
       if (existing.data.items && existing.data.items.length > 0) {
         existingEventId = existing.data.items[0].id;

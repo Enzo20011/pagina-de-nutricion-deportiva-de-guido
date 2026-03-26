@@ -1,15 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  DollarSign, 
-  User, 
-  CreditCard, 
-  Calendar as CalendarIcon, 
-  CheckCircle2,
-  ChevronDown
-} from 'lucide-react';
+import { X, DollarSign, User, CreditCard, Calendar as CalendarIcon, CheckCircle2, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MetodoPago, CategoriaPago } from '../types/finance';
 
@@ -22,7 +14,7 @@ export default function ModalRegistroPago({ onClose, onSuccess }: Props) {
   const [pacientes, setPacientes] = useState<any[]>([]);
   const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const [form, setForm] = useState({
     pacienteId: '',
     monto: '',
@@ -33,16 +25,10 @@ export default function ModalRegistroPago({ onClose, onSuccess }: Props) {
   });
 
   useEffect(() => {
-    const fetchPacientes = async () => {
-      try {
-        const res = await fetch('/api/pacientes');
-        const data = await res.json();
-        setPacientes(data?.data || []);
-      } catch (err) {
-        console.error('Error fetching patients:', err);
-      }
-    };
-    fetchPacientes();
+    fetch('/api/pacientes')
+      .then(r => r.json())
+      .then(data => setPacientes(data?.data || []))
+      .catch(() => {});
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,14 +38,9 @@ export default function ModalRegistroPago({ onClose, onSuccess }: Props) {
       const res = await fetch('/api/finance/manual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          monto: Number(form.monto)
-        })
+        body: JSON.stringify({ ...form, monto: Number(form.monto) })
       });
-      if (res.ok) {
-        onSuccess();
-      }
+      if (res.ok) onSuccess();
     } catch (err) {
       console.error('Error registrando pago:', err);
     } finally {
@@ -67,146 +48,165 @@ export default function ModalRegistroPago({ onClose, onSuccess }: Props) {
     }
   };
 
-  const filteredPacientes = pacientes.filter(p => 
-    p.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  const filteredPacientes = pacientes.filter(p =>
+    `${p.nombre} ${p.apellido || ''}`.toLowerCase().includes(busqueda.toLowerCase())
   );
 
+  const inputClass = "w-full bg-[#0e1419] border border-[#1f262e] rounded-sm py-3.5 text-white text-sm font-bold focus:border-[#3b82f6]/50 focus:outline-none transition-colors placeholder:text-[#43484e]";
+  const labelClass = "text-[#a7abb2] font-bold text-[9px] uppercase tracking-[0.25em]";
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 lg:p-12">
-      <motion.div 
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+      {/* Backdrop */}
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-darkNavy/80 backdrop-blur-xl"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
       />
-      
-      <motion.div 
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="relative z-10 w-full max-w-2xl bg-cardDark border border-white/10 rounded-[3.5rem] shadow-3xl overflow-hidden"
+
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
+        transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+        className="relative z-10 w-full sm:max-w-lg bg-[#0a0f14] border border-[#1f262e] sm:rounded-sm shadow-2xl overflow-hidden rounded-t-2xl"
       >
         {/* HEADER */}
-        <div className="bg-accentBlue/10 p-10 flex justify-between items-center border-b border-white/5">
-           <div>
-             <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Registrar <span className="text-accentBlue">Cobro</span></h2>
-             <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-1">Ingreso Manual de Efectivo / Otros</p>
-           </div>
-           <button onClick={onClose} className="p-4 bg-white/5 rounded-2xl hover:bg-white/10 text-white transition-all">
-             <X className="w-6 h-6" />
-           </button>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[#1f262e] bg-[#0e1419]">
+          <div>
+            <h2 className="text-base font-heading font-black text-white uppercase tracking-tight">
+              Registrar <span className="text-[#3b82f6]">Cobro</span>
+            </h2>
+            <p className="text-[#a7abb2] font-label text-[9px] uppercase tracking-[0.25em] mt-0.5">
+              Ingreso Manual de Efectivo / Otros
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar modal"
+            className="w-9 h-9 flex items-center justify-center bg-[#1f262e] hover:bg-[#2a333d] rounded-sm text-[#a7abb2] hover:text-white transition-colors border border-[#1a2027]"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-12 space-y-10">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* PACIENTE */}
-          <div className="space-y-4">
-            <label className="text-slate-500 font-black uppercase text-xs tracking-widest pl-2">Seleccionar Paciente</label>
-            <div className="relative group">
-               <User className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-accentBlue" />
-               <input 
-                 type="text" 
-                 placeholder="Buscar paciente..."
-                 value={busqueda}
-                 onChange={(e) => setBusqueda(e.target.value)}
-                 className="w-full bg-white/5 border border-white/10 rounded-3xl py-5 pl-16 pr-6 text-white font-bold focus:border-accentBlue/50 focus:ring-4 focus:ring-accentBlue/10 transition-all outline-none"
-               />
-               
-               {busqueda && filteredPacientes.length > 0 && !form.pacienteId && (
-                 <div className="absolute top-full left-0 right-0 mt-4 bg-darkNavy border border-white/10 rounded-3xl p-4 shadow-2xl z-50 max-h-60 overflow-y-auto overflow-hidden">
-                    {filteredPacientes.slice(0, 5).map(p => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => {
-                          setForm({ ...form, pacienteId: p.id });
-                          setBusqueda(`${p.nombre} ${p.apellido || ''}`);
-                        }}
-                        className="w-full text-left p-4 hover:bg-accentBlue/10 rounded-2xl text-white font-bold transition-all border border-transparent hover:border-accentBlue/20"
-                      >
-                        {p.nombre}
-                      </button>
-                    ))}
-                 </div>
-               )}
+          <div className="space-y-2">
+            <label className={labelClass}>Seleccionar Paciente</label>
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3b82f6]" />
+              <input
+                type="text"
+                placeholder="Buscar paciente..."
+                value={busqueda}
+                onChange={(e) => { setBusqueda(e.target.value); setForm({ ...form, pacienteId: '' }); }}
+                className={`${inputClass} pl-11 pr-4`}
+              />
+              {busqueda && filteredPacientes.length > 0 && !form.pacienteId && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[#0e1419] border border-[#1f262e] rounded-sm shadow-xl z-50 max-h-48 overflow-y-auto">
+                  {filteredPacientes.slice(0, 6).map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setForm({ ...form, pacienteId: p.id });
+                        setBusqueda(`${p.nombre} ${p.apellido || ''}`);
+                      }}
+                      className="w-full text-left px-4 py-3 text-white text-sm font-bold hover:bg-[#3b82f6]/10 hover:text-[#3b82f6] transition-colors border-b border-[#1f262e] last:border-none flex items-center gap-3"
+                    >
+                      <User className="w-3.5 h-3.5 opacity-40 shrink-0" />
+                      <span className="text-[11px] font-label uppercase tracking-widest">{p.nombre} {p.apellido || ''}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* MONTO */}
-            <div className="space-y-4">
-              <label className="text-slate-500 font-black uppercase text-xs tracking-widest pl-2 font-sans">Monto ($)</label>
+          {/* MONTO + CATEGORÍA */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className={labelClass}>Monto ($)</label>
               <div className="relative">
-                <DollarSign className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-400 font-sans" />
-                <input 
-                  type="number" 
+                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#22c55e]" />
+                <input
+                  type="number"
                   required
                   value={form.monto}
                   onChange={(e) => setForm({ ...form, monto: e.target.value })}
                   placeholder="0.00"
-                  className="w-full bg-white/5 border border-white/10 rounded-3xl py-5 pl-16 pr-6 text-white text-2xl font-black italic focus:border-emerald-400/50 focus:ring-4 focus:ring-emerald-400/10 transition-all outline-none"
+                  className={`${inputClass} pl-11 pr-4 text-[#22c55e]`}
                 />
               </div>
             </div>
 
-            {/* CATEGORIA */}
-            <div className="space-y-4">
-              <label className="text-slate-500 font-black uppercase text-xs tracking-widest pl-2">Categoría</label>
+            <div className="space-y-2">
+              <label className={labelClass}>Categoría</label>
               <div className="relative">
-                <select 
+                <select
                   value={form.categoria}
                   onChange={(e) => setForm({ ...form, categoria: e.target.value as CategoriaPago })}
-                  className="w-full bg-white/5 border border-white/10 rounded-3xl py-5 px-6 text-white font-bold appearance-none focus:border-accentBlue/50 transition-all outline-none"
+                  title="Categoría de pago"
+                  className={`${inputClass} px-4 pr-10 appearance-none`}
                 >
                   {Object.values(CategoriaPago).map(cat => (
-                    <option key={cat} value={cat} className="bg-darkNavy">{cat}</option>
+                    <option key={cat} value={cat} className="bg-[#0e1419]">{cat}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#43484e] pointer-events-none" />
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* METODO */}
-            <div className="space-y-4">
-              <label className="text-slate-500 font-black uppercase text-xs tracking-widest pl-2">Método de Pago</label>
+          {/* MÉTODO + FECHA */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className={labelClass}>Método de Pago</label>
               <div className="relative">
-                <select 
+                <select
                   value={form.metodo}
                   onChange={(e) => setForm({ ...form, metodo: e.target.value as MetodoPago })}
-                  className="w-full bg-white/5 border border-white/10 rounded-3xl py-5 px-6 text-white font-bold appearance-none focus:border-accentBlue/50 transition-all outline-none"
+                  title="Método de pago"
+                  className={`${inputClass} px-4 pr-10 appearance-none`}
                 >
                   {Object.values(MetodoPago).map(m => (
-                    <option key={m} value={m} className="bg-darkNavy">{m}</option>
+                    <option key={m} value={m} className="bg-[#0e1419]">{m}</option>
                   ))}
                 </select>
-                <CreditCard className="absolute right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none" />
+                <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#43484e] pointer-events-none" />
               </div>
             </div>
 
-            {/* FECHA */}
-            <div className="space-y-4">
-              <label className="text-slate-500 font-black uppercase text-xs tracking-widest pl-2">Fecha</label>
+            <div className="space-y-2">
+              <label className={labelClass}>Fecha</label>
               <div className="relative">
-                <CalendarIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-accentBlue" />
-                <input 
-                  type="date" 
+                <CalendarIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#3b82f6]" />
+                <input
+                  type="date"
                   value={form.fecha}
                   onChange={(e) => setForm({ ...form, fecha: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-3xl py-5 px-16 text-white font-bold focus:border-accentBlue/50 transition-all outline-none"
+                  title="Fecha del pago"
+                  className={`${inputClass} pl-11 pr-4`}
                 />
               </div>
             </div>
           </div>
 
-          <button 
-            type="submit" 
+          {/* SUBMIT */}
+          <button
+            type="submit"
             disabled={loading || !form.pacienteId || !form.monto}
-            className="w-full py-6 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-700 text-white rounded-[2rem] font-black uppercase text-lg tracking-[0.2em] italic transition-all shadow-2xl flex items-center justify-center gap-4 group"
+            className="w-full py-4 bg-[#3b82f6] hover:bg-[#3b82f6]/90 disabled:bg-[#1f262e] disabled:text-[#43484e] text-white rounded-sm font-label font-black uppercase text-[10px] tracking-[0.25em] transition-colors shadow-lg shadow-[#3b82f6]/10 flex items-center justify-center gap-3 mt-2"
           >
-            {loading ? 'Procesando...' : (
+            {loading ? (
+              <span className="animate-pulse">Procesando...</span>
+            ) : (
               <>
-                <CheckCircle2 className="w-6 h-6 group-hover:scale-125 transition-transform" />
+                <CheckCircle2 className="w-4 h-4" />
                 Sincronizar Ingreso
               </>
             )}
