@@ -18,15 +18,9 @@ const services = [
     icon: Dumbbell,
     title: 'Evaluación Antropométrica ISAK',
     description: 'Perfilado corporal de nivel olímpico. Método ISAK de máxima precisión para el mapeo graso y muscular.',
-    tag: 'ISAK CERTIFICADO',
-    image: '/scientific_metabolic_tracking.png'
-  },
-  {
-    icon: Trophy,
-    title: 'Plan de Competición Deportiva',
-    description: 'Peaking nutricional y estrategias de carga de carbohidratos diseñadas para maximizar tus resultados el día del evento.',
-    tag: 'COMPETICIÓN',
-    image: '/hero_elite_nutrition_macro.png'
+    tag: 'PRÓXIMAMENTE',
+    image: '/scientific_metabolic_tracking.png',
+    disabled: true
   },
   {
     icon: Stethoscope,
@@ -50,6 +44,8 @@ const services = [
     image: '/pro_nutrition_ingredients.png'
   },
 ];
+
+type Service = { icon: any; title: string; description: string; tag: string; image: string; disabled?: boolean };
 
 const DOT_GRID = `radial-gradient(circle, rgba(67,72,78,0.4) 1px, transparent 1px)`;
 
@@ -84,7 +80,7 @@ export default function ServiciosSection({ onBookingClick = () => {} }: { onBook
       <section className="bg-[#0e1419] py-16 px-8">
         <div className="max-w-[1200px] mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-[#1a2027] border border-[#1f262e]">
-            {services.map((service, i) => {
+            {(services as Service[]).map((service, i) => {
               const Icon = service.icon;
               return (
                 <motion.div
@@ -96,33 +92,37 @@ export default function ServiciosSection({ onBookingClick = () => {} }: { onBook
                   className="relative group h-full"
                 >
                   <TiltCard className="h-full">
-                    <div 
-                      onClick={onBookingClick}
-                      className="relative bg-[#0e1419] p-8 h-full group hover:bg-[#141a20] transition-all duration-700 overflow-hidden border border-[#1f262e] group-hover:border-[#3b82f6]/30 cursor-pointer"
+                    <div
+                      onClick={service.disabled ? undefined : onBookingClick}
+                      className={`relative bg-[#0e1419] p-8 h-full group transition-all duration-700 overflow-hidden border border-[#1f262e] ${service.disabled ? 'opacity-60 cursor-not-allowed' : 'hover:bg-[#141a20] group-hover:border-[#3b82f6]/30 cursor-pointer'}`}
                     >
                       {/* Background Image */}
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-1000 scale-110 group-hover:scale-100 transition-transform duration-1000">
-                        <Image 
-                          src={service.image}
-                          alt={service.title}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
+                      {!service.disabled && (
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-1000 scale-110 group-hover:scale-100 transition-transform duration-1000">
+                          <Image
+                            src={service.image}
+                            alt={service.title}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      )}
 
                       {/* Top neon accent on hover */}
-                      <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3b82f6] opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20"
-                        style={{ boxShadow: "0 0 20px rgba(59,130,246,0.8)" }} />
+                      {!service.disabled && (
+                        <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#3b82f6] opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20"
+                          style={{ boxShadow: "0 0 20px rgba(59,130,246,0.8)" }} />
+                      )}
 
                       <div className="relative z-10 h-full flex flex-col">
                         <div className="flex items-start justify-between mb-8">
-                          <motion.div 
-                            whileHover={{ scale: 1.1, rotate: 5 }}
+                          <motion.div
+                            whileHover={service.disabled ? {} : { scale: 1.1, rotate: 5 }}
                             className="w-12 h-12 bg-[#1a2027] rounded-sm flex items-center justify-center border border-[#1f262e] group-hover:border-[#3b82f6]/40 transition-colors duration-500"
                           >
-                            <Icon className="w-5 h-5 text-[#3b82f6]" />
+                            <Icon className={`w-5 h-5 ${service.disabled ? 'text-[#43484e]' : 'text-[#3b82f6]'}`} />
                           </motion.div>
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-[#a7abb2] border border-[#1f262e] px-3 py-1 rounded-sm group-hover:border-[#3b82f6]/20 transition-colors">
+                          <span className={`text-[9px] font-bold uppercase tracking-widest border px-3 py-1 rounded-sm transition-colors ${service.disabled ? 'text-[#a7abb2] border-[#3b82f6]/30 bg-[#3b82f6]/5' : 'text-[#a7abb2] border-[#1f262e] group-hover:border-[#3b82f6]/20'}`}>
                             {service.tag}
                           </span>
                         </div>
@@ -134,12 +134,14 @@ export default function ServiciosSection({ onBookingClick = () => {} }: { onBook
                           {service.description}
                         </p>
 
-                        <button 
-                          onClick={onBookingClick}
-                          className="flex items-center gap-2 font-bold text-[10px] tracking-[0.2em] uppercase text-[#3b82f6] group/btn hover:text-white transition-all duration-500"
-                        >
-                          SABER MÁS <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-2 transition-transform" />
-                        </button>
+                        {!service.disabled && (
+                          <button
+                            onClick={onBookingClick}
+                            className="flex items-center gap-2 font-bold text-[10px] tracking-[0.2em] uppercase text-[#3b82f6] group/btn hover:text-white transition-all duration-500"
+                          >
+                            SABER MÁS <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-2 transition-transform" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </TiltCard>
