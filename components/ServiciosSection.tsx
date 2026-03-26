@@ -10,7 +10,7 @@ const services = [
   {
     icon: BarChart3,
     title: 'Plan Alimentario Personalizado',
-    description: 'Nutrición de precisión ajustada a tu bioquímica y objetivos específicos. Periodización nutricional adaptada a tu carga de entrenamiento.',
+    description: 'Nutrición de precisión ajustada a tus requerimientos específicos. Periodización nutricional adaptada a tu carga de entrenamiento.',
     tag: 'MÁS SOLICITADO',
     image: '/precision_nutrition_lab.png'
   },
