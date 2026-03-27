@@ -15,6 +15,7 @@ import AnimatedBackground from '@/components/AnimatedBackground';
 function PublicLayoutContent({ children }: { children: React.ReactNode }) {
   const { isOpen, closeTurnero, openTurnero } = useTurnero();
   const [showStickyCTA, setShowStickyCTA] = useState(false);
+  const [isDark, setIsDark] = useState(true);
   const { scrollYProgress } = useScroll();
   const pathname = usePathname();
   const isLoginPage = pathname === '/login';
@@ -23,6 +24,15 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
     const handleScroll = () => setShowStickyCTA(window.scrollY > 420);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const check = () => setIsDark(localStorage.getItem('theme') !== 'light');
+    check();
+    window.addEventListener('storage', check);
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => { window.removeEventListener('storage', check); observer.disconnect(); };
   }, []);
 
   // En login no mostramos ningún chrome del sitio público
@@ -41,7 +51,7 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
       <AnimatedBackground />
       <Navbar onBookingClick={openTurnero} />
 
-      <main className="flex-grow bg-[#0a0f14] text-bone">
+      <main className={`flex-grow ${isDark ? 'bg-[#0a0f14] text-bone' : 'bg-[#f4f6fa] text-[#0a0f14]'}`}>
         {children}
       </main>
 
@@ -80,24 +90,24 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeTurnero}
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              className={`absolute inset-0 backdrop-blur-md ${isDark ? 'bg-black/80' : 'bg-black/30'}`}
             />
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 30 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-2xl max-h-[95vh] bg-[#0B1120]/60 border border-white/5 rounded-sm shadow-3xl p-6 md:p-10 overflow-y-auto custom-scrollbar backdrop-blur-3xl"
+              className={`relative w-full max-w-2xl max-h-[95vh] rounded-sm shadow-2xl p-6 md:p-10 overflow-y-auto custom-scrollbar backdrop-blur-3xl ${isDark ? 'bg-[#0B1120]/60 border border-white/5' : 'bg-white border border-black/10'}`}
             >
               <button
                 onClick={closeTurnero}
                 aria-label="Cerrar modal"
-                className="absolute top-4 right-4 p-3 bg-white/5 hover:bg-white hover:text-[#1B365D] rounded-sm text-white transition-all duration-500 border border-white/10 z-50 shadow-2xl group"
+                className={`absolute top-4 right-4 p-3 rounded-sm transition-all duration-500 border z-50 shadow-2xl group ${isDark ? 'bg-white/5 hover:bg-white hover:text-[#1B365D] text-white border-white/10' : 'bg-black/5 hover:bg-black/10 text-[#0a0f14] border-black/10'}`}
               >
                 <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
               </button>
 
               <div className="mb-6 text-center">
-                <h2 className="text-2xl font-black uppercase tracking-tight text-white !mb-0">AGENDAR TURNO</h2>
+                <h2 className={`text-2xl font-black uppercase tracking-tight !mb-0 ${isDark ? 'text-white' : 'text-[#0a0f14]'}`}>AGENDAR TURNO</h2>
               </div>
 
               <TurneroInteractivo />

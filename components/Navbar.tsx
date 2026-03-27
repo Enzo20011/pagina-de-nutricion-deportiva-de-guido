@@ -65,11 +65,15 @@ const Navbar = ({
   return (
     <>
     <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-6 pointer-events-none">
-      <header 
+      <header
         className={`pointer-events-auto transition-all duration-500 ease-[0.16,1,0.3,1] border rounded-full overflow-hidden ${
-          isScrolled 
-            ? 'bg-[#0a0f14]/80 backdrop-blur-xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] px-2 py-1' 
-            : 'bg-[#0a0f14]/40 backdrop-blur-md border-white/5 px-4 py-2'
+          isScrolled
+            ? isDark
+              ? 'bg-[#0a0f14]/80 backdrop-blur-xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] px-2 py-1'
+              : 'bg-white/95 backdrop-blur-xl border-black/15 shadow-[0_8px_32px_rgba(0,0,0,0.12)] px-2 py-1'
+            : isDark
+              ? 'bg-[#0a0f14]/40 backdrop-blur-md border-white/5 px-4 py-2'
+              : 'bg-white/85 backdrop-blur-md border-black/10 px-4 py-2'
         }`}
       >
         <div className="flex items-center gap-4 md:gap-8 h-12 md:h-14 px-4">
@@ -84,13 +88,13 @@ const Navbar = ({
               <Image src="/logo.png" alt="Logo Guido Operuk - Nutricionista" width={24} height={24} className="w-full h-full object-contain" priority />
             </div>
             <div className="hidden sm:flex flex-col">
-              <span className="text-[10px] font-black text-white leading-none uppercase tracking-tighter">Guido Operuk</span>
-              <span className="text-[7px] font-bold text-[#a7abb2] leading-none mt-1 uppercase tracking-widest opacity-60">MP 778</span>
+              <span className={`text-[10px] font-black leading-none uppercase tracking-tighter ${isDark ? 'text-white' : 'text-[#0a0f14]'}`}>Guido Operuk</span>
+              <span className={`text-[7px] font-bold leading-none mt-1 uppercase tracking-widest opacity-60 ${isDark ? 'text-[#a7abb2]' : 'text-[#4a5568]'}`}>MP 778</span>
             </div>
           </Link>
           
           {/* Separator */}
-          <div className="h-4 w-[1px] bg-white/10 hidden md:block" />
+          <div className={`h-4 w-[1px] hidden md:block ${isDark ? 'bg-white/10' : 'bg-black/15'}`} />
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6">
@@ -102,7 +106,7 @@ const Navbar = ({
                   href={link.path}
                   onClick={() => setActiveTab(link.path)}
                   className={`text-[9px] font-bold uppercase tracking-[0.2em] transition-all duration-300 relative py-2 ${
-                    active ? 'text-[#3b82f6]' : 'text-white/60 hover:text-white'
+                    active ? 'text-[#3b82f6]' : isDark ? 'text-white/60 hover:text-white' : 'text-[#4a5568] hover:text-[#0a0f14]'
                   }`}
                 >
                   {link.name}
@@ -122,27 +126,27 @@ const Navbar = ({
             type="button"
             onClick={toggleTheme}
             aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-            className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-white/15 rounded-full border border-white/10 transition-all outline-none"
+            className={`w-9 h-9 flex items-center justify-center rounded-full border transition-all outline-none ${isDark ? 'bg-white/5 hover:bg-white/15 border-white/10' : 'bg-black/5 hover:bg-black/10 border-black/15'}`}
           >
-            {isDark ? <Sun className="w-4 h-4 text-white/60" /> : <Moon className="w-4 h-4 text-white/60" />}
+            {isDark ? <Sun className="w-4 h-4 text-white/60" /> : <Moon className="w-4 h-4 text-[#4a5568]" />}
           </button>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
-            <button 
-               className="w-10 h-10 flex flex-col items-center justify-center bg-white/5 rounded-full border border-white/10 transition-all hover:bg-white/15 outline-none focus:ring-0"
+            <button
+               className={`w-10 h-10 flex flex-col items-center justify-center rounded-full border transition-all outline-none focus:ring-0 ${isDark ? 'bg-white/5 border-white/10 hover:bg-white/15' : 'bg-black/5 border-black/15 hover:bg-black/10'}`}
                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                aria-label={mobileMenuOpen ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
                aria-expanded={mobileMenuOpen}
             >
               <div className="relative w-5 h-5 flex flex-col justify-center gap-[6px]">
-                <motion.span 
+                <motion.span
                   animate={mobileMenuOpen ? { rotate: 45, y: 4, width: "100%" } : { rotate: 0, y: 0, width: "100%" }}
-                  className="block h-[2px] bg-white rounded-full transition-all duration-300"
+                  className={`block h-[2px] rounded-full transition-all duration-300 ${isDark ? 'bg-white' : 'bg-[#0a0f14]'}`}
                 />
-                <motion.span 
+                <motion.span
                   animate={mobileMenuOpen ? { rotate: -45, y: -4, width: "100%" } : { rotate: 0, y: 0, width: "60%" }}
-                  className="block h-[2px] bg-white rounded-full transition-all duration-300 self-end"
+                  className={`block h-[2px] rounded-full transition-all duration-300 self-end ${isDark ? 'bg-white' : 'bg-[#0a0f14]'}`}
                 />
               </div>
             </button>
