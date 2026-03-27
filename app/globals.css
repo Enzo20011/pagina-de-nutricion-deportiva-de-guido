@@ -5,14 +5,15 @@ html.light-mode {
   --lm-surface-low: #eef1f7;
   --lm-surface-med: #e4e8f0;
   --lm-surface-hi: #dde2eb;
-  --lm-text: #1a1f2e;
-  --lm-text-secondary: #2d3748;
-  --lm-text-dim: #4a5568;
-  --lm-text-muted: #718096;
-  --lm-border: rgba(0,0,0,0.12);
-  --lm-border-light: rgba(0,0,0,0.06);
+  --lm-text: #000000;
+  --lm-text-secondary: #111111;
+  --lm-text-dim: #222222;
+  --lm-text-muted: #333333;
+  --lm-border: rgba(0,0,0,0.15);
+  --lm-border-light: rgba(0,0,0,0.08);
 }
 
+html.light-mode,
 html.light-mode body {
   background-color: var(--lm-bg) !important;
   color: var(--lm-text) !important;
@@ -211,25 +212,53 @@ html.light-mode .group-hover\/tab\:opacity-100 {
   opacity: 1 !important;
 }
 
-/* Ensure accent colors remain visible */
+/* Ensure all text is dark/black by default */
+html.light-mode p,
+html.light-mode span,
+html.light-mode div,
+html.light-mode label,
+html.light-mode button,
+html.light-mode a {
+  color: var(--lm-text) !important;
+}
+
+html.light-mode h1,
+html.light-mode h2,
+html.light-mode h3,
+html.light-mode h4,
+html.light-mode h5,
+html.light-mode h6 {
+  color: var(--lm-text) !important;
+}
+
+/* Ensure accent colors remain visible - these override the above */
 html.light-mode .text-\[\#3b82f6\],
-html.light-mode .text-blue-500 {
+html.light-mode .text-blue-500,
+html.light-mode .text-\[#3b82f6\] {
   color: #3b82f6 !important;
 }
 
 html.light-mode .text-\[\#f43f5e\],
-html.light-mode .text-rose-500 {
+html.light-mode .text-rose-500,
+html.light-mode .text-\[#f43f5e\] {
   color: #f43f5e !important;
 }
 
 html.light-mode .text-\[\#22c55e\],
-html.light-mode .text-green-500 {
+html.light-mode .text-green-500,
+html.light-mode .text-\[#22c55e\] {
   color: #22c55e !important;
 }
 
 html.light-mode .text-\[\#ff4d4d\],
-html.light-mode .text-red-500 {
+html.light-mode .text-red-500,
+html.light-mode .text-\[#ff4d4d\] {
   color: #ff4d4d !important;
+}
+
+/* Keep cyan/info colors */
+html.light-mode .text-cyan-400 {
+  color: #06b6d4 !important;
 }
 
 /* Underline and decorative elements */
