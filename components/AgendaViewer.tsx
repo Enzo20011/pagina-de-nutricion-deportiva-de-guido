@@ -18,26 +18,36 @@ import {
   isToday
 } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  User, 
-  Clock, 
-  Phone, 
-  Mail, 
-  CheckCircle2, 
-  Clock3, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  User,
+  Clock,
+  Phone,
+  Mail,
+  CheckCircle2,
+  Clock3,
   Calendar as CalendarIcon,
   Search,
-  ArrowUpRight
+  ArrowUpRight,
+  Plus,
+  X,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
+
+const TIMES = ["09:00","10:00","11:00","15:00","16:00","17:00","18:00"];
 
 export default function AgendaViewer() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date());
+  const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [form, setForm] = useState({ nombre: '', email: '', telefono: '', fecha: format(new Date(), 'yyyy-MM-dd'), hora: '09:00' });
+  const queryClient = useQueryClient();
 
   const { data: appointmentsRes, isLoading } = useQuery({
     queryKey: ['appointments', format(currentDate, 'yyyy-MM')],
@@ -68,7 +78,30 @@ export default function AgendaViewer() {
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
+  const handleAdminCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setModalError(null);
+    try {
+      const res = await fetch('/api/appointments/admin-create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al crear turno');
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      setShowModal(false);
+      setForm({ nombre: '', email: '', telefono: '', fecha: format(new Date(), 'yyyy-MM-dd'), hora: '09:00' });
+    } catch (err: any) {
+      setModalError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
+    <>
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start p-4 md:p-8">
       
       {/* STRATEGIC CALENDAR CORE */}
@@ -85,15 +118,22 @@ export default function AgendaViewer() {
               <p className="text-[7px] md:text-[9px] font-label font-bold tracking-[0.2em] text-[#a7abb2] uppercase mt-1 md:mt-2">Gestión de Turnos</p>
             </div>
           </div>
-          <div className="flex gap-2 justify-center md:justify-end">
-            <button onClick={prevMonth} className="w-9 h-9 md:w-10 md:h-10 bg-[#1f262e] hover:bg-[#3b82f6] text-white rounded-sm transition-all border border-[#1a2027] flex items-center justify-center">
+          <div className="flex gap-2 justify-center md:justify-end flex-wrap">
+            <button type="button" aria-label="Mes anterior" onClick={prevMonth} className="w-9 h-9 md:w-10 md:h-10 bg-[#1f262e] hover:bg-[#3b82f6] text-white rounded-sm transition-all border border-[#1a2027] flex items-center justify-center">
               <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
             </button>
-            <button onClick={() => setCurrentDate(new Date())} className="flex-1 md:flex-none px-4 md:px-6 h-9 md:h-10 bg-[#3b82f6] text-white rounded-sm text-[8px] md:text-[9px] font-label font-bold uppercase tracking-widest hover:bg-[#3b82f6]/90 transition-all shadow-md">
+            <button type="button" onClick={() => setCurrentDate(new Date())} className="flex-1 md:flex-none px-4 md:px-6 h-9 md:h-10 bg-[#3b82f6] text-white rounded-sm text-[8px] md:text-[9px] font-label font-bold uppercase tracking-widest hover:bg-[#3b82f6]/90 transition-all shadow-md">
               Hoy
             </button>
-            <button onClick={nextMonth} className="w-9 h-9 md:w-10 md:h-10 bg-[#1f262e] hover:bg-[#3b82f6] text-white rounded-sm transition-all border border-[#1a2027] flex items-center justify-center">
+            <button type="button" aria-label="Mes siguiente" onClick={nextMonth} className="w-9 h-9 md:w-10 md:h-10 bg-[#1f262e] hover:bg-[#3b82f6] text-white rounded-sm transition-all border border-[#1a2027] flex items-center justify-center">
               <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 px-4 h-9 md:h-10 bg-white text-[#0a0f14] rounded-sm text-[8px] md:text-[9px] font-label font-bold uppercase tracking-widest hover:bg-white/90 transition-all shadow-md"
+            >
+              <Plus className="w-4 h-4" /> Nuevo Turno
             </button>
           </div>
         </header>
@@ -116,6 +156,7 @@ export default function AgendaViewer() {
 
               return (
                 <button
+                  type="button"
                   key={i}
                   onClick={() => setSelectedDay(day)}
                   className={clsx(
@@ -203,7 +244,7 @@ export default function AgendaViewer() {
                         <Phone className="w-3.5 h-3.5" /> {app.telefono}
                       </div>
                     </div>
-                    <Link href="/admin/consulta" className="w-10 h-10 bg-[#1f262e] hover:bg-[#3b82f6] text-[#a7abb2] hover:text-white rounded-sm transition-all flex items-center justify-center border border-[#1a2027]">
+                    <Link href={`/admin/pacientes?buscar=${encodeURIComponent(app.nombre)}`} className="w-10 h-10 bg-[#1f262e] hover:bg-[#3b82f6] text-[#a7abb2] hover:text-white rounded-sm transition-all flex items-center justify-center border border-[#1a2027]" title="Buscar paciente">
                        <ArrowUpRight className="w-5 h-5" />
                     </Link>
                   </div>
@@ -233,5 +274,93 @@ export default function AgendaViewer() {
         </div>
       </div>
     </div>
+    {/* MODAL NUEVO TURNO */}
+    <AnimatePresence>
+      {showModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setShowModal(false)}
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+            className="relative w-full max-w-md bg-[#0e1419] border border-[#1f262e] rounded-sm shadow-2xl p-8 space-y-8"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#3b82f6] mb-1">Admin</p>
+                <h3 className="text-xl font-black text-white uppercase tracking-tight">Nuevo Turno</h3>
+              </div>
+              <button type="button" aria-label="Cerrar" onClick={() => setShowModal(false)}
+                className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 rounded-sm text-white/40 hover:text-white transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAdminCreate} className="space-y-4">
+              {[
+                { label: 'Nombre y Apellido *', key: 'nombre', type: 'text', required: true },
+                { label: 'Email', key: 'email', type: 'email', required: false },
+                { label: 'Teléfono / WhatsApp', key: 'telefono', type: 'tel', required: false },
+              ].map(field => (
+                <div key={field.key} className="space-y-1">
+                  <label htmlFor={`turno-${field.key}`} className="text-[9px] font-bold uppercase tracking-widest text-white/30">{field.label}</label>
+                  <input
+                    id={`turno-${field.key}`}
+                    type={field.type}
+                    required={field.required}
+                    value={form[field.key as keyof typeof form]}
+                    onChange={e => setForm({ ...form, [field.key]: e.target.value })}
+                    className="w-full px-4 py-3 bg-[#141a20] border border-white/5 focus:border-[#3b82f6]/40 rounded-sm outline-none text-white font-bold text-sm uppercase tracking-wide"
+                  />
+                </div>
+              ))}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label htmlFor="turno-fecha" className="text-[9px] font-bold uppercase tracking-widest text-white/30">Fecha *</label>
+                  <input
+                    id="turno-fecha"
+                    type="date"
+                    required
+                    value={form.fecha}
+                    onChange={e => setForm({ ...form, fecha: e.target.value })}
+                    className="w-full px-4 py-3 bg-[#141a20] border border-white/5 focus:border-[#3b82f6]/40 rounded-sm outline-none text-white font-bold text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="turno-hora" className="text-[9px] font-bold uppercase tracking-widest text-white/30">Horario *</label>
+                  <select
+                    id="turno-hora"
+                    required
+                    value={form.hora}
+                    onChange={e => setForm({ ...form, hora: e.target.value })}
+                    className="w-full px-4 py-3 bg-[#141a20] border border-white/5 focus:border-[#3b82f6]/40 rounded-sm outline-none text-white font-bold text-sm"
+                  >
+                    {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {modalError && (
+                <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest">{modalError}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full py-4 bg-[#3b82f6] hover:bg-[#2563eb] disabled:opacity-50 text-white font-black text-[10px] uppercase tracking-[0.3em] rounded-sm transition-colors flex items-center justify-center gap-3"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                {saving ? 'Guardando...' : 'Confirmar Turno'}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }

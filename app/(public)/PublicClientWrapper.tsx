@@ -59,7 +59,7 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
           >
-            <div className="px-4 pb-6 pt-3" style={{ background: 'linear-gradient(to top, rgba(7,12,20,1) 60%, transparent)' }}>
+            <div className="px-4 pb-6 pt-3 bg-gradient-top">
               <button
                 onClick={openTurnero}
                 className="w-full py-4 bg-[#3b82f6] hover:bg-[#2563eb] active:scale-[0.98] text-white font-black text-[11px] tracking-[0.3em] uppercase rounded-sm shadow-[0_0_40px_rgba(59,130,246,0.35)] transition-colors"
@@ -90,6 +90,7 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
             >
               <button
                 onClick={closeTurnero}
+                aria-label="Cerrar modal"
                 className="absolute top-4 right-4 p-3 bg-white/5 hover:bg-white hover:text-[#1B365D] rounded-sm text-white transition-all duration-500 border border-white/10 z-50 shadow-2xl group"
               >
                 <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />

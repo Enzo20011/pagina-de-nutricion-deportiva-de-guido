@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
-import { Menu, X, ArrowRight } from 'lucide-react';
+import { Menu, X, ArrowRight, Sun, Moon } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -25,7 +25,24 @@ const Navbar = ({
 }: NavbarProps) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isDark, setIsDark] = useState(true);
   const pathname = usePathname();
+
+  React.useEffect(() => {
+    const stored = localStorage.getItem('theme');
+    const dark = stored !== 'light';
+    setIsDark(dark);
+    document.documentElement.classList.toggle('dark', dark);
+    document.documentElement.classList.toggle('light-mode', !dark);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', next);
+    document.documentElement.classList.toggle('light-mode', !next);
+  };
   
   const { scrollY } = useScroll();
 
@@ -99,6 +116,16 @@ const Navbar = ({
               );
             })}
           </nav>
+
+          {/* Dark/Light Toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-white/15 rounded-full border border-white/10 transition-all outline-none"
+          >
+            {isDark ? <Sun className="w-4 h-4 text-white/60" /> : <Moon className="w-4 h-4 text-white/60" />}
+          </button>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">

@@ -5,6 +5,7 @@ import PanelClinico from '@/components/PanelClinico';
 import PanelAntropometria from '@/components/PanelAntropometria';
 import PlanAlimentario from '@/components/PlanAlimentario';
 import DashboardEvolucion from '@/components/DashboardEvolucion';
+import BlocNotas from '@/components/BlocNotas';
 import { 
   User, 
   ClipboardList, 
@@ -25,7 +26,7 @@ import clsx from 'clsx';
 import { useConsultaStore } from '@/store/useConsultaStore';
 
 export default function ConsultaPage({ params }: { params: { id: string } }) {
-  const [activeTab, setActiveTab] = useState<'anamnesis' | 'antropometria' | 'dieta' | 'evolucion'>('anamnesis');
+  const [activeTab, setActiveTab] = useState<'anamnesis' | 'antropometria' | 'dieta' | 'evolucion' | 'notas'>('anamnesis');
   const [isExporting, setIsExporting] = useState(false);
   
   const { 
@@ -103,6 +104,7 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
                    <Calendar className="w-3 h-3 opacity-40" /> {isLoading ? '...' : new Date(paciente?.data?.createdAt || Date.now()).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase()} <span className="w-1 h-1 rounded-full bg-white/10" /> {paciente?.data?.status?.toUpperCase() || 'ACTIVO'}
                 </p>
                  <button
+                  type="button"
                   onClick={async () => {
                     if (isExporting) return;
                     setIsExporting(true);
@@ -140,8 +142,10 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
             { id: 'antropometria', label: 'Biometría', shortLabel: 'Bio.', icon: Ruler, hasData: !!antropometria },
             { id: 'dieta', label: 'Plan Nutricional', shortLabel: 'Plan', icon: Utensils, hasData: !!dieta },
             { id: 'evolucion', label: 'Evolución', shortLabel: 'Evol.', icon: TrendingUp, hasData: true },
+            { id: 'notas', label: 'Notas', shortLabel: 'Notas', icon: FileText, hasData: false },
           ].map((tab) => (
             <button
+              type="button"
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={clsx(
@@ -196,6 +200,9 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
                 paciente={paciente || {}}
                 sessionData={consultaData}
                />
+             )}
+             {activeTab === 'notas' && (
+               <BlocNotas pacienteId={params.id} />
              )}
            </div>
         </div>

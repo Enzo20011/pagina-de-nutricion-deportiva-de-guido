@@ -393,59 +393,12 @@ export default function PanelAntropometria({
           </h3>
 
           <div className="space-y-16 relative z-10">
-            <div className="relative group/grasa">
-              <div className="flex mb-8 items-end justify-between">
-                <div className="space-y-2">
-                  <span className="text-[11px] font-bold uppercase tracking-[0.4em] text-white/10 block mb-3 leading-none group-hover/grasa:text-white transition-all duration-75">GRASA (FAULKNER)</span>
-                  <span className="text-2xl font-bold uppercase text-white leading-none tracking-tight">
-                    PORCENTAJE
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-3xl font-bold text-white tracking-tight drop-shadow-2xl">
-                    {grasaPct}<span className="text-xl opacity-20 ml-2">%</span>
-                  </span>
-                </div>
-              </div>
-              <div 
-                className="overflow-hidden h-3 mb-12 bg-[#070C14] rounded-full shadow-inner relative transition-all duration-75 border border-white/5"
-                role="progressbar"
-                aria-valuenow={grasaPct}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label="Porcentaje de grasa corporal calculado"
-              >
-                <motion.div 
-                  layout
-                  initial={{ width: 0 }}
-                  animate={{ width: `${grasaPct}%` }}
-                  className="h-full bg-white shadow-[0_0_30px_rgba(255,255,255,0.3)] rounded-full" 
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6">
-              <div className="p-6 bg-[#0a0f14] rounded-sm border border-white/5 text-center flex flex-col items-center justify-center space-y-4 shadow-xl relative overflow-hidden group/magra">
-                <p className="text-[9px] font-bold text-white/5 uppercase tracking-[0.4em] leading-none mb-2 italic relative z-10">Masa Magra</p>
-                <div className="flex items-center gap-6 relative z-10">
-                  <Zap className="w-8 h-8 text-[#3b82f6]/50 group-hover/magra:text-[#3b82f6] transition-all duration-75" />
-                  <p className="text-2xl font-bold text-white tracking-tight leading-none">{comp.masaMagraKg} <span className="text-xl opacity-10 ml-2">KG</span></p>
-                </div>
-              </div>
-              
-              <div className="p-6 bg-[#0a0f14] rounded-sm border border-white/5 text-center flex flex-col items-center justify-center space-y-4 shadow-xl relative overflow-hidden">
-                <p className="text-[9px] font-bold text-white/5 uppercase tracking-[0.4em] leading-none mb-2 italic relative z-10">Masa Gorda</p>
-                <p className="text-2xl font-bold text-white tracking-tight leading-none relative z-10">{comp.masaGordaKg} <span className="text-xl opacity-10 ml-2">KG</span></p>
-              </div>
-            </div>
-
             <div className="bg-white/5 p-8 rounded-sm text-white/20 flex items-start gap-6 border border-white/5 relative group/info hover:border-white/10 transition-all duration-75">
               <Info className="w-8 h-8 shrink-0 text-[#3b82f6]/40" />
               <p className="text-[10px] leading-relaxed font-bold uppercase tracking-widest italic">
-                Cálculos validados. Interpretación profesional basada en valores antropométricos estandarizados.
+                Los datos antropométricos se registran correctamente. Para análisis de composición corporal consulte con el profesional.
               </p>
             </div>
-
           </div>
         </div>
       </div>

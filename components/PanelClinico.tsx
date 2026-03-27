@@ -181,7 +181,18 @@ export default function PanelClinico({
   }, [antropometriaData?.mediciones?.peso, antropometriaData?.mediciones?.altura, setValue]);
 
   const [macrosPct, setMacrosPct] = useState({ carbos: 50, proteinas: 20, grasas: 30 });
-  
+  const [caloriasOffset, setCaloriasOffset] = useState(0);
+
+  const handleMacroPctChange = (changedKey: 'carbos' | 'proteinas' | 'grasas', newVal: number) => {
+    const clamped = Math.max(0, Math.min(100, newVal));
+    const otherKeys = (['carbos', 'proteinas', 'grasas'] as const).filter(k => k !== changedKey);
+    const remaining = 100 - clamped;
+    const sumOthers = macrosPct[otherKeys[0]] + macrosPct[otherKeys[1]];
+    let a = sumOthers > 0 ? Math.round((macrosPct[otherKeys[0]] / sumOthers) * remaining) : Math.round(remaining / 2);
+    let b = remaining - a;
+    setMacrosPct({ ...macrosPct, [changedKey]: clamped, [otherKeys[0]]: a, [otherKeys[1]]: b });
+  };
+
   const resultados = React.useMemo(() => calcularGastoEnergetico(
     watchedFields.peso || 70,
     watchedFields.altura || 170,
@@ -195,10 +206,11 @@ export default function PanelClinico({
   const superavit = Math.round(resultados.get + 500);
 
   const currentTargetKcal = React.useMemo(() => {
-    if (watchedFields.tipoObjetivo === 'deficit') return deficit;
-    if (watchedFields.tipoObjetivo === 'superavit') return superavit;
-    return mantenimiento;
-  }, [watchedFields.tipoObjetivo, deficit, mantenimiento, superavit]);
+    let base = mantenimiento;
+    if (watchedFields.tipoObjetivo === 'deficit') base = deficit;
+    if (watchedFields.tipoObjetivo === 'superavit') base = superavit;
+    return Math.max(0, base + caloriasOffset);
+  }, [watchedFields.tipoObjetivo, deficit, mantenimiento, superavit, caloriasOffset]);
 
   // Sync currentTargetKcal to form field for persistence
   React.useEffect(() => {
@@ -522,50 +534,91 @@ export default function PanelClinico({
               ))}
           </div>
 
+          {/* #3 — Ajuste manual de calorías */}
+          <div className="mb-12 bg-[#0e1419] border border-white/5 rounded-sm p-6 space-y-4">
+            <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-white/20">Ajuste manual de calorías</p>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                aria-label="Restar 50 calorías"
+                onClick={() => setCaloriasOffset(o => o - 50)}
+                className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 rounded-sm text-white font-bold text-lg transition-colors"
+              >−</button>
+              <div className="flex-1 text-center">
+                <span className={clsx("text-2xl font-bold tracking-tight", caloriasOffset > 0 ? "text-emerald-400" : caloriasOffset < 0 ? "text-red-400" : "text-white/20")}>
+                  {caloriasOffset > 0 ? '+' : ''}{caloriasOffset}
+                </span>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-white/10 block">kcal de ajuste</span>
+              </div>
+              <button
+                type="button"
+                aria-label="Sumar 50 calorías"
+                onClick={() => setCaloriasOffset(o => o + 50)}
+                className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 rounded-sm text-white font-bold text-lg transition-colors"
+              >+</button>
+            </div>
+            {caloriasOffset !== 0 && (
+              <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-white/20">Total objetivo</span>
+                <span className="text-lg font-bold text-white">{currentTargetKcal} <span className="text-sm opacity-30">kcal</span></span>
+              </div>
+            )}
+            {caloriasOffset !== 0 && (
+              <button type="button" onClick={() => setCaloriasOffset(0)} className="text-[8px] font-bold uppercase tracking-widest text-white/10 hover:text-white/40 transition-colors">
+                Resetear ajuste
+              </button>
+            )}
+          </div>
+
           <div className="space-y-12 relative z-10">
             <h3 className="font-bold uppercase text-[10px] tracking-[0.5em] text-white/10 flex items-center gap-6">
                <Sparkles className="w-4 h-4 text-[#3b82f6]" /> MACROS
             </h3>
-            
+
+            {/* #4 — Macros editables */}
             <div className="space-y-8">
-               {[
-                 { label: 'Carbohidratos', key: 'carbos', g: macros.carbohidratos, color: 'bg-white shadow-[0_0_30px_rgba(255,255,255,0.2)]' },
-                 { label: 'Proteínas', key: 'proteinas', g: macros.proteinas, color: 'bg-[#1B365D] shadow-[0_0_30px_rgba(27,54,93,0.3)] border border-white/10' },
-                 { label: 'Grasas', key: 'grasas', g: macros.grasas, color: 'bg-white/5' }
-               ].map((macro) => (
-                 <div key={macro.key} className="space-y-4 group cursor-default">
-                   <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.3em]">
-                     <span className="text-white/20 group-hover:text-white transition-all duration-75">{macro.label} ({macrosPct[macro.key as keyof typeof macrosPct]}%)</span>
-                     <span className="text-white text-2xl tracking-tight">{macro.g}g</span>
+               {([
+                 { label: 'Carbohidratos', key: 'carbos' as const, g: macros.carbohidratos, color: 'bg-white shadow-[0_0_30px_rgba(255,255,255,0.2)]' },
+                 { label: 'Proteínas', key: 'proteinas' as const, g: macros.proteinas, color: 'bg-[#1B365D] shadow-[0_0_30px_rgba(27,54,93,0.3)] border border-white/10' },
+                 { label: 'Grasas', key: 'grasas' as const, g: macros.grasas, color: 'bg-white/5' }
+               ]).map((macro) => (
+                 <div key={macro.key} className="space-y-4 group">
+                   <div className="flex items-center justify-between gap-4">
+                     <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/20 group-hover:text-white transition-all duration-75 flex-1">{macro.label}</span>
+                     <div className="flex items-center gap-2">
+                       <input
+                         type="number"
+                         min={0}
+                         max={100}
+                         value={macrosPct[macro.key]}
+                         onChange={e => handleMacroPctChange(macro.key, parseInt(e.target.value) || 0)}
+                         aria-label={`Porcentaje de ${macro.label}`}
+                         className="w-14 text-center bg-[#0a0f14] border border-white/10 focus:border-[#3b82f6]/40 rounded-sm outline-none text-white font-bold text-sm py-1 px-2"
+                       />
+                       <span className="text-white/20 font-bold text-sm">%</span>
+                     </div>
+                     <span className="text-white text-2xl tracking-tight font-bold w-16 text-right">{macro.g}g</span>
                    </div>
-                   <div 
+                   <div
                     className="w-full h-2 bg-[#070C14]/80 rounded-full overflow-hidden relative border border-white/5"
                     role="progressbar"
-                    aria-valuenow={macrosPct[macro.key as keyof typeof macrosPct]}
+                    aria-valuenow={macrosPct[macro.key]}
                     aria-valuemin={0}
                     aria-valuemax={100}
-                    aria-label={`Porcentaje de ${macro.label.toLowerCase()}: ${macrosPct[macro.key as keyof typeof macrosPct]}%`}
+                    aria-label={`Porcentaje de ${macro.label.toLowerCase()}: ${macrosPct[macro.key]}%`}
                    >
-                     <motion.div 
+                     <motion.div
                        layout
                        initial={{ width: 0 }}
-                       animate={{ width: `${macrosPct[macro.key as keyof typeof macrosPct]}%` }}
+                       animate={{ width: `${macrosPct[macro.key]}%` }}
                        transition={{ type: 'spring', damping: 20, stiffness: 100 }}
-                       className={`h-full ${macro.color} rounded-full`} 
+                       className={`h-full ${macro.color} rounded-full`}
                      />
                    </div>
                  </div>
                ))}
             </div>
 
-            <div className="mt-12 p-6 sm:p-8 bg-[#0a0f14]/60 rounded-sm border border-white/5 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-8 group transition-all duration-75 text-center sm:text-left">
-               <div className="w-10 h-10 bg-white/5 rounded-sm flex items-center justify-center shrink-0">
-                  <Info className="w-5 h-5 text-[#3b82f6]/40" />
-               </div>
-               <p className="text-[9px] sm:text-[11px] text-white/10 font-bold leading-relaxed uppercase tracking-[0.15em] group-hover:text-white/20 transition-all duration-75">
-                 METODOLOGÍA HARRIS-BENEDICT OPTIMIZADA PARA NUTRICIÓN DEPORTIVA Y CLÍNICA. CÁLCULO DE ALTA PRECISIÓN.
-               </p>
-            </div>
           </div>
         </section>
       </div>

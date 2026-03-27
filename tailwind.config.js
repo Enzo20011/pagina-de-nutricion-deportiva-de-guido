@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -62,7 +63,10 @@ module.exports = {
         'xl': '24px',
         '2xl': '40px',
         '3xl': '60px',
-      }
+      },
+      backgroundImage: {
+        'gradient-top': 'linear-gradient(to top, rgba(7,12,20,1) 60%, transparent)',
+      },
     },
   },
   plugins: [],

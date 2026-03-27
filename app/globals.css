@@ -1,3 +1,62 @@
+/* ─ LIGHT MODE ─────────────────────────────────────────────── */
+html.light-mode {
+  --lm-bg: #f4f6fa;
+  --lm-surface: #ffffff;
+  --lm-surface-low: #eef1f7;
+  --lm-surface-med: #e4e8f0;
+  --lm-text: #0a0f14;
+  --lm-text-dim: #4a5568;
+  --lm-border: rgba(0,0,0,0.08);
+}
+
+html.light-mode body {
+  background-color: var(--lm-bg) !important;
+  color: var(--lm-text) !important;
+}
+
+html.light-mode .bg-\[\#0a0f14\],
+html.light-mode .bg-darkNavy {
+  background-color: var(--lm-bg) !important;
+}
+
+html.light-mode .bg-\[\#0e1419\] {
+  background-color: var(--lm-surface) !important;
+}
+
+html.light-mode .bg-\[\#141a20\] {
+  background-color: var(--lm-surface-low) !important;
+}
+
+html.light-mode .bg-\[\#1a2027\] {
+  background-color: var(--lm-surface-med) !important;
+}
+
+html.light-mode .text-white {
+  color: var(--lm-text) !important;
+}
+
+html.light-mode .text-bone {
+  color: var(--lm-text) !important;
+}
+
+html.light-mode .border-white\/5,
+html.light-mode .border-\[\#1f262e\],
+html.light-mode .border-\[\#1a2027\] {
+  border-color: var(--lm-border) !important;
+}
+
+html.light-mode .text-white\/20,
+html.light-mode .text-white\/30,
+html.light-mode .text-white\/40,
+html.light-mode .text-white\/60 {
+  color: var(--lm-text-dim) !important;
+}
+
+html.light-mode nav header {
+  background-color: rgba(255,255,255,0.85) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+}
+
 @keyframes fade-in {
   0% { opacity: 0; transform: translateY(24px); }
   100% { opacity: 1; transform: translateY(0); }
@@ -237,6 +296,30 @@
   --kl-text-dim: #a7abb2;
   --kl-outline: #71767c;
   --kl-outline-var: #43484e;
+}
+
+html.light-mode {
+  --background: #f4f6fa;
+  --foreground: #0a0f14;
+  --muted: #e4e8f0;
+  --navy-deep: #f4f6fa;
+  --navy-professional: #ffffff;
+  --kl-bg: #f4f6fa;
+  --kl-surface-low: #ffffff;
+  --kl-surface-med: #eef1f7;
+  --kl-surface-hi: #e4e8f0;
+  --kl-surface-top: #d8dde8;
+  --kl-text: #0a0f14;
+  --kl-text-dim: #4a5568;
+  --kl-outline: rgba(0,0,0,0.12);
+  --kl-outline-var: rgba(0,0,0,0.06);
+  --foreground-rgb: 10, 15, 20;
+  --background-rgb: 244, 246, 250;
+}
+
+html.light-mode body {
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 @layer components {

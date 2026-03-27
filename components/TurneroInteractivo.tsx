@@ -181,7 +181,7 @@ export default function TurneroInteractivo() {
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               exit={{ opacity: 0, scale: 0.95, filter: "blur(5px)" }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className="space-y-12"
+              className="space-y-6"
             >
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
@@ -193,9 +193,10 @@ export default function TurneroInteractivo() {
                 </div>
                 
                 <div className="flex items-center gap-4 bg-[#141a20] px-4 py-2 border border-[#1f262e] rounded-sm">
-                  <button 
-                    onClick={() => changeMonth(-1)} 
+                  <button
+                    onClick={() => changeMonth(-1)}
                     disabled={currentMonth.getMonth() === new Date().getMonth() && currentMonth.getFullYear() === new Date().getFullYear()}
+                    aria-label="Mes anterior"
                     className="p-1.5 hover:bg-white/5 disabled:opacity-5 disabled:cursor-not-allowed rounded-sm transition-colors text-white/40 hover:text-white"
                   >
                     <ChevronLeft className="w-3.5 h-3.5" />
@@ -204,7 +205,7 @@ export default function TurneroInteractivo() {
                     <p className="text-[7px] font-bold uppercase tracking-widest text-[#43484e] mb-0.5">MES</p>
                     <p className="text-[11px] font-bold text-white uppercase tracking-tight">{currentMonth.toLocaleString('es', { month: 'long', year: 'numeric' }).toUpperCase()}</p>
                   </div>
-                  <button onClick={() => changeMonth(1)} className="p-1.5 hover:bg-white/5 rounded-sm transition-colors text-white/40 hover:text-white">
+                  <button onClick={() => changeMonth(1)} aria-label="Próximo mes" className="p-1.5 hover:bg-white/5 rounded-sm transition-colors text-white/40 hover:text-white">
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -217,7 +218,7 @@ export default function TurneroInteractivo() {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-7 gap-1 relative min-h-[200px]">
+                <div className="grid grid-cols-7 gap-0.5 relative min-h-[160px]">
                   <AnimatePresence mode="popLayout">
                     <motion.div
                       key={currentMonth.toISOString()}
@@ -245,17 +246,17 @@ export default function TurneroInteractivo() {
                               fetchAvailability(dateStr);
                               setSelectedTime(null);
                             }}
-                            className={`relative p-2.5 rounded-sm flex flex-col items-center justify-center transition-all duration-300 border ${
-                              isSelected 
-                              ? 'bg-[#3b82f6] border-[#3b82f6] text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] z-10' 
+                            className={`relative p-1.5 rounded-sm flex flex-col items-center justify-center transition-all duration-300 border ${
+                              isSelected
+                              ? 'bg-[#3b82f6] border-[#3b82f6] text-white shadow-[0_0_20px_rgba(59,130,246,0.3)] z-10'
                               : isPassed ? 'bg-transparent border-transparent text-white/5 cursor-not-allowed'
                               : 'bg-[#1a2027]/20 border-white/5 text-[#a7abb2] hover:border-white/10'
                             }`}
                           >
-                            <span className={`text-[11px] font-bold tracking-tighter leading-none ${isToday && !isSelected ? 'text-[#3b82f6]' : ''}`}>
+                            <span className={`text-[10px] font-bold tracking-tighter leading-none ${isToday && !isSelected ? 'text-[#3b82f6]' : ''}`}>
                               {date.getDate()}
                             </span>
-                            {isToday && !isSelected && <div className="absolute top-1 right-1 w-1 h-1 bg-[#3b82f6] rounded-full" />}
+                            {isToday && !isSelected && <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-[#3b82f6] rounded-full" />}
                           </motion.button>
                         );
                       })}
@@ -265,11 +266,11 @@ export default function TurneroInteractivo() {
               </div>
 
               {selectedDate && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="space-y-8">
-                  <label className="flex items-center gap-4 eyebrow !text-[#3b82f6]/40 italic">
-                    <Clock className="w-4 h-4" /> 02. Horarios
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="space-y-3">
+                  <label className="flex items-center gap-3 eyebrow !text-[#3b82f6]/40 italic !text-[9px]">
+                    <Clock className="w-3.5 h-3.5" /> HORARIOS DISPONIBLES
                   </label>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                     {TIMES.map((time) => {
                       const isTaken = takenSlots.includes(time);
                       return (
@@ -277,7 +278,7 @@ export default function TurneroInteractivo() {
                           key={time}
                           disabled={isTaken}
                           onClick={() => setSelectedTime(time)}
-                          className={`relative py-4 rounded-sm font-bold text-xs uppercase tracking-widest transition-all duration-500 border overflow-hidden ${
+                          className={`relative py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest transition-all duration-500 border overflow-hidden ${
                             selectedTime === time 
                             ? 'bg-[#3b82f6] text-white border-[#3b82f6] shadow-[0_0_30px_rgba(59,130,246,0.3)]' 
                             : isTaken ? 'bg-transparent text-[#1f262e] border-[#1f262e] cursor-not-allowed line-through opacity-10'
@@ -301,7 +302,7 @@ export default function TurneroInteractivo() {
               <button
                 disabled={!selectedDate || !selectedTime || loading}
                 onClick={handleNextStep}
-                className="w-full mt-10 py-6 bg-[#3b82f6] disabled:bg-[#1f262e] disabled:text-[#43484e] text-white font-bold rounded-sm transition-all shadow-[0_0_40px_rgba(59,130,246,0.1)] hover:shadow-[0_0_60px_rgba(59,130,246,0.3)] eyebrow !text-[10px] flex items-center justify-center gap-4 group overflow-hidden"
+                className="w-full mt-4 py-5 bg-[#3b82f6] disabled:bg-[#1f262e] disabled:text-[#43484e] text-white font-bold rounded-sm transition-all shadow-[0_0_40px_rgba(59,130,246,0.1)] hover:shadow-[0_0_60px_rgba(59,130,246,0.3)] eyebrow !text-[10px] flex items-center justify-center gap-4 group overflow-hidden"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>RESERVAR TURNO <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}
               </button>
@@ -396,12 +397,12 @@ export default function TurneroInteractivo() {
                    </div>
                 </div>
 
-                <div className="bg-[#3b82f6]/5 border border-[#3b82f6]/20 p-8 rounded-sm flex items-center justify-between relative z-10 shadow-[0_0_40px_rgba(59,130,246,0.05)]">
-                  <div className="space-y-1">
+                <div className="bg-[#3b82f6]/5 border border-[#3b82f6]/20 p-6 rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10 shadow-[0_0_40px_rgba(59,130,246,0.05)]">
+                  <div className="space-y-1 min-w-0">
                     <p className="eyebrow !text-[#3b82f6] !text-[8px]">SEÑA</p>
                     <p className="body-text !text-[10px] !text-[#3b82f6]/40 uppercase tracking-widest">Pago para confirmar el compromiso</p>
                   </div>
-                  <p className="stat-val !text-4xl text-white italic tracking-tighter">$5.000</p>
+                  <p className="stat-val !text-3xl text-white italic tracking-tighter shrink-0">$5.000</p>
                 </div>
               </div>
 
