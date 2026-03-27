@@ -26,6 +26,7 @@ const DOT_GRID = `radial-gradient(circle, rgba(67,72,78,0.4) 1px, transparent 1p
 
 export default function HeroSection({ onBookingClick = () => {} }: HeroSectionProps) {
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isDark, setIsDark] = useState(true);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const mouseXSpring = useSpring(x, { stiffness: 400, damping: 30 });
@@ -33,6 +34,16 @@ export default function HeroSection({ onBookingClick = () => {} }: HeroSectionPr
 
   useEffect(() => {
     setIsDesktop(window.innerWidth >= 1024);
+    const stored = localStorage.getItem('theme');
+    setIsDark(stored !== 'light');
+
+    const handleThemeChange = () => {
+      const stored = localStorage.getItem('theme');
+      setIsDark(stored !== 'light');
+    };
+
+    window.addEventListener('storage', handleThemeChange);
+    return () => window.removeEventListener('storage', handleThemeChange);
   }, []);
 
   const handleButtonMouse = (e: MouseEvent<HTMLButtonElement>) => {
@@ -114,8 +125,8 @@ export default function HeroSection({ onBookingClick = () => {} }: HeroSectionPr
               style={{
                 x: mouseXSpring,
                 y: mouseYSpring,
-                background: "linear-gradient(135deg, #3b82f6, #2563eb)",
-                color: "#ffffff"
+                background: isDark ? "linear-gradient(135deg, #3b82f6, #2563eb)" : "linear-gradient(135deg, #3b82f6, #1d4ed8)",
+                color: isDark ? "#ffffff" : "#ffffff"
               }}
               whileHover={{
                 scale: 1.05,
