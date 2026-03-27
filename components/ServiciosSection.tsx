@@ -65,8 +65,8 @@ export default function ServiciosSection({ onBookingClick = () => {} }: { onBook
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tight leading-[0.9] text-white hover:text-[#3b82f6] transition-colors mb-6">
-              SERVICIOS DE<br />
+            <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tight leading-[0.9] mb-6">
+              <span className="text-white">SERVICIOS DE</span><br />
               <span className="text-[#3b82f6]">ALTO NIVEL</span>
             </h2>
             <p className="body-text max-w-xl">
