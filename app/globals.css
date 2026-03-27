@@ -231,6 +231,18 @@ html.light-mode h6 {
   color: var(--lm-text) !important;
 }
 
+/* But preserve explicit color classes on headings */
+html.light-mode h1[class*="text-\[#3b82f6\]"],
+html.light-mode h2[class*="text-\[#3b82f6\]"],
+html.light-mode h1.text-\[\#3b82f6\],
+html.light-mode h2.text-\[\#3b82f6\],
+html.light-mode h1.text-blue-500,
+html.light-mode h2.text-blue-500,
+html.light-mode h1.\!text-\[\#3b82f6\],
+html.light-mode h2.\!text-\[\#3b82f6\] {
+  color: #3b82f6 !important;
+}
+
 /* Ensure accent colors remain visible - these override the above */
 html.light-mode .text-\[\#3b82f6\],
 html.light-mode .text-blue-500,
