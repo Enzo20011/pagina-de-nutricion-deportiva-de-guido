@@ -111,6 +111,103 @@ html.light-mode .opacity-60 {
   opacity: 0.75;
 }
 
+/* Additional background overrides for light mode */
+html.light-mode .bg-\[\#070C14\]\/60,
+html.light-mode .bg-\[\#0a0f14\]\/40,
+html.light-mode .bg-\[\#0B1120\]\/40 {
+  background-color: var(--lm-surface-low) !important;
+}
+
+/* Placeholder and skeleton loaders */
+html.light-mode .animate-pulse {
+  background-color: var(--lm-surface-med) !important;
+}
+
+/* All text variations need proper color */
+html.light-mode .text-\[\#eaeef6\],
+html.light-mode .text-bone,
+html.light-mode .text-white {
+  color: var(--lm-text) !important;
+}
+
+html.light-mode .text-\[\#a7abb2\],
+html.light-mode .text-\[#a7abb2\] {
+  color: var(--lm-text-dim) !important;
+}
+
+html.light-mode .text-\[\#43484e\],
+html.light-mode .text-\[#43484e\] {
+  color: var(--lm-text-muted) !important;
+}
+
+/* Form inputs and their styling */
+html.light-mode input[type="text"],
+html.light-mode input[type="email"],
+html.light-mode input[type="password"],
+html.light-mode input[type="number"],
+html.light-mode input[type="date"],
+html.light-mode input[type="time"],
+html.light-mode select,
+html.light-mode textarea {
+  background-color: var(--lm-surface) !important;
+  color: var(--lm-text) !important;
+  border-color: var(--lm-border) !important;
+}
+
+html.light-mode input::placeholder,
+html.light-mode textarea::placeholder {
+  color: var(--lm-text-muted) !important;
+}
+
+/* Ensure eyebrow/label styles are readable */
+html.light-mode .eyebrow,
+html.light-mode .font-label {
+  color: var(--lm-text-dim) !important;
+}
+
+/* Card and container styling */
+html.light-mode .shadow-xl,
+html.light-mode .shadow-2xl {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+
+/* Button and interactive elements */
+html.light-mode button {
+  color: var(--lm-text) !important;
+}
+
+html.light-mode .hover\:text-white:hover,
+html.light-mode .group-hover\/tab\:opacity-100 {
+  color: var(--lm-text) !important;
+  opacity: 1 !important;
+}
+
+/* Ensure accent colors remain visible */
+html.light-mode .text-\[\#3b82f6\],
+html.light-mode .text-blue-500 {
+  color: #3b82f6 !important;
+}
+
+html.light-mode .text-\[\#f43f5e\],
+html.light-mode .text-rose-500 {
+  color: #f43f5e !important;
+}
+
+html.light-mode .text-\[\#22c55e\],
+html.light-mode .text-green-500 {
+  color: #22c55e !important;
+}
+
+html.light-mode .text-\[\#ff4d4d\],
+html.light-mode .text-red-500 {
+  color: #ff4d4d !important;
+}
+
+/* Underline and decorative elements */
+html.light-mode .nav-underline {
+  background-color: #3b82f6 !important;
+}
+
 @keyframes fade-in {
   0% { opacity: 0; transform: translateY(24px); }
   100% { opacity: 1; transform: translateY(0); }
