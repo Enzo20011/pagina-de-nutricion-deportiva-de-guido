@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ngrok version:*)",
+      "Bash(node -e \":*)",
+      "Bash(ls \"/c/Users/enzul/OneDrive/Escritorio/guido/app/\\(public\\)/\")",
+      "Bash(find /c/Users/enzul/OneDrive/Escritorio/guido/components -type f \\\\\\(-name *.tsx -o -name *.ts -o -name *.jsx -o -name *.js \\\\\\))",
+      "Bash(grep -r from.*@/ /c/Users/enzul/OneDrive/Escritorio/guido/components --include=*.tsx --include=*.ts)",
+      "WebFetch(domain:susceptive-nonsociable-lilia.ngrok-free.dev)",
+      "Bash(curl -s http://localhost:3005/)",
+      "Bash(find c:UsersenzulOneDriveEscritorioguido -name *dieta* -o -name *validations*)",
+      "Bash(npm run:*)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill /PID 7376 /F)",
+      "Bash(taskkill /PID 29012 /F)",
+      "Bash(powershell -Command \"Stop-Process -Name ''node'' -Force -ErrorAction SilentlyContinue\")",
+      "Bash(tasklist /fi \"PID eq 25868\" /v)"
+    ]
+  }
+}

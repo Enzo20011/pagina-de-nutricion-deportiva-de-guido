@@ -26,7 +26,7 @@ import clsx from 'clsx';
 import { useConsultaStore } from '@/store/useConsultaStore';
 
 export default function ConsultaPage({ params }: { params: { id: string } }) {
-  const [activeTab, setActiveTab] = useState<'anamnesis' | 'antropometria' | 'dieta' | 'evolucion' | 'notas'>('anamnesis');
+  const [activeTab, setActiveTab] = useState<'anamnesis' | 'antropometria' | 'dieta' | 'evolucion' | 'notas'>('notas');
   const [isExporting, setIsExporting] = useState(false);
   
   const { 
@@ -138,11 +138,11 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
         {/* TOP LEVEL NAVIGATION TABS */}
         <div className="flex bg-[#070C14]/60 p-1.5 rounded-sm border border-white/5 relative z-10 shadow-inner backdrop-blur-3xl mt-4 lg:mt-0 items-center w-full lg:w-fit max-w-full overflow-x-auto scrollbar-hide shrink-0 gap-0.5">
           {[
+            { id: 'notas', label: 'Notas', shortLabel: 'Notas', icon: FileText, hasData: false },
             { id: 'anamnesis', label: 'Historial', shortLabel: 'Hist.', icon: ClipboardList, hasData: !!anamnesis },
             { id: 'antropometria', label: 'Biometría', shortLabel: 'Bio.', icon: Ruler, hasData: !!antropometria },
             { id: 'dieta', label: 'Plan Nutricional', shortLabel: 'Plan', icon: Utensils, hasData: !!dieta },
             { id: 'evolucion', label: 'Evolución', shortLabel: 'Evol.', icon: TrendingUp, hasData: true },
-            { id: 'notas', label: 'Notas', shortLabel: 'Notas', icon: FileText, hasData: false },
           ].map((tab) => (
             <button
               type="button"

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { 
-  ArrowDown, 
-  ArrowUp, 
+import {
+  ArrowDown,
+  ArrowUp,
   Equal,
   Sofa,
   Footprints,
@@ -11,8 +11,6 @@ import {
   Flame,
   Zap,
   Info,
-  ChevronRight,
-  BookOpen,
   Target
 } from 'lucide-react';
 import { 
@@ -342,95 +340,6 @@ export default function CalculadoraMetabolica() {
         </div>
       </div>
 
-      {/* --- INFORMATION SECTION: HARRIS BENEDICT --- */}
-      <motion.section 
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="mt-20 border-t border-[#1f262e] pt-20"
-      >
-        <div className="max-w-4xl mx-auto space-y-16 px-4">
-          <div className="text-center space-y-4">
-            <h2 className="heading-lg">
-              ¿QUÉ ES LA CALCULADORA <br/>
-              <span className={accentClass}>HARRIS BENEDICT?</span>
-            </h2>
-            <div className={clsx("w-20 h-1 mx-auto rounded-full", accentBg)} />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <div className="space-y-6">
-              <p className="body-text">
-                La calculadora Harris Benedict es una herramienta fundamental para determinar tus necesidades calóricas diarias basándose en tu metabolismo basal (TMB) y nivel de actividad física.
-              </p>
-              <p className="body-text">
-                Esta ecuación, desarrollada por los nutricionistas J. Arthur Harris y Francis G. Benedict en 1919 y actualizada en varias ocasiones, es ampliamente utilizada por profesionales de la nutrición.
-              </p>
-            </div>
-            <div className="bg-[#0e1419] border border-[#1f262e] p-8 rounded-sm relative group overflow-hidden">
-               <div className={clsx("absolute top-0 left-0 w-1 h-full", accentBg)} style={{ boxShadow: `0 0 15px ${accentShadow}` }} />
-               <h3 className="heading-sm mb-6 flex items-center gap-2">
-                 <BookOpen className={clsx("w-4 h-4", accentClass)} /> Fórmulas Actualizadas
-               </h3>
-               <div className={clsx("space-y-6 font-mono text-[11px]", accentClass)}>
-                 <div className="p-3 bg-black/20 rounded-sm">
-                   <p className="text-white mb-2 eyebrow opacity-50 font-sans">Mujeres:</p>
-                   TMB = 447.593 + (9.247 × kg) + (3.098 × cm) - (4.330 × años)
-                 </div>
-                 <div className="p-3 bg-black/20 rounded-sm">
-                   <p className="text-white mb-2 eyebrow opacity-50 font-sans">Hombres:</p>
-                   TMB = 88.362 + (13.397 × kg) + (4.799 × cm) - (5.677 × años)
-                 </div>
-               </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-4 md:px-0">
-            {[
-              {
-                title: "Cálculo del TMB",
-                text: "Primero, calculamos tu Tasa Metabólica Basal, la cantidad de energía que tu cuerpo necesita en reposo absoluto para funciones vitales.",
-                num: "01"
-              },
-              {
-                title: "Factor de Actividad",
-                text: "Multiplicamos tu TMB por un factor basado en tu nivel de actividad diaria, de sedentario a extremadamente activo.",
-                num: "02"
-              },
-              {
-                title: "Gasto Diario (TDEE)",
-                text: "Obtenemos tus necesidades totales, indicando cuántas calorías necesitas para mantener tu peso actual.",
-                num: "03"
-              },
-              {
-                title: "Ajuste de Objetivos",
-                text: "Calculamos variaciones para perder, mantener o aumentar peso, aplicando déficits o superávits científicos.",
-                num: "04"
-              }
-            ].map((step, i) => (
-              <div key={i} className="bg-[#0e1419] border border-[#1f262e] p-6 rounded-sm hover:border-[#3b82f6]/30 transition-all group">
-                <span className="heading-sm text-[#1f262e] group-hover:text-[#3b82f6]/20 transition-colors block mb-2">{step.num}</span>
-                <h4 className="heading-sm !text-[12px] opacity-90 mb-4">{step.title}</h4>
-                <p className="body-sm">{step.text}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="bg-[#3b82f6]/5 border border-[#3b82f6]/20 p-8 rounded-sm mx-4 md:mx-0">
-             <div className="flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left">
-                <div className={clsx("w-12 h-12 rounded-sm flex items-center justify-center shrink-0", accentBg)}>
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                   <h3 className="heading-sm mb-2 text-white">Dato importante</h3>
-                   <p className="body-text !text-sm italic">
-                     "Este método científico proporciona una base sólida para planificar tu alimentación diaria. Sin embargo, recuerda que es una estimación y puede requerir ajustes según tu respuesta individual y monitoreo profesional."
-                   </p>
-                </div>
-             </div>
-          </div>
-        </div>
-      </motion.section>
     </>
   );
 }

@@ -11,7 +11,9 @@ import {
   LogOut,
   DollarSign,
   Menu,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import Toast from './Toast';
@@ -27,7 +29,24 @@ const MENU_ITEMS = [
 export default function AdminNavbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDark, setIsDark] = useState(true);
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'|'info'}|null>(null);
+
+  React.useEffect(() => {
+    const stored = localStorage.getItem('theme');
+    const dark = stored !== 'light';
+    setIsDark(dark);
+    document.documentElement.classList.toggle('dark', dark);
+    document.documentElement.classList.toggle('light-mode', !dark);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', next);
+    document.documentElement.classList.toggle('light-mode', !next);
+  };
 
   const handleSignOut = () => {
     setToast({ msg: 'Sesión cerrada correctamente', type: 'success' });
@@ -93,6 +112,14 @@ export default function AdminNavbar() {
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-4">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-white/15 rounded-sm border border-white/10 transition-all outline-none"
+          >
+            {isDark ? <Sun className="w-4 h-4 text-white/60" /> : <Moon className="w-4 h-4 text-white/60" />}
+          </button>
           <button
             onClick={handleSignOut}
             className="flex items-center gap-2 px-4 py-2 rounded-sm text-white/30 hover:text-red-400 hover:bg-red-400/5 border border-white/5 hover:border-red-400/20 transition-all text-[9px] font-bold uppercase tracking-widest"
@@ -160,7 +187,16 @@ export default function AdminNavbar() {
                 })}
               </div>
 
-              <div className="mt-auto pt-10 border-t border-white/5">
+              <div className="mt-auto pt-10 border-t border-white/5 space-y-4">
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+                  className="w-full flex items-center justify-center gap-3 p-4 bg-white/5 border border-white/10 rounded-sm hover:bg-white/15 transition-all text-xs font-bold uppercase tracking-widest text-white/70 hover:text-white"
+                >
+                  {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                  {isDark ? 'Modo Claro' : 'Modo Oscuro'}
+                </button>
                 <button
                   onClick={() => { handleSignOut(); toggleMobileMenu(); }}
                   className="w-full flex items-center justify-center gap-4 p-5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-sm hover:bg-red-500/20 transition-all text-xs font-black uppercase tracking-widest"
