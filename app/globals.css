@@ -278,6 +278,67 @@ html.light-mode .nav-underline {
   background-color: #3b82f6 !important;
 }
 
+/* --- NAVBAR FIXES FOR LIGHT MODE --- */
+html.light-mode header {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  color: var(--lm-text) !important;
+}
+
+html.light-mode header * {
+  color: var(--lm-text) !important;
+}
+
+html.light-mode header .text-white\/60,
+html.light-mode header .text-white\/40 {
+  color: var(--lm-text-dim) !important;
+}
+
+html.light-mode header .text-\[\#a7abb2\] {
+  color: var(--lm-text-dim) !important;
+}
+
+/* Keep blue links in navbar */
+html.light-mode header .text-\[\#3b82f6\] {
+  color: #3b82f6 !important;
+}
+
+/* Navbar separator */
+html.light-mode .bg-white\/10,
+html.light-mode .bg-white\/5 {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* --- TURNERO/CALENDAR FIXES FOR LIGHT MODE --- */
+html.light-mode .bg-\[\#141a20\],
+html.light-mode .bg-\[\#0e1419\],
+html.light-mode .bg-\[\#1a2027\] {
+  background-color: var(--lm-surface) !important;
+}
+
+html.light-mode .border-\[\#1f262e\],
+html.light-mode .border-\[\#1a2027\],
+html.light-mode .border-\[\#2a3040\],
+html.light-mode .border-\[\#141a20\] {
+  border-color: var(--lm-border) !important;
+}
+
+/* Calendar text and buttons */
+html.light-mode .text-\[\#43484e\] {
+  color: var(--lm-text-dim) !important;
+}
+
+/* Icons in buttons */
+html.light-mode button .text-white\/40,
+html.light-mode button .text-white\/60 {
+  color: var(--lm-text-dim) !important;
+}
+
+html.light-mode button:hover .text-white\/40,
+html.light-mode button:hover .text-white\/60 {
+  color: var(--lm-text) !important;
+}
+
 @keyframes fade-in {
   0% { opacity: 0; transform: translateY(24px); }
   100% { opacity: 1; transform: translateY(0); }
