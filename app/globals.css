@@ -307,6 +307,22 @@ html.light-mode header a.text-\[\#3b82f6\] {
   color: #3b82f6 !important;
 }
 
+/* Preserve blue on spans with explicit color class inside headings */
+html.light-mode h1 span.text-\[\#3b82f6\],
+html.light-mode h2 span.text-\[\#3b82f6\],
+html.light-mode span.text-\[\#3b82f6\] {
+  color: #3b82f6 !important;
+}
+
+/* Fix hover dark background on buttons in light mode (calculadora Mujer/Hombre) */
+html.light-mode .hover\:bg-\[\#1f262e\]:hover {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+html.light-mode .hover\:bg-white\/5:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
 /* Navbar separator and borders */
 html.light-mode header .bg-white\/10,
 html.light-mode header .bg-white\/5,

@@ -151,7 +151,7 @@ export default function LandingPage() {
             </h2>
             <button
               onClick={openTurnero}
-              className="w-full sm:w-auto px-12 py-5 bg-white text-black font-black text-[11px] tracking-[0.25em] uppercase hover:bg-[#3b82f6] hover:text-white transition-all duration-500 shadow-2xl rounded-sm"
+              className="w-full sm:w-auto px-12 py-5 bg-[#3b82f6] text-white font-black text-[11px] tracking-[0.25em] uppercase hover:bg-[#2563eb] transition-all duration-500 shadow-2xl rounded-sm"
             >
               AGENDAR CONSULTA_
             </button>
