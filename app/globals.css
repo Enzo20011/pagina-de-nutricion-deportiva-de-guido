@@ -339,6 +339,38 @@ html.light-mode button:hover .text-white\/60 {
   color: var(--lm-text) !important;
 }
 
+/* --- MAIN AND MODAL BACKGROUNDS --- */
+html.light-mode main {
+  background-color: var(--lm-bg) !important;
+  color: var(--lm-text) !important;
+}
+
+html.light-mode .bg-\[\#0B1120\]\/60,
+html.light-mode .bg-\[\#0B1120\] {
+  background-color: var(--lm-surface) !important;
+}
+
+html.light-mode .bg-\[\#0a0f14\] {
+  background-color: var(--lm-bg) !important;
+}
+
+html.light-mode [className*="bg-black\/80"] {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Ensure all text in modals is dark */
+html.light-mode .bg-\[\#0B1120\]\/60 * {
+  color: var(--lm-text) !important;
+}
+
+html.light-mode .bg-\[\#0B1120\]\/60 .text-white {
+  color: var(--lm-text) !important;
+}
+
+html.light-mode .bg-\[\#0B1120\]\/60 .text-white\/\* {
+  color: var(--lm-text-dim) !important;
+}
+
 @keyframes fade-in {
   0% { opacity: 0; transform: translateY(24px); }
   100% { opacity: 1; transform: translateY(0); }
