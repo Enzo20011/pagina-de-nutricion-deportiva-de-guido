@@ -5,12 +5,12 @@ html.light-mode {
   --lm-surface-low: #eef1f7;
   --lm-surface-med: #e4e8f0;
   --lm-surface-hi: #dde2eb;
-  --lm-text: #0a0f14;
+  --lm-text: #1a1f2e;
   --lm-text-secondary: #2d3748;
-  --lm-text-dim: #5a6b7d;
-  --lm-text-muted: #8a95a6;
-  --lm-border: rgba(0,0,0,0.1);
-  --lm-border-light: rgba(0,0,0,0.05);
+  --lm-text-dim: #4a5568;
+  --lm-text-muted: #718096;
+  --lm-border: rgba(0,0,0,0.12);
+  --lm-border-light: rgba(0,0,0,0.06);
 }
 
 html.light-mode body {
@@ -58,19 +58,32 @@ html.light-mode .text-\[\#eaeef6\] {
   color: var(--lm-text) !important;
 }
 
-html.light-mode .text-\[\#a7abb2\],
+/* All white opacity text variants must be dark in light mode */
+html.light-mode .text-white {
+  color: var(--lm-text) !important;
+}
+
+html.light-mode .text-white\/5,
+html.light-mode .text-white\/10,
+html.light-mode .text-white\/15,
+html.light-mode .text-white\/20,
+html.light-mode .text-white\/25,
+html.light-mode .text-white\/30,
+html.light-mode .text-white\/35,
 html.light-mode .text-white\/40,
-html.light-mode .text-white\/30 {
+html.light-mode .text-white\/45,
+html.light-mode .text-white\/50,
+html.light-mode .text-white\/55,
+html.light-mode .text-white\/60,
+html.light-mode .text-white\/65,
+html.light-mode .text-white\/70,
+html.light-mode .text-white\/75 {
   color: var(--lm-text-dim) !important;
 }
 
-html.light-mode .text-white\/20,
-html.light-mode .text-white\/10 {
-  color: var(--lm-text-muted) !important;
-}
-
-html.light-mode .text-white\/60 {
-  color: var(--lm-text-muted) !important;
+html.light-mode .text-\[\#a7abb2\],
+html.light-mode .text-\[#a7abb2\] {
+  color: var(--lm-text-dim) !important;
 }
 
 html.light-mode .border-white\/5,
@@ -111,11 +124,27 @@ html.light-mode .opacity-60 {
   opacity: 0.75;
 }
 
-/* Additional background overrides for light mode */
-html.light-mode .bg-\[\#070C14\]\/60,
+/* All semi-transparent dark backgrounds should be light surfaces */
+html.light-mode .bg-\[\#0a0f14\]\/90,
+html.light-mode .bg-\[\#0a0f14\]\/80,
+html.light-mode .bg-\[\#0a0f14\]\/70,
+html.light-mode .bg-\[\#0a0f14\]\/60,
+html.light-mode .bg-\[\#0a0f14\]\/50,
 html.light-mode .bg-\[\#0a0f14\]\/40,
-html.light-mode .bg-\[\#0B1120\]\/40 {
+html.light-mode .bg-\[\#0a0f14\]\/30,
+html.light-mode .bg-\[\#0a0f14\]\/20,
+html.light-mode .bg-\[\#0B1120\]\/40,
+html.light-mode .bg-\[\#070C14\]\/60,
+html.light-mode .bg-\[\#070C14\]\/40,
+html.light-mode .bg-black\/20,
+html.light-mode .bg-black\/30 {
   background-color: var(--lm-surface-low) !important;
+}
+
+html.light-mode .bg-\[\#0e1419\]\/40,
+html.light-mode .bg-\[\#141a20\]\/50,
+html.light-mode .bg-\[\#141a20\]\/40 {
+  background-color: var(--lm-border-light) !important;
 }
 
 /* Placeholder and skeleton loaders */
