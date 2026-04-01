@@ -24,6 +24,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { exportarDietaLazy } from '@/utils/exportPdfAction';
+import { useConsultaStore } from '@/store/useConsultaStore';
 
 interface FoodItem {
   id: string;
@@ -75,7 +76,12 @@ export default function PlanAlimentario({
   ]);
   const [targetKcal, setTargetKcal] = useState(2000);
   const [targetMacros, setTargetMacros] = useState({ proteinas: 30, carbohidratos: 40, grasas: 30 });
+  const [tablaManual, setTablaManual] = useState<{alimento: string, cantidad: string}[]>([]);
+  const [recomendaciones, setRecomendaciones] = useState<string[]>([]);
   const [isExporting, setIsExporting] = useState(false);
+
+  const setStoreDieta = useConsultaStore(state => state.setDieta);
+  const storeDieta = useConsultaStore(state => state.dieta);
 
   // Sync calories from clinical panel (Anamnesis)
   React.useEffect(() => {
@@ -131,9 +137,15 @@ export default function PlanAlimentario({
             grasas: macrosObjetivo.grasas || macrosObjetivo.lipidos || macrosObjetivo.f || macrosObjetivo.g || 30
           });
         }
+        if (serverData.data.tablaManual) setTablaManual(serverData.data.tablaManual);
+        if (serverData.data.recomendaciones) setRecomendaciones(serverData.data.recomendaciones);
+        serverHydratedRef.current = true;
+    } else if (storeDieta && !serverHydratedRef.current) {
+        if (storeDieta.tablaManual) setTablaManual(storeDieta.tablaManual);
+        if (storeDieta.recomendaciones) setRecomendaciones(storeDieta.recomendaciones);
         serverHydratedRef.current = true;
     }
-  }, [serverData, anamnesisData]);
+  }, [serverData, anamnesisData, storeDieta]);
 
   // Dynamic meals handler
   const getMealNames = (num: number) => {
@@ -208,14 +220,16 @@ export default function PlanAlimentario({
   const lastSyncRef = React.useRef<string>('');
   React.useEffect(() => {
     if (onSync) {
-      const syncObj = { meals, totals, targets: { targetKcal, targetMacros } };
+      const syncObj = { meals, totals, targets: { targetKcal, targetMacros }, tablaManual, recomendaciones };
       const syncStr = JSON.stringify(syncObj);
       if (syncStr !== lastSyncRef.current) {
         lastSyncRef.current = syncStr;
         onSync(syncObj);
+        // Instant sync to session store
+        setStoreDieta(syncObj);
       }
     }
-  }, [meals, totals, targetKcal, targetMacros, onSync]);
+  }, [meals, totals, targetKcal, targetMacros, tablaManual, recomendaciones, onSync, setStoreDieta]);
 
   // Autoguardado debounced
   React.useEffect(() => {
@@ -225,12 +239,14 @@ export default function PlanAlimentario({
           pacienteId,
           objetivoCalorico: targetKcal,
           comidas: meals,
-          macrosObjetivo: targetMacros
+          macrosObjetivo: targetMacros,
+          tablaManual,
+          recomendaciones
         });
       }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [meals, targetKcal, targetMacros, pacienteId]);
+  }, [meals, targetKcal, targetMacros, tablaManual, recomendaciones, pacienteId]);
 
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -523,6 +539,126 @@ export default function PlanAlimentario({
                 </div>
              </div>
            ))}
+        </div>
+
+        {/* TABLA DEL PACIENTE SECTION (Restored) */}
+        <div className="bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl space-y-8 mt-12">
+          <div className="flex items-center gap-4 text-white/20 px-2">
+             <Sparkles className="w-4 h-4 text-[#3b82f6]" />
+             <span className="text-[10px] font-bold uppercase tracking-[0.4em]">PLAN ALIMENTARIO — TABLA DEL PACIENTE</span>
+          </div>
+
+          <div className="border border-white/5 rounded-sm overflow-hidden bg-[#0a0f14]/40">
+             <div className="grid grid-cols-2 bg-[#0a0f14]/80 border-b border-white/5 p-4">
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 px-2">ALIMENTO</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 px-2">CANTIDAD</div>
+             </div>
+             {tablaManual.map((row, i) => (
+                <div key={i} className="grid grid-cols-2 border-b border-white/5 group hover:bg-white/5 transition-colors">
+                   <input 
+                      autoFocus={i === tablaManual.length - 1 && row.alimento === ''}
+                      className="bg-transparent p-5 outline-none text-sm text-white font-bold placeholder:text-white/5 border-r border-white/5 font-sans"
+                      placeholder="Ej: Pollo / Carne"
+                      value={row.alimento} 
+                      onChange={e => {
+                        const newTabla = [...tablaManual];
+                        newTabla[i].alimento = e.target.value;
+                        setTablaManual(newTabla);
+                      }}
+                   />
+                   <div className="flex items-center gap-2 pr-4">
+                      <input 
+                         className="flex-1 bg-transparent p-5 outline-none text-sm text-white font-bold placeholder:text-white/10 font-sans"
+                         placeholder="Ej: 200g / 1 porción"
+                         value={row.cantidad} 
+                         onChange={e => {
+                            const newTabla = [...tablaManual];
+                            newTabla[i].cantidad = e.target.value;
+                            setTablaManual(newTabla);
+                         }}
+                      />
+                      <button 
+                        onClick={() => setTablaManual(tablaManual.filter((_, idx) => idx !== i))}
+                        className="text-white/10 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-3"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                   </div>
+                </div>
+             ))}
+             <button 
+                onClick={() => setTablaManual([...tablaManual, { alimento: '', cantidad: '' }])}
+                className="w-full p-8 text-[10px] font-bold uppercase tracking-[0.2em] text-white/20 hover:text-[#3b82f6] hover:bg-[#3b82f6]/5 transition-all flex items-center justify-center gap-4"
+             >
+                <Plus className="w-4 h-4" /> AGREGAR FILA
+             </button>
+          </div>
+        </div>
+
+        {/* RECOMENDACIONES SECTION (Restored) */}
+        <div className="bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl space-y-8 mt-12 mb-12">
+           <div className="flex items-center gap-4 text-white/20 px-2">
+             <Sparkles className="w-4 h-4 text-[#3b82f6]" />
+             <span className="text-[10px] font-bold uppercase tracking-[0.4em]">RECOMENDACIONES PARA EL PACIENTE</span>
+           </div>
+
+           <div className="space-y-4">
+              {recomendaciones.map((rec, i) => {
+                 const upperRec = rec.toUpperCase();
+                 const notaIndex = upperRec.indexOf('NOTA:');
+                 const hasNota = notaIndex !== -1;
+                 
+                 // UI Granular Highlight logic
+                 const part1 = hasNota ? rec.substring(0, notaIndex) : rec;
+                 const part2 = hasNota ? rec.substring(notaIndex) : '';
+
+                 return (
+                   <div key={i} className="flex items-center gap-6 group">
+                      <div className={clsx(
+                        "w-2 h-2 rounded-full shrink-0 transition-all",
+                        hasNota ? "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] scale-125" : "bg-[#3b82f6]/40 group-hover:bg-[#3b82f6] shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+                      )} />
+                      <div className="flex-1 relative min-h-[56px] flex items-center">
+                         {/* Visual Representation Layer */}
+                         <div className={clsx(
+                           "absolute inset-0 p-5 rounded-sm border pointer-events-none text-sm font-bold font-sans flex items-center transition-all",
+                           hasNota 
+                             ? "bg-red-500/5 border-red-500/30 shadow-[inset_0_0_20px_rgba(239,68,68,0.05)]" 
+                             : "bg-[#0a0f14]/60 border-white/5"
+                         )}>
+                            <span className="text-white whitespace-pre">{part1}</span>
+                            <span className="text-red-400 whitespace-pre">{part2}</span>
+                            {rec === '' && <span className="text-white/5">Escribir recomendación...</span>}
+                         </div>
+
+                         {/* Real Input Layer (Transparent) */}
+                         <input 
+                            className="flex-1 w-full p-5 bg-transparent border-none outline-none text-sm font-bold text-transparent caret-white font-sans relative z-10"
+                            placeholder="Escribir recomendación..."
+                            value={rec}
+                            onChange={e => {
+                               const newRecs = [...recomendaciones];
+                               newRecs[i] = e.target.value;
+                               setRecomendaciones(newRecs);
+                            }}
+                         />
+                      </div>
+                      <button 
+                         onClick={() => setRecomendaciones(recomendaciones.filter((_, idx) => idx !== i))}
+                         className="text-white/10 hover:text-red-500 p-3 opacity-20 group-hover:opacity-100 transition-all"
+                      >
+                         <Trash2 className="w-4 h-4" />
+                      </button>
+                   </div>
+                 );
+              })}
+              <button 
+                onClick={() => setRecomendaciones([...recomendaciones, ''])}
+                className="flex items-center gap-4 px-8 py-6 text-[10px] font-bold uppercase tracking-[0.2em] text-white/20 hover:text-white hover:bg-white/5 transition-all rounded-sm"
+              >
+                <Plus className="w-4 h-4" /> AGREGAR RECOMENDACIÓN
+              </button>
+           </div>
         </div>
       </div>
 

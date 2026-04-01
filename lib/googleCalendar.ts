@@ -55,7 +55,7 @@ export async function syncAppointmentToCalendar(reserva: {
     };
 
     // 1. Verificar si ya existe un evento para esta reserva
-    let existingEventId = null;
+    let existingEventId: string | null | undefined = null;
     if (reserva.id) {
       const existing = await calendarClient.events.list({
         calendarId: CALENDAR_ID,
@@ -114,5 +114,42 @@ export async function getCalendarEventsForDay(dateStr: string) {
   } catch (error) {
     console.error('Error obteniendo eventos:', error);
     return [];
+  }
+}
+
+/**
+ * Elimina un evento de Google Calendar buscando por el ID de la reserva.
+ */
+export async function deleteCalendarEventByReservaId(reservaId: string) {
+  if (!CLIENT_EMAIL || !PRIVATE_KEY || !CALENDAR_ID) return { success: false };
+
+  try {
+    // 1. Buscar el evento que tenga esta reservaId
+    const response = await calendarClient.events.list({
+      calendarId: CALENDAR_ID,
+      privateExtendedProperty: [`reservaId=${reservaId}`],
+    });
+
+    const items = response.data.items || [];
+    if (items.length === 0) {
+      console.log(`ℹ️ No se encontró evento en Calendar para reserva: ${reservaId}`);
+      return { success: true, notFound: true };
+    }
+
+    // 2. Eliminar cada evento encontrado (usualmente uno)
+    for (const event of items) {
+      if (event.id) {
+        console.log(`🗑️ Eliminando evento de Calendar: ${event.id}`);
+        await calendarClient.events.delete({
+          calendarId: CALENDAR_ID,
+          eventId: event.id,
+        });
+      }
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('❌ Error eliminando evento de Calendar:', error.message);
+    return { success: false, error: error.message };
   }
 }

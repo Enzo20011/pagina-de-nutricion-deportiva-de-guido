@@ -1,8 +1,7 @@
 
 'use client';
 
-import React, { useEffect } from 'react';
-import { useSession, signIn } from 'next-auth/react';
+import React from 'react';
 import BasePacientes from '@/components/BasePacientes';
 
 export default function PacientesPage() {

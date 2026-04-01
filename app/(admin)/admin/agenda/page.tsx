@@ -2,9 +2,10 @@
 'use client';
 
 import React from 'react';
-import AgendaViewer from '@/components/AgendaViewer';
-
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
+
+const AgendaViewer = dynamic(() => import('@/components/AgendaViewer'));
 import { Sparkles } from 'lucide-react';
 
 export default function AgendaPage() {

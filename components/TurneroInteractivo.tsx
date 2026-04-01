@@ -273,15 +273,30 @@ export default function TurneroInteractivo() {
                   <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                     {TIMES.map((time) => {
                       const isTaken = takenSlots.includes(time);
+                      
+                      // Validación: No permitir turnos en el pasado si es hoy
+                      const isToday = new Date().toISOString().split('T')[0] === selectedDate;
+                      let isPastTime = false;
+                      
+                      if (isToday) {
+                        const now = new Date();
+                        const [hours, minutes] = time.split(':').map(Number);
+                        const slotTime = new Date();
+                        slotTime.setHours(hours, minutes, 0, 0);
+                        isPastTime = now > slotTime;
+                      }
+
+                      const isDisabled = isTaken || isPastTime;
+
                       return (
                         <motion.button
                           key={time}
-                          disabled={isTaken}
+                          disabled={isDisabled}
                           onClick={() => setSelectedTime(time)}
                           className={`relative py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest transition-all duration-500 border overflow-hidden ${
                             selectedTime === time 
                             ? 'bg-[#3b82f6] text-white border-[#3b82f6] shadow-[0_0_30px_rgba(59,130,246,0.3)]' 
-                            : isTaken ? 'bg-transparent text-[#1f262e] border-[#1f262e] cursor-not-allowed line-through opacity-10'
+                            : isDisabled ? 'bg-transparent text-[#1f262e] border-[#1f262e] cursor-not-allowed line-through opacity-10'
                             : 'bg-[#1a2027]/20 border-white/5 text-[#a7abb2] hover:border-white/10'
                           }`}
                         >

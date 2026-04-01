@@ -1,16 +1,16 @@
 /* ─ LIGHT MODE ─────────────────────────────────────────────── */
 html.light-mode {
-  --lm-bg: #f4f6fa;
-  --lm-surface: #ffffff;
-  --lm-surface-low: #eef1f7;
-  --lm-surface-med: #e4e8f0;
-  --lm-surface-hi: #dde2eb;
-  --lm-text: #000000;
-  --lm-text-secondary: #111111;
-  --lm-text-dim: #222222;
-  --lm-text-muted: #333333;
-  --lm-border: rgba(0,0,0,0.15);
-  --lm-border-light: rgba(0,0,0,0.08);
+  --lm-bg: #F8F9FA;
+  --lm-surface: #FFFFFF;
+  --lm-surface-low: #f1f3f5;
+  --lm-surface-med: #e9ecef;
+  --lm-surface-hi: #dee2e6;
+  --lm-text: #212529;
+  --lm-text-secondary: #343a40;
+  --lm-text-dim: #43494f;
+  --lm-text-muted: #64748b;
+  --lm-border: rgba(33,37,41,0.22);
+  --lm-border-light: rgba(33,37,41,0.12);
 }
 
 html.light-mode,
@@ -31,22 +31,29 @@ html.light-mode .bg-black {
 }
 
 html.light-mode .bg-\[\#0e1419\],
-html.light-mode .bg-\[\#070C14\] {
+html.light-mode .bg-\[\#070C14\],
+html.light-mode .bg-\[\#080C14\],
+html.light-mode .bg-\[\#0c1219\],
+html.light-mode .bg-\[\#141a20\],
+html.light-mode .bg-\[\#1a2027\],
+html.light-mode .bg-cardDark,
+html.light-mode .bg-navy {
   background-color: var(--lm-surface) !important;
 }
 
-html.light-mode .bg-\[\#0b1120\] {
+html.light-mode .bg-\[\#0a0f14\] {
   background-color: var(--lm-surface-low) !important;
+}
+
+html.light-mode .bg-\[\#0b1120\] {
+  background-color: var(--lm-surface) !important;
 }
 
 html.light-mode .bg-\[\#141a20\],
-html.light-mode .bg-cardDark {
-  background-color: var(--lm-surface-low) !important;
-}
-
 html.light-mode .bg-\[\#1a2027\],
+html.light-mode .bg-cardDark,
 html.light-mode .bg-navy {
-  background-color: var(--lm-surface-med) !important;
+  background-color: var(--lm-surface) !important;
 }
 
 html.light-mode .bg-\[\#1f262e\] {
@@ -68,7 +75,10 @@ html.light-mode .text-white\/5,
 html.light-mode .text-white\/10,
 html.light-mode .text-white\/15,
 html.light-mode .text-white\/20,
-html.light-mode .text-white\/25,
+html.light-mode .text-white\/25 {
+  color: var(--lm-text-muted) !important;
+}
+
 html.light-mode .text-white\/30,
 html.light-mode .text-white\/35,
 html.light-mode .text-white\/40,
@@ -78,7 +88,9 @@ html.light-mode .text-white\/55,
 html.light-mode .text-white\/60,
 html.light-mode .text-white\/65,
 html.light-mode .text-white\/70,
-html.light-mode .text-white\/75 {
+html.light-mode .text-white\/75,
+html.light-mode .text-white\/80,
+html.light-mode .text-white\/90 {
   color: var(--lm-text-dim) !important;
 }
 
@@ -135,17 +147,25 @@ html.light-mode .bg-\[\#0a0f14\]\/40,
 html.light-mode .bg-\[\#0a0f14\]\/30,
 html.light-mode .bg-\[\#0a0f14\]\/20,
 html.light-mode .bg-\[\#0B1120\]\/40,
+html.light-mode .bg-\[\#070C14\]\/90,
+html.light-mode .bg-\[\#070C14\]\/80,
+html.light-mode .bg-\[\#070C14\]\/70,
 html.light-mode .bg-\[\#070C14\]\/60,
 html.light-mode .bg-\[\#070C14\]\/40,
 html.light-mode .bg-black\/20,
 html.light-mode .bg-black\/30 {
-  background-color: var(--lm-surface-low) !important;
+  background-color: var(--lm-surface-med) !important;
 }
 
-html.light-mode .bg-\[\#0e1419\]\/40,
-html.light-mode .bg-\[\#141a20\]\/50,
-html.light-mode .bg-\[\#141a20\]\/40 {
-  background-color: var(--lm-border-light) !important;
+html.light-mode .bg-\[\#111827\],
+html.light-mode .bg-\[\#1f2937\],
+html.light-mode .bg-\[\#374151\] {
+  background-color: var(--lm-surface) !important;
+}
+
+html.light-mode .bg-white\/5,
+html.light-mode .bg-white\/10 {
+  background-color: var(--lm-surface-med) !important;
 }
 
 /* Placeholder and skeleton loaders */

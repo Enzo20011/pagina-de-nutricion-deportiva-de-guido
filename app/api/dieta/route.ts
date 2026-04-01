@@ -53,6 +53,8 @@ export async function POST(request: Request) {
       objetivoCalorico: Number(data.objetivoCalorico),
       comidas: data.comidas || [],
       macrosObjetivo: data.macrosObjetivo || { p: 0, c: 0, f: 0 },
+      tablaManual: data.tablaManual || [],
+      recomendaciones: data.recomendaciones || [],
       fechaInicio: data.fechaInicio ? new Date(data.fechaInicio) : new Date(),
     };
 

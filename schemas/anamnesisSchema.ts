@@ -18,6 +18,10 @@ export const anamnesisSchema = z.object({
   edad: z.number().min(1).max(120).optional(),
   sexo: z.enum(['masculino', 'femenino']).optional(),
   caloriasObjetivo: z.number().optional(),
+  caloriasOffset: z.number().optional(),
+  macrosCarbos: z.number().optional(),
+  macrosProteinas: z.number().optional(),
+  macrosGrasas: z.number().optional(),
   tipoObjetivo: z.enum(['deficit', 'mantenimiento', 'superavit']).optional(),
   isDraft: z.boolean().optional(),
 });

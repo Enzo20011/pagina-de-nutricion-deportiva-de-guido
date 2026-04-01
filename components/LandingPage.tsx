@@ -1,12 +1,14 @@
 "use client";
 import React from 'react';
+import dynamic from 'next/dynamic';
 import HeroSection from './HeroSection';
 import ServiciosSection from './ServiciosSection';
-import ScientificAvales from './ScientificAvales';
-import CalculadoraMetabolica from './CalculadoraMetabolica';
-import Testimonios from './Testimonios';
 import { useTurnero } from '@/components/TurneroContext';
 import { motion } from 'framer-motion';
+
+const CalculadoraMetabolica = dynamic(() => import('./CalculadoraMetabolica'), { ssr: false });
+const Testimonios = dynamic(() => import('./Testimonios'));
+const ScientificAvales = dynamic(() => import('./ScientificAvales'));
 
 const DOT_GRID = `radial-gradient(circle, rgba(67,72,78,0.4) 1px, transparent 1px)`;
 
@@ -145,9 +147,8 @@ export default function LandingPage() {
             transition={{ duration: 0.4 }}
           >
             <p className="text-[9px] font-bold uppercase tracking-[0.4em] text-[#3b82f6]/60 mb-4">Comenzá hoy</p>
-            <h2 className="heading-xl !text-[#3b82f6] mb-10">
-              INICIAR<br />
-              <span className="text-white">TU PLAN_</span>
+            <h2 className="heading-xl text-[#212529] dark:text-white mb-10">
+              Inicia tu plan
             </h2>
             <button
               onClick={openTurnero}

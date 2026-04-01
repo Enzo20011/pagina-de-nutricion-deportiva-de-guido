@@ -154,22 +154,22 @@ export default function BlocNotas({ pacienteId }: { pacienteId: string }) {
               exit={{ opacity: 0 }}
               className="bg-[#0a0f14]/60 border border-white/5 rounded-sm p-6 space-y-4 h-full flex flex-col"
             >
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
                 <input
                   type="text"
                   placeholder="Título de la nota..."
                   value={draft.titulo}
                   onChange={e => setDraft(d => ({ ...d, titulo: e.target.value }))}
-                  className="flex-1 bg-transparent outline-none text-white font-black text-lg uppercase tracking-tight placeholder:text-white/10 border-b border-white/5 pb-2 focus:border-[#3b82f6]/30 transition-colors"
+                  className="flex-1 min-w-0 bg-transparent outline-none text-white font-black text-lg uppercase tracking-tight placeholder:text-white/10 border-b border-white/5 pb-2 focus:border-[#3b82f6]/30 transition-colors"
                 />
                 <button
                   type="button"
                   onClick={handleSave}
                   disabled={saving || !draft.contenido.trim()}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#3b82f6] hover:bg-[#2563eb] disabled:opacity-30 text-white font-black text-[9px] uppercase tracking-widest rounded-sm transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 bg-[#3b82f6] hover:bg-[#2563eb] disabled:opacity-30 text-white font-black text-[9px] uppercase tracking-widest rounded-sm transition-colors shrink-0"
                 >
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  Guardar
+                  <span className="hidden sm:inline">Guardar</span>
                 </button>
               </div>
 

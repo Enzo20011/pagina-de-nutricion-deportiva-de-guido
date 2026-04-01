@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
-import { Menu, X, ArrowRight, Sun, Moon } from 'lucide-react';
+import { X, ArrowRight, Sun, Moon } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -134,7 +134,7 @@ const Navbar = ({
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
             <button
-               className={`w-10 h-10 flex flex-col items-center justify-center rounded-full border transition-all outline-none focus:ring-0 ${isDark ? 'bg-white/5 border-white/10 hover:bg-white/15' : 'bg-black/5 border-black/15 hover:bg-black/10'}`}
+               className={`w-10 h-10 flex flex-col items-center justify-center rounded-full border transition-all outline-none focus:ring-0 ${isDark ? 'bg-white/5 border-white/10 hover:bg-white/15' : 'bg-black/10 border-black/25 hover:bg-black/15'}`}
                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                aria-label={mobileMenuOpen ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
                aria-expanded={mobileMenuOpen}
@@ -155,62 +155,105 @@ const Navbar = ({
       </header>
     </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu — Drawer lateral */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[55] bg-[#0a0f14]/90 backdrop-blur-3xl flex flex-col pt-32 pb-12 px-10 md:hidden overflow-hidden"
-          >
-            {/* Background decorative glow */}
-            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#3b82f6]/10 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#3b82f6]/5 rounded-full blur-[120px] pointer-events-none" />
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className={`fixed inset-0 z-[54] md:hidden ${isDark ? 'bg-black/70' : 'bg-black/30'} backdrop-blur-sm`}
+            />
 
-            <nav className="flex flex-col gap-8 relative z-10">
-              {navLinks.map((link, i) => (
-                <motion.div
-                  key={link.path}
-                  initial={{ opacity: 0, x: -20, filter: 'blur(10px)' }}
-                  animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                  transition={{ delay: 0.1 + i * 0.1, duration: 0.4, ease: "easeOut" }}
+            {/* Drawer */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+              className={`fixed top-0 right-0 bottom-0 w-[80vw] max-w-[300px] z-[55] md:hidden flex flex-col shadow-2xl ${
+                isDark ? 'bg-[#0a0f14] border-l border-white/5' : 'bg-white border-l border-black/10'
+              }`}
+            >
+              {/* Header */}
+              <div className={`flex items-center justify-between px-6 pt-8 pb-6 border-b ${isDark ? 'border-white/5' : 'border-black/8'}`}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 flex items-center justify-center bg-white rounded-full overflow-hidden p-1 shadow">
+                    <Image src="/logo.png" alt="Logo" width={24} height={24} className="w-full h-full object-contain" />
+                  </div>
+                  <div>
+                    <p className={`text-[10px] font-black uppercase tracking-tighter leading-none ${isDark ? 'text-white' : 'text-[#0a0f14]'}`}>Guido Operuk</p>
+                    <p className={`text-[7px] font-bold uppercase tracking-widest mt-0.5 ${isDark ? 'text-white/30' : 'text-[#4a5568]/60'}`}>MP 778</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  aria-label="Cerrar menú"
+                  className={`w-9 h-9 flex items-center justify-center rounded-full border transition-all ${isDark ? 'border-white/10 text-white/40 hover:text-white hover:bg-white/5' : 'border-black/10 text-[#4a5568] hover:text-[#0a0f14] hover:bg-black/5'}`}
                 >
-                  <Link
-                    href={link.path}
-                    onClick={() => { setActiveTab(link.path); setMobileMenuOpen(false); }}
-                    className={`text-6xl font-black italic uppercase tracking-tighter transition-all duration-300 block ${
-                      pathname === link.path 
-                        ? 'text-white' 
-                        : 'text-white/20 hover:text-white/40'
-                    }`}
-                  >
-                    {link.name}
-                  </Link>
-                </motion.div>
-              ))}
-            </nav>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
-            <div className="mt-auto relative z-10 space-y-8">
-              {/* Professional Footer inside Menu */}
-              <motion.div 
- className="border-t border-white/10 pt-8"
-              >
-                <p className="text-[10px] font-black italic text-white tracking-[0.2em] uppercase mb-1">Lic. Guido Operuk</p>
-                <p className="text-[8px] font-bold text-[#a7abb2] tracking-[0.2em] uppercase opacity-60">Matrícula Profesional 778</p>
-              </motion.div>
+              {/* Nav links */}
+              <nav className="flex flex-col gap-1 px-4 py-6 flex-1">
+                {navLinks.map((link, i) => {
+                  const active = pathname === link.path;
+                  return (
+                    <motion.div
+                      key={link.path}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.05 + i * 0.07 }}
+                    >
+                      <Link
+                        href={link.path}
+                        onClick={() => { setActiveTab(link.path); setMobileMenuOpen(false); }}
+                        className={`flex items-center justify-between px-4 py-4 rounded-xl transition-all group ${
+                          active
+                            ? 'bg-[#3b82f6] text-white'
+                            : isDark
+                              ? 'text-white/60 hover:text-white hover:bg-white/5'
+                              : 'text-[#4a5568] hover:text-[#0a0f14] hover:bg-black/5'
+                        }`}
+                      >
+                        <span className="text-[11px] font-black uppercase tracking-[0.2em]">{link.name}</span>
+                        <ArrowRight className={`w-4 h-4 transition-transform group-hover:translate-x-1 ${active ? 'opacity-100' : 'opacity-30'}`} />
+                      </Link>
+                    </motion.div>
+                  );
+                })}
+              </nav>
 
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                onClick={handleBooking}
-                className="w-full py-5 bg-white text-black font-black text-[12px] tracking-[0.3em] uppercase rounded-sm shadow-2xl active:scale-[0.98] transition-all"
-              >
-                AGENDAR AHORA
-              </motion.button>
-            </div>
-          </motion.div>
+              {/* Footer */}
+              <div className={`px-4 pb-8 pt-4 border-t space-y-3 ${isDark ? 'border-white/5' : 'border-black/8'}`}>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all ${
+                    isDark
+                      ? 'border-white/10 text-white/40 hover:text-white hover:bg-white/5'
+                      : 'border-black/10 text-[#4a5568] hover:text-[#0a0f14] hover:bg-black/5'
+                  }`}
+                >
+                  {isDark ? <><Sun className="w-3.5 h-3.5" /> Modo Claro</> : <><Moon className="w-3.5 h-3.5" /> Modo Oscuro</>}
+                </button>
+                <motion.button
+                  type="button"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  onClick={handleBooking}
+                  className="w-full py-4 bg-[#3b82f6] hover:bg-[#2563eb] text-white font-black text-[11px] tracking-[0.3em] uppercase rounded-xl shadow-lg shadow-[#3b82f6]/20 active:scale-[0.98] transition-all"
+                >
+                  Agendar Consulta
+                </motion.button>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>

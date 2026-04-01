@@ -57,6 +57,28 @@ Este documento registra la evolución, arquitectura y funcionalidades de la cara
 
 ---
 
+
+---
+
+## 🚀 Avances recientes no documentados
+
+- **Centralización de datos de contacto:**
+	El número de WhatsApp y teléfono se centralizó en constantes reutilizables, facilitando cambios futuros y evitando inconsistencias.
+
+- **Mejoras de accesibilidad y responsividad en la UI:**
+	Ajustes en botones, menús móviles, y componentes visuales para una experiencia más fluida y accesible en todos los dispositivos.
+
+- **Carga dinámica de secciones pesadas en landing:**
+	Se implementó carga dinámica para Calculadora Metabólica, Testimonios y Avales Científicos, optimizando el tiempo de carga inicial.
+
+- **Pantallas de loading personalizadas:**
+	Se agregaron pantallas de carga animadas para las páginas de Servicios y Sobre Mí, mejorando la percepción de velocidad y profesionalismo.
+
+- **Página de Sobre Mí como componente cliente:**
+	Ahora la página "Sobre Mí" utiliza un componente cliente que integra la sección de avales científicos y permite interacción directa con el sistema de turnos.
+
+---
+
 > [!NOTE]
 > Esta sección se enfoca en la captación y educación del paciente, funcionando como el escaparate principal de la marca profesional.
 > El flujo completo es: Landing → Servicios → Turnero → MercadoPago → Confirmación (`/success`).

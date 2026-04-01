@@ -1,9 +1,11 @@
 'use client';
 
 import React from 'react';
-import CalculadoraMetabolica from '@/components/CalculadoraMetabolica';
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { Zap, Sparkles, Activity } from 'lucide-react';
+
+const CalculadoraMetabolica = dynamic(() => import('@/components/CalculadoraMetabolica'), { ssr: false });
 
 export default function AdminCalculadoraPage() {
   return (

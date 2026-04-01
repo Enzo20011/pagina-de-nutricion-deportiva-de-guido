@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence, useScroll } from 'framer-motion';
 import { X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
-import ContactoSection from '@/components/ContactoSection';
-import TurneroInteractivo from '@/components/TurneroInteractivo';
 import { TurneroProvider, useTurnero } from '@/components/TurneroContext';
-import AnimatedBackground from '@/components/AnimatedBackground';
+
+const AnimatedBackground = dynamic(() => import('@/components/AnimatedBackground'), { ssr: false });
+const ContactoSection = dynamic(() => import('@/components/ContactoSection'));
+const TurneroInteractivo = dynamic(() => import('@/components/TurneroInteractivo'), { ssr: false });
 
 function PublicLayoutContent({ children }: { children: React.ReactNode }) {
   const { isOpen, closeTurnero, openTurnero } = useTurnero();
@@ -35,7 +37,6 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
     return () => { window.removeEventListener('storage', check); observer.disconnect(); };
   }, []);
 
-  // En login no mostramos ningún chrome del sitio público
   if (isLoginPage) {
     return <>{children}</>;
   }
@@ -52,14 +53,24 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
       <Navbar onBookingClick={openTurnero} />
 
       <main className={`flex-grow ${isDark ? 'bg-[#0a0f14] text-bone' : 'bg-[#f4f6fa] text-[#0a0f14]'}`}>
-        {children}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={pathname}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       <ContactoSection />
       <Footer onBookingClick={openTurnero} />
       <WhatsAppButton raised={showStickyCTA} />
 
-      {/* Sticky mobile CTA — sólo visible en mobile, aparece tras scrollear */}
+      {/* Sticky mobile CTA */}
       <AnimatePresence>
         {showStickyCTA && !isOpen && (
           <motion.div

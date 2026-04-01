@@ -1,7 +1,8 @@
-import { Instagram, Mail, Phone, MapPin, ArrowUpRight } from "lucide-react";
+import { Instagram, Phone, MapPin, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { PHONE_DISPLAY } from "@/lib/constants";
 
 interface FooterProps {
   onBookingClick?: () => void;
@@ -34,21 +35,17 @@ export default function Footer({ onBookingClick = () => {} }: FooterProps) {
             </div>
           </div>
           <div className="flex gap-3">
-            {[
-              { href: "https://www.instagram.com/lic.guidooperuk/", icon: Instagram },
-            ].map(({ href, icon: Icon }, i) => (
-              <motion.a 
-                key={i} 
-                href={href} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                whileHover={{ scale: 1.1, backgroundColor: "#3b82f6", color: "#ffffff", boxShadow: "0 0 20px rgba(59,130,246,0.4)" }}
-                whileTap={{ scale: 0.9 }}
-                className="w-10 h-10 bg-[#1a2027] text-[#a7abb2] rounded-sm flex items-center justify-center transition-all duration-300 border border-[#2a3040]"
-              >
-                <Icon className="w-4 h-4" />
-              </motion.a>
-            ))}
+            <motion.a
+              href="https://www.instagram.com/lic.guidooperuk/"
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ scale: 1.1, backgroundColor: "#3b82f6", color: "#ffffff", boxShadow: "0 0 20px rgba(59,130,246,0.4)" }}
+              whileTap={{ scale: 0.9 }}
+              className="w-10 h-10 bg-[#1a2027] text-[#a7abb2] rounded-sm flex items-center justify-center transition-all duration-300 border border-[#2a3040]"
+              aria-label="Instagram de Guido Operuk"
+            >
+              <Instagram className="w-4 h-4" />
+            </motion.a>
           </div>
         </div>
 
@@ -92,7 +89,7 @@ export default function Footer({ onBookingClick = () => {} }: FooterProps) {
             </div>
             <div className="flex items-center gap-4">
               <Phone className="w-4 h-4 text-[#a7abb2] flex-shrink-0" />
-              <p className="font-body text-xs text-[#a7abb2]">+54 376 415-2484</p>
+              <p className="font-body text-xs text-[#a7abb2]">{PHONE_DISPLAY}</p>
             </div>
           </div>
         </div>
@@ -106,7 +103,6 @@ export default function Footer({ onBookingClick = () => {} }: FooterProps) {
         <div className="flex gap-8">
           <Link href="/privacidad" className="body-sm !text-[10px] !text-[#43484e] hover:text-[#a7abb2] transition-colors">Privacidad</Link>
           <Link href="/terminos" className="body-sm !text-[10px] !text-[#43484e] hover:text-[#a7abb2] transition-colors">Términos</Link>
-          <span className="body-sm !text-[10px] !text-[#2a3040]">v2.0</span>
         </div>
       </div>
     </footer>

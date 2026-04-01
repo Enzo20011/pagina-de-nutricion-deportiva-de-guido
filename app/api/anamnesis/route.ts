@@ -68,7 +68,12 @@ export async function POST(request: Request) {
       peso: dataToSave.peso ? Number(dataToSave.peso) : null,
       altura: dataToSave.altura ? Number(dataToSave.altura) : null,
       edad: dataToSave.edad ? Number(dataToSave.edad) : null,
-      sexo: dataToSave.sexo
+      sexo: dataToSave.sexo,
+      caloriasObjetivo: dataToSave.caloriasObjetivo != null ? Number(dataToSave.caloriasObjetivo) : null,
+      caloriasOffset: dataToSave.caloriasOffset != null ? Number(dataToSave.caloriasOffset) : null,
+      macrosCarbos: dataToSave.macrosCarbos != null ? Number(dataToSave.macrosCarbos) : null,
+      macrosProteinas: dataToSave.macrosProteinas != null ? Number(dataToSave.macrosProteinas) : null,
+      macrosGrasas: dataToSave.macrosGrasas != null ? Number(dataToSave.macrosGrasas) : null,
     };
 
     // Buscar registro existente para hacer upsert

@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import ServiciosPageClient from "@/components/ServiciosPageClient";
+
+export const metadata: Metadata = {
+  title: "Servicios",
+  description: "Planes de nutrición deportiva y clínica personalizados. Evaluación antropométrica ISAK, seguimiento continuo y consultas presenciales u online en Posadas, Misiones.",
+  alternates: { canonical: "/servicios" },
+  openGraph: {
+    url: "https://guidooperuk.com/servicios",
+    title: "Servicios | Guido Operuk Nutrición",
+    description: "Planes de nutrición deportiva y clínica personalizados. Evaluación antropométrica ISAK, seguimiento continuo y consultas en Posadas, Misiones.",
+  },
+};
 
 export default function ServiciosPage() {
   return (

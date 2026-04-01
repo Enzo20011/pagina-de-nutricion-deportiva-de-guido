@@ -1,33 +1,43 @@
 'use client';
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import PanelClinico from '@/components/PanelClinico';
-import PanelAntropometria from '@/components/PanelAntropometria';
-import PlanAlimentario from '@/components/PlanAlimentario';
-import DashboardEvolucion from '@/components/DashboardEvolucion';
 import BlocNotas from '@/components/BlocNotas';
-import { 
-  User, 
-  ClipboardList, 
-  Ruler, 
+
+const TabSkeleton = () => (
+  <div className="space-y-6 animate-pulse">
+    <div className="h-8 w-48 bg-white/5 rounded-sm" />
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="h-64 bg-white/5 rounded-sm border border-white/5" />
+      <div className="h-64 bg-white/5 rounded-sm border border-white/5" />
+    </div>
+    <div className="h-48 bg-white/5 rounded-sm border border-white/5" />
+  </div>
+);
+
+const PanelAntropometria = dynamic(() => import('@/components/PanelAntropometria'), { loading: () => <TabSkeleton /> });
+const PlanAlimentario    = dynamic(() => import('@/components/PlanAlimentario'),    { loading: () => <TabSkeleton /> });
+const DashboardEvolucion = dynamic(() => import('@/components/DashboardEvolucion'), { loading: () => <TabSkeleton /> });
+import {
+  User,
+  ClipboardList,
+  Ruler,
   ChevronLeft,
   Calendar,
   Utensils,
   TrendingUp,
-  Sparkles,
   FileText
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import Loader from '@/components/Loader';
 
 import clsx from 'clsx';
 import { useConsultaStore } from '@/store/useConsultaStore';
 
 export default function ConsultaPage({ params }: { params: { id: string } }) {
-  const [activeTab, setActiveTab] = useState<'anamnesis' | 'antropometria' | 'dieta' | 'evolucion' | 'notas'>('notas');
-  const [isExporting, setIsExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'anamnesis' | 'antropometria' | 'dieta' | 'evolucion'>('anamnesis');
+  const [exportingType, setExportingType] = useState<'sesion' | 'dieta' | null>(null);
   
   const { 
     anamnesis, 
@@ -43,12 +53,26 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
   const lastPatientIdRef = React.useRef<string | null>(null);
   React.useEffect(() => {
     if (params.id && params.id !== lastPatientIdRef.current) {
-       clearSession();
+       // Solo limpiar al CAMBIAR de paciente, no al recargar la misma página
+       if (lastPatientIdRef.current !== null) {
+         clearSession();
+       }
        lastPatientIdRef.current = params.id;
     }
   }, [params.id, clearSession]);
 
-  const consultaData = { anamnesis, antropometria, dieta };
+  const { data: notasData } = useQuery({
+    queryKey: ['notas', params.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/notas?pacienteId=${params.id}`);
+      if (!res.ok) throw new Error('Error al cargar notas');
+      return res.json();
+    },
+    enabled: !!params.id,
+  });
+
+  const notas = notasData?.data || [];
+  const consultaData = { anamnesis, antropometria, dieta, notas };
 
   const { data: paciente, isLoading } = useQuery({
     queryKey: ['paciente', params.id],
@@ -103,33 +127,78 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
                 <p className="text-[10px] text-white/20 font-bold uppercase tracking-[0.2em] flex items-center gap-2">
                    <Calendar className="w-3 h-3 opacity-40" /> {isLoading ? '...' : new Date(paciente?.data?.createdAt || Date.now()).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase()} <span className="w-1 h-1 rounded-full bg-white/10" /> {paciente?.data?.status?.toUpperCase() || 'ACTIVO'}
                 </p>
-                 <button
-                  type="button"
-                  onClick={async () => {
-                    if (isExporting) return;
-                    setIsExporting(true);
-                    try {
-                      const { exportarConsultaLazy } = await import('@/utils/exportPdfAction');
-                      await exportarConsultaLazy(paciente, consultaData);
-                    } catch (err) {
-                      console.error(err);
-                    } finally {
-                      setIsExporting(false);
-                    }
-                  }}
-                  disabled={isExporting}
-                  className={clsx(
-                    "bg-white px-5 py-3 min-h-[44px] rounded-sm text-[9px] font-bold uppercase tracking-[0.2em] text-[#0a0f14] transition-all duration-75 flex items-center gap-3 shadow-xl",
-                    isExporting ? "opacity-50 cursor-not-allowed" : "hover:bg-white/90"
-                  )}
-                >
-                  {isExporting ? (
-                    <div className="w-4 h-4 border-2 border-[#0a0f14]/20 border-t-[#0a0f14] rounded-full animate-spin" />
-                  ) : (
-                    <FileText className="w-4 h-4" />
-                  )}
-                  {isExporting ? "Generando..." : "PDF"}
-                </button>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (exportingType) return;
+                      setExportingType('sesion');
+                      try {
+                        const { exportarConsultaLazy } = await import('@/utils/exportPdfAction');
+                        await exportarConsultaLazy(paciente, consultaData);
+                      } catch (err) {
+                        console.error(err);
+                      } finally {
+                        setExportingType(null);
+                      }
+                    }}
+                    disabled={!!exportingType}
+                    className={clsx(
+                      "bg-white px-5 py-3 min-h-[44px] rounded-sm text-[9px] font-bold uppercase tracking-[0.2em] text-[#0a0f14] transition-all duration-75 flex items-center gap-3 shadow-xl",
+                      exportingType === 'sesion' ? "opacity-90" : !!exportingType ? "opacity-50 cursor-not-allowed" : "hover:bg-white/90"
+                    )}
+                  >
+                    {exportingType === 'sesion' ? (
+                      <div className="w-4 h-4 border-2 border-[#0a0f14]/20 border-t-[#0a0f14] rounded-full animate-spin" />
+                    ) : (
+                      <FileText className="w-4 h-4" />
+                    )}
+                    {exportingType === 'sesion' ? "..." : "SESIÓN"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (exportingType) return;
+                      setExportingType('dieta');
+                      try {
+                        const { exportarDietaLazy } = await import('@/utils/exportPdfAction');
+                        
+                        const antroFlat = {
+                           peso: antropometria?.mediciones?.peso || anamnesis?.peso,
+                           altura: antropometria?.mediciones?.altura || anamnesis?.altura,
+                           cintura: antropometria?.mediciones?.perimetros?.cintura,
+                           cadera: antropometria?.mediciones?.perimetros?.cadera,
+                        };
+
+                        await exportarDietaLazy(
+                          paciente?.data, 
+                          dieta?.totals || {}, 
+                          dieta?.meals || [], 
+                          antroFlat, 
+                          dieta?.tablaManual || [], 
+                          dieta?.recomendaciones || []
+                        );
+                      } catch (err) {
+                        console.error(err);
+                      } finally {
+                        setExportingType(null);
+                      }
+                    }}
+                    disabled={!!exportingType}
+                    className={clsx(
+                      "bg-[#3b82f6] px-5 py-3 min-h-[44px] rounded-sm text-[9px] font-bold uppercase tracking-[0.2em] text-white transition-all duration-75 flex items-center gap-3 shadow-xl",
+                      exportingType === 'dieta' ? "opacity-90" : !!exportingType ? "opacity-50 cursor-not-allowed" : "hover:bg-white/90"
+                    )}
+                  >
+                    {exportingType === 'dieta' ? (
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Utensils className="w-4 h-4" />
+                    )}
+                    {exportingType === 'dieta' ? "..." : "DIETA"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -138,9 +207,8 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
         {/* TOP LEVEL NAVIGATION TABS */}
         <div className="flex bg-[#070C14]/60 p-1.5 rounded-sm border border-white/5 relative z-10 shadow-inner backdrop-blur-3xl mt-4 lg:mt-0 items-center w-full lg:w-fit max-w-full overflow-x-auto scrollbar-hide shrink-0 gap-0.5">
           {[
-            { id: 'notas', label: 'Notas', shortLabel: 'Notas', icon: FileText, hasData: false },
             { id: 'anamnesis', label: 'Historial', shortLabel: 'Hist.', icon: ClipboardList, hasData: !!anamnesis },
-            { id: 'antropometria', label: 'Biometría', shortLabel: 'Bio.', icon: Ruler, hasData: !!antropometria },
+            { id: 'antropometria', label: 'Antropometría', shortLabel: 'Antro.', icon: Ruler, hasData: !!antropometria },
             { id: 'dieta', label: 'Plan Nutricional', shortLabel: 'Plan', icon: Utensils, hasData: !!dieta },
             { id: 'evolucion', label: 'Evolución', shortLabel: 'Evol.', icon: TrendingUp, hasData: true },
           ].map((tab) => (
@@ -171,39 +239,47 @@ export default function ConsultaPage({ params }: { params: { id: string } }) {
       <main className="relative min-h-[600px]">
         <div className="bg-[#0e1419] rounded-sm border border-white/5 p-3 sm:p-6 shadow-xl overflow-hidden min-h-[600px] relative">
            <div className="bg-[#0a0f14]/40 rounded-sm p-3 sm:p-6 lg:p-10 min-h-[500px] shadow-inner border border-white/5">
-             {activeTab === 'anamnesis' && (
-               <PanelClinico
-                 pacienteId={params.id}
-                 onSync={setAnamnesis}
-                 pacienteInitialData={paciente?.data}
-                 antropometriaData={antropometria}
-               />
-             )}
-             {activeTab === 'antropometria' && (
+
+             {/* Todos los paneles se mantienen montados, solo se ocultan con CSS */}
+             <div style={{ display: activeTab === 'anamnesis' ? 'block' : 'none' }}>
+               <div className="space-y-10">
+                 <PanelClinico
+                   pacienteId={params.id}
+                   onSync={setAnamnesis}
+                   pacienteInitialData={paciente?.data}
+                   antropometriaData={antropometria}
+                   isActive={activeTab === 'anamnesis'}
+                 />
+                 <BlocNotas pacienteId={params.id} />
+               </div>
+             </div>
+
+             <div style={{ display: activeTab === 'antropometria' ? 'block' : 'none' }}>
                <PanelAntropometria
                  pacienteId={params.id}
                  onSync={setAntropometria}
                  pacienteInitialData={paciente?.data}
                  anamnesisData={anamnesis}
+                 isActive={activeTab === 'antropometria'}
                />
-             )}
-             {activeTab === 'dieta' && (
+             </div>
+
+             <div style={{ display: activeTab === 'dieta' ? 'block' : 'none' }}>
                <PlanAlimentario
-                pacienteId={params.id}
-                onSync={setDieta}
-                anamnesisData={anamnesis}
+                 pacienteId={params.id}
+                 onSync={setDieta}
+                 anamnesisData={anamnesis}
                />
-             )}
-             {activeTab === 'evolucion' && (
+             </div>
+
+             <div style={{ display: activeTab === 'evolucion' ? 'block' : 'none' }}>
                <DashboardEvolucion
-                pacienteId={params.id}
-                paciente={paciente || {}}
-                sessionData={consultaData}
+                 pacienteId={params.id}
+                 paciente={paciente || {}}
+                 sessionData={consultaData}
                />
-             )}
-             {activeTab === 'notas' && (
-               <BlocNotas pacienteId={params.id} />
-             )}
+             </div>
+
            </div>
         </div>
       </main>

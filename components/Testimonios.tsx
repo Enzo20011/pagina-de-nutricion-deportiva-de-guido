@@ -6,22 +6,22 @@ import { ChevronLeft, ChevronRight, Quote } from 'lucide-react';
 
 const TESTIMONIOS = [
   {
-    nombre: 'María G.',
-    resultado: '-8 kg en 3 meses',
-    disciplina: 'Running amateur',
-    texto: 'La precisión en el ajuste de carbohidratos cambió totalmente mi recuperación entre sesiones de pista. Los resultados hablan solos.',
+    nombre: 'Paula S.',
+    resultado: 'Cambio de hábitos real',
+    disciplina: 'Entrenamiento funcional',
+    texto: 'Me cambió la cabeza. Antes probaba dietas de esas "milagrosas" y no bajaba un gramo. Con Guido aprendí a comer de verdad y los resultados se notan al toque.',
   },
   {
     nombre: 'Lucas M.',
-    resultado: '+4 kg de masa muscular',
-    disciplina: 'Crossfit & musculación',
-    texto: 'El enfoque científico en la recomposición corporal me permitió competir en una categoría menor sin perder potencia. Metodología sin igual.',
+    resultado: 'Mejora en rendimiento',
+    disciplina: 'Crossfit & Gym',
+    texto: 'Increíble cómo mejoré la potencia entrenando. No perdí ni un poquito de fuerza y me siento mucho más ágil. El plan es a medida, nada de fotocopias genéricas.',
   },
   {
     nombre: 'Sofía R.',
-    resultado: 'Energía y Vitalidad',
-    disciplina: 'Ciclismo competitivo',
-    texto: 'No solo mejoró mis resultados, sino que entendí el porqué de cada gramo de macronutrientes en mi plato. Ciencia real aplicada al campo.',
+    resultado: 'Bienestar general',
+    disciplina: 'Vida activa',
+    texto: 'Lo mejor es que no es una dieta sufrida. Como rico, entiendo lo que hago y rindo mejor que nunca en el laburo y cuando voy a entrenar. Es otra vida, de verdad.',
   },
 ];
 

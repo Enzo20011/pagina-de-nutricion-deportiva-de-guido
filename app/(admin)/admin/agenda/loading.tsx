@@ -1,11 +1,42 @@
 export default function Loading() {
   return (
-    <div className="max-w-[1200px] mx-auto p-4 sm:p-6 space-y-6 animate-pulse">
-      <div className="h-6 w-32 bg-white/5 rounded-sm" />
-      <div className="grid grid-cols-7 gap-2">
-        {[...Array(35)].map((_, i) => (
-          <div key={i} className="h-20 bg-white/5 rounded-sm border border-white/5" />
-        ))}
+    <div className="max-w-[1200px] mx-auto px-4 md:px-8 pb-20 space-y-8 animate-pulse">
+      {/* Header */}
+      <div className="pt-8 space-y-3">
+        <div className="h-2 w-36 bg-white/5 rounded-sm" />
+        <div className="h-12 w-56 bg-white/5 rounded-sm" />
+        <div className="h-2 w-48 bg-white/5 rounded-sm" />
+      </div>
+      {/* Calendar grid + sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Calendar */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Month nav */}
+          <div className="flex items-center justify-between">
+            <div className="h-8 w-8 bg-white/5 rounded-sm" />
+            <div className="h-5 w-32 bg-white/5 rounded-sm" />
+            <div className="h-8 w-8 bg-white/5 rounded-sm" />
+          </div>
+          {/* Day labels */}
+          <div className="grid grid-cols-7 gap-1">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="h-4 bg-white/5 rounded-sm" />
+            ))}
+          </div>
+          {/* Calendar cells */}
+          <div className="grid grid-cols-7 gap-1">
+            {[...Array(35)].map((_, i) => (
+              <div key={i} className="h-14 bg-white/[0.03] rounded-sm border border-white/5" />
+            ))}
+          </div>
+        </div>
+        {/* Day appointments */}
+        <div className="space-y-4">
+          <div className="h-5 w-32 bg-white/5 rounded-sm" />
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-20 bg-white/[0.03] rounded-sm border border-white/5" />
+          ))}
+        </div>
       </div>
     </div>
   );

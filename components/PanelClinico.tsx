@@ -19,7 +19,9 @@ import {
   ArrowUp,
   Equal,
   User,
-  Zap
+  Zap,
+  Copy,
+  Check
 } from 'lucide-react';
 import AnimatedNumber from './AnimatedNumber';
 import { anamnesisSchema, draftAnamnesisSchema, type AnamnesisInput } from '@/schemas/anamnesisSchema';
@@ -34,19 +36,21 @@ export default function PanelClinico({
   pacienteId, 
   onSync,
   pacienteInitialData,
-  antropometriaData
+  antropometriaData,
+  isActive
 }: { 
   pacienteId: string, 
   onSync?: (data: any) => void,
   pacienteInitialData?: any,
-  antropometriaData?: any
+  antropometriaData?: any,
+  isActive?: boolean
 }) {
   const queryClient = useQueryClient();
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 1. Fetch data from server
-  const { data: serverData, isLoading } = useQuery({
+  const { data: serverData, isLoading, isFetched: anamnesisF } = useQuery({
     queryKey: ['anamnesis', pacienteId],
     queryFn: async () => {
       const res = await fetch(`/api/anamnesis?pacienteId=${pacienteId}`, { cache: 'no-store' });
@@ -98,36 +102,92 @@ export default function PanelClinico({
 
   // Sync server data to form only ONCE per patient load
   const hasLoadedRef = React.useRef(false);
+  const [copied, setCopied] = useState(false);
+
+  // RESET ON PATIENT CHANGE (V6 STABILIZATION)
+  React.useEffect(() => {
+    hasLoadedRef.current = false;
+    // Clear form briefly while loading new patient
+    reset({
+      pacienteId: pacienteId,
+      motivoConsulta: '',
+      alergiasIntolerancias: 'Ninguna',
+      nivelActividad: 'Sedentario',
+      ritmoIntestinal: 'Normal',
+      horasSueno: 8,
+      nivelEstres: 5,
+      peso: 70,
+      altura: 170,
+      sexo: 'masculino',
+      tipoObjetivo: 'mantenimiento'
+    } as any);
+  }, [pacienteId, reset]);
+
+  const handleCopyResults = () => {
+    const text = `Resultados Clínicos - ${pacienteInitialData?.nombre || 'Paciente'}\n` +
+                 `Peso: ${watchedFields.peso}kg | Altura: ${watchedFields.altura}cm | Edad: ${watchedFields.edad}\n` +
+                 `GET: ${resultados.get} kcal\n` +
+                 `Proteínas: ${macros.proteinas}g | Carbohidratos: ${macros.carbos}g | Grasas: ${macros.grasas}g`;
+    
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  const lastSyncedPesoRef = React.useRef<number | null>(null);
+  const lastSyncedAlturaRef = React.useRef<number | null>(null);
+  const isInternalUpdateRef = React.useRef(false);
+ 
+
+  // Hidratar desde localStorage INMEDIATAMENTE (antes de que responda el servidor)
+  React.useEffect(() => {
+    if (hasLoadedRef.current) return;
+    const cached = localStorage.getItem(`anamnesis-${pacienteId}`);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        reset({ ...parsed, pacienteId });
+        hasLoadedRef.current = true;
+      } catch {}
+    }
+  }, [pacienteId]);
+
   React.useEffect(() => {
     if (serverData?.data && !hasLoadedRef.current) {
       const data = serverData.data;
-      // Only reset if we have saved data to hydrate
-      if (Object.keys(data).length > 2) { // 2 keys usually: _id, pacienteId
-        reset({
-          ...watchedFields,
-          ...data,
-          pacienteId: pacienteId
-        });
+      if (Object.keys(data).length > 2) {
+        reset({ ...watchedFields, ...data, pacienteId });
+        if (!macrosLoadedRef.current) {
+          if (data.caloriasOffset != null) setCaloriasOffset(data.caloriasOffset);
+          if (data.macrosCarbos != null && data.macrosProteinas != null && data.macrosGrasas != null) {
+            setMacrosPct({ carbos: data.macrosCarbos, proteinas: data.macrosProteinas, grasas: data.macrosGrasas });
+          }
+          macrosLoadedRef.current = true;
+        }
         hasLoadedRef.current = true;
       }
-    } else if (pacienteInitialData && !hasLoadedRef.current && !serverData?.data) {
-       // Fallback to patient root data if no anamnesis yet
+    } else if (serverData?.data && hasLoadedRef.current) {
+      // Ya hidratado desde localStorage, solo restaurar macros si los tiene el servidor
+      const data = serverData.data;
+      if (!macrosLoadedRef.current && data.macrosCarbos != null) {
+        if (data.caloriasOffset != null) setCaloriasOffset(data.caloriasOffset);
+        setMacrosPct({ carbos: data.macrosCarbos, proteinas: data.macrosProteinas, grasas: data.macrosGrasas });
+        macrosLoadedRef.current = true;
+      }
+    } else if (pacienteInitialData && !hasLoadedRef.current && anamnesisF && !serverData?.data) {
        const initialValues = {
          ...watchedFields,
          motivoConsulta: pacienteInitialData.objetivo || '',
          peso: pacienteInitialData.peso || 70,
          altura: pacienteInitialData.altura || 170,
          sexo: pacienteInitialData.sexo || 'masculino',
-         edad: pacienteInitialData.fechaNacimiento ? 
+         edad: pacienteInitialData.fechaNacimiento ?
                new Date().getFullYear() - new Date(pacienteInitialData.fechaNacimiento).getFullYear() : 30,
        };
        reset(initialValues);
        hasLoadedRef.current = true;
-       
-       // Trigger immediate save for new patients to ensure "Sincronizado" state
        saveMutation.mutate({ ...initialValues, isDraft: false });
     }
-  }, [serverData, reset, pacienteId, pacienteInitialData]);
+  }, [serverData, anamnesisF, reset, pacienteId, pacienteInitialData]);
 
   // Sync latest biometry to form ONLY if form is still at default (new patient session)
   React.useEffect(() => {
@@ -141,6 +201,9 @@ export default function PanelClinico({
   // Reset flag when patient changes
   React.useEffect(() => {
     hasLoadedRef.current = false;
+    macrosLoadedRef.current = false;
+    setCaloriasOffset(0);
+    setMacrosPct({ carbos: 50, proteinas: 20, grasas: 30 });
   }, [pacienteId]);
 
   // PROACTIVE SYNC: If patient root data changes (e.g. edited in modal), update clinical form
@@ -165,32 +228,42 @@ export default function PanelClinico({
 
   // REACTIVE SYNC FROM BIOMETRY (ANTROPOMETRIA)
   // If user edits weight in Biometry tab, it should reflect here instantly
+  // WE SYNC EVEN IF INACTIVE: This keeps our internal form updated so we don't back-sync OLD data when we become active.
   React.useEffect(() => {
     if (antropometriaData?.mediciones) {
-        const { peso: antroPeso, altura: antroAltura } = antropometriaData.mediciones;
-        const currentPeso = watchedFields.peso;
-        const currentAltura = watchedFields.altura;
+        const clPeso = Number(antropometriaData.mediciones.peso);
+        const clAltura = Number(antropometriaData.mediciones.altura);
 
-        if (antroPeso && antroPeso !== currentPeso) {
-            setValue('peso', antroPeso);
+        // REGRESIÓN DE BUCLE: Solo sincronizar si el usuario NO está editando estos campos aquí
+        const isPesoFocused = document.activeElement?.id === 'calc-peso';
+        const isAlturaFocused = document.activeElement?.id === 'calc-altura';
+
+        // Threshold comparison to break floating point loops + Focus lock
+        if (clPeso && !isPesoFocused && Math.abs(clPeso - (lastSyncedPesoRef.current || 0)) > 0.01) {
+            isInternalUpdateRef.current = true;
+            setValue('peso', clPeso, { shouldDirty: false });
+            lastSyncedPesoRef.current = clPeso;
+            setTimeout(() => { isInternalUpdateRef.current = false; }, 100);
         }
-        if (antroAltura && antroAltura !== currentAltura) {
-            setValue('altura', antroAltura);
+        
+        if (clAltura && !isAlturaFocused && Math.abs(clAltura - (lastSyncedAlturaRef.current || 0)) > 0.01) {
+            isInternalUpdateRef.current = true;
+            setValue('altura', clAltura, { shouldDirty: false });
+            lastSyncedAlturaRef.current = clAltura;
+            setTimeout(() => { isInternalUpdateRef.current = false; }, 100);
         }
     }
-  }, [antropometriaData?.mediciones?.peso, antropometriaData?.mediciones?.altura, setValue]);
+  }, [antropometriaData?.mediciones?.peso, antropometriaData?.mediciones?.altura, setValue, isActive]);
+ 
+ 
 
   const [macrosPct, setMacrosPct] = useState({ carbos: 50, proteinas: 20, grasas: 30 });
   const [caloriasOffset, setCaloriasOffset] = useState(0);
+  const macrosLoadedRef = React.useRef(false);
 
   const handleMacroPctChange = (changedKey: 'carbos' | 'proteinas' | 'grasas', newVal: number) => {
     const clamped = Math.max(0, Math.min(100, newVal));
-    const otherKeys = (['carbos', 'proteinas', 'grasas'] as const).filter(k => k !== changedKey);
-    const remaining = 100 - clamped;
-    const sumOthers = macrosPct[otherKeys[0]] + macrosPct[otherKeys[1]];
-    let a = sumOthers > 0 ? Math.round((macrosPct[otherKeys[0]] / sumOthers) * remaining) : Math.round(remaining / 2);
-    let b = remaining - a;
-    setMacrosPct({ ...macrosPct, [changedKey]: clamped, [otherKeys[0]]: a, [otherKeys[1]]: b });
+    setMacrosPct(prev => ({ ...prev, [changedKey]: clamped }));
   };
 
   const resultados = React.useMemo(() => calcularGastoEnergetico(
@@ -216,6 +289,16 @@ export default function PanelClinico({
   React.useEffect(() => {
     setValue('caloriasObjetivo', currentTargetKcal);
   }, [currentTargetKcal, setValue]);
+
+  // Sync caloriasOffset and macrosPct to form for persistence
+  React.useEffect(() => {
+    setValue('caloriasOffset' as any, caloriasOffset);
+  }, [caloriasOffset, setValue]);
+  React.useEffect(() => {
+    setValue('macrosCarbos' as any, macrosPct.carbos);
+    setValue('macrosProteinas' as any, macrosPct.proteinas);
+    setValue('macrosGrasas' as any, macrosPct.grasas);
+  }, [macrosPct, setValue]);
 
   const macros = React.useMemo(() => calcularMacros(
     currentTargetKcal,
@@ -260,7 +343,10 @@ export default function PanelClinico({
   const lastSyncRef = React.useRef<string>('');
   
   React.useEffect(() => {
+    if (!isActive) return; // PROCESO DE ESTABILIZACIÓN V4
     if (onSync) {
+      if (isInternalUpdateRef.current) return; // Break Loop
+
       const syncObj = {
         anamnesis: watchedFields,
         resultados,
@@ -277,19 +363,26 @@ export default function PanelClinico({
       }
     }
   }, [watchedFields, resultados, macros, onSync, deficit, mantenimiento, superavit, currentTargetKcal]);
+ 
 
-  // Autosave debounced — saves using DRAFT schema to allow partial data
+  // Guardar en localStorage en cada cambio (backup instantáneo ante F5)
+  React.useEffect(() => {
+    if (!hasLoadedRef.current || !pacienteId) return;
+    localStorage.setItem(`anamnesis-${pacienteId}`, JSON.stringify(watchedFields));
+  }, [watchedFields, pacienteId]);
+
+  // Autosave debounced al servidor (reducido a 800ms)
   const autoSaveRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   React.useEffect(() => {
     if (!watchedFields.pacienteId) return;
     if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
     autoSaveRef.current = setTimeout(() => {
-      // Validate with draft schema but save as REAL (isDraft: false) to ensure absolute persistence
+      if (!hasLoadedRef.current) return;
       const validation = draftAnamnesisSchema.safeParse(watchedFields);
       if (validation.success) {
         saveMutation.mutate({ ...watchedFields, isDraft: false });
       }
-    }, 1500);
+    }, 800);
     return () => { if (autoSaveRef.current) clearTimeout(autoSaveRef.current); };
   }, [watchedFields]);
 
@@ -333,16 +426,20 @@ export default function PanelClinico({
           </div>
         </header>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl space-y-12 group/form relative overflow-hidden">
+        <form onSubmit={handleSubmit(onSubmit)} className="bg-[#0e1419] p-4 sm:p-8 rounded-sm border border-white/5 shadow-xl space-y-8 sm:space-y-12 group/form relative overflow-hidden">
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/[0.01] rounded-full blur-[120px] -ml-48 -mb-48" />
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 relative z-10">
             
             <div className="space-y-4">
               <label htmlFor="motivoConsulta" className="text-[10px] font-bold text-white/10 uppercase tracking-[0.4em] pl-6">Motivo de Consulta</label>
               {/* Persistent Objective Fields */}
               <input type="hidden" {...register('tipoObjetivo')} id="tipoObjetivo-hidden" />
               <input type="hidden" {...register('caloriasObjetivo')} id="caloriasObjetivo-hidden" />
+              <input type="hidden" {...register('caloriasOffset' as any)} id="caloriasOffset-hidden" />
+              <input type="hidden" {...register('macrosCarbos' as any)} id="macrosCarbos-hidden" />
+              <input type="hidden" {...register('macrosProteinas' as any)} id="macrosProteinas-hidden" />
+              <input type="hidden" {...register('macrosGrasas' as any)} id="macrosGrasas-hidden" />
               
               <textarea 
                 id="motivoConsulta"
@@ -446,10 +543,10 @@ export default function PanelClinico({
           </div>
         </header>
 
-        <section className="bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl relative overflow-hidden">
+        <section className="bg-[#0e1419] p-4 sm:p-8 rounded-sm border border-white/5 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-80 h-80 bg-white/[0.01] rounded-full blur-[90px] -ml-40 -mt-40" />
           
-          <div className="grid grid-cols-2 gap-10 mb-16 relative z-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10 mb-8 sm:mb-16 relative z-10">
             {[
                { label: 'SEXO', key: 'sexo', icon: User, type: 'select', options: ['masculino', 'femenino'], id: 'calc-sexo' },
                { label: 'ACTIVIDAD', key: 'nivelActividad', icon: Zap, type: 'select', options: ['Sedentario', 'Ligero', 'Moderado', 'Intenso', 'Atleta'], id: 'calc-actividad' },
@@ -479,23 +576,32 @@ export default function PanelClinico({
                       type="number" 
                       step={item.key === 'edad' ? '1' : '0.1'}
                       {...register(item.key as any, { valueAsNumber: true })}
-                      className="w-full p-4 bg-[#0a0f14]/60 border border-white/5 rounded-sm text-2xl font-bold text-white focus:border-[#3b82f6]/30 outline-none transition-all duration-75 shadow-inner group-hover/input:border-white/10 tracking-tight" 
+                      className="w-full p-3 sm:p-4 pr-10 bg-[#0a0f14]/60 border border-white/5 rounded-sm text-xl sm:text-2xl font-bold text-white focus:border-[#3b82f6]/30 outline-none transition-all duration-75 shadow-inner group-hover/input:border-white/10 tracking-tight tabular-nums"
                       aria-label={`Ingresar ${item.label.toLowerCase()}`}
                     />
                   )}
-                  <item.icon className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/5 group-focus-within/input:text-[#3b82f6]/40 transition-all duration-75 pointer-events-none" />
+                  <item.icon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-transparent group-focus-within/input:text-[#3b82f6]/50 transition-colors duration-150 pointer-events-none" />
                 </div>
               </div>
             ))}
           </div>
 
           <div className="mb-12 relative group">
-             <div className="relative flex items-center justify-between p-10 bg-[#3b82f6] text-white rounded-sm shadow-xl overflow-hidden group-hover:-translate-y-1 transition-all duration-500">
-                <div className="relative z-10">
+             <div className="relative flex items-center justify-between p-6 sm:p-10 bg-[#3b82f6] text-white rounded-sm shadow-xl overflow-hidden group-hover:-translate-y-1 transition-all duration-500">
+                <div className="relative z-10 flex-1">
                   <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/60 mb-6 leading-none">TOTAL DIARIO (GET)</p>
-                  <p className="text-4xl font-bold tracking-tight leading-none"><AnimatedNumber value={resultados.get} /> <span className="text-xl opacity-40 font-bold pr-2">KCAL</span></p>
+                  <p className="text-3xl sm:text-4xl font-bold tracking-tight leading-none"><AnimatedNumber value={resultados.get} /> <span className="text-lg sm:text-xl opacity-40 font-bold pr-2">KCAL</span></p>
                 </div>
-                <Activity className="w-24 h-24 opacity-10 absolute right-[-10px] bottom-[-20px]" />
+                <div className="flex flex-col gap-4 relative z-10">
+                   <button 
+                     type="button"
+                     onClick={handleCopyResults}
+                     className="p-3 bg-white/10 hover:bg-white/20 rounded-sm border border-white/10 transition-all group/copy"
+                   >
+                     {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-white/40 group-hover/copy:text-white" />}
+                   </button>
+                   <Activity className="w-12 h-12 opacity-10" />
+                </div>
              </div>
           </div>
 
@@ -578,14 +684,14 @@ export default function PanelClinico({
             {/* #4 — Macros editables */}
             <div className="space-y-8">
                {([
-                 { label: 'Carbohidratos', key: 'carbos' as const, g: macros.carbohidratos, color: 'bg-white shadow-[0_0_30px_rgba(255,255,255,0.2)]' },
-                 { label: 'Proteínas', key: 'proteinas' as const, g: macros.proteinas, color: 'bg-[#1B365D] shadow-[0_0_30px_rgba(27,54,93,0.3)] border border-white/10' },
-                 { label: 'Grasas', key: 'grasas' as const, g: macros.grasas, color: 'bg-white/5' }
+                 { label: 'Carbohidratos', key: 'carbos' as const, g: macros.carbohidratos, color: 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]' },
+                 { label: 'Proteínas', key: 'proteinas' as const, g: macros.proteinas, color: 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]' },
+                 { label: 'Grasas', key: 'grasas' as const, g: macros.grasas, color: 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' }
                ]).map((macro) => (
                  <div key={macro.key} className="space-y-4 group">
-                   <div className="flex items-center justify-between gap-4">
-                     <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/20 group-hover:text-white transition-all duration-75 flex-1">{macro.label}</span>
-                     <div className="flex items-center gap-2">
+                   <div className="flex items-center gap-3">
+                     <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/20 group-hover:text-white transition-all duration-75 flex-1 min-w-0 truncate">{macro.label}</span>
+                     <div className="flex items-center gap-2 shrink-0">
                        <input
                          type="number"
                          min={0}
@@ -593,11 +699,11 @@ export default function PanelClinico({
                          value={macrosPct[macro.key]}
                          onChange={e => handleMacroPctChange(macro.key, parseInt(e.target.value) || 0)}
                          aria-label={`Porcentaje de ${macro.label}`}
-                         className="w-14 text-center bg-[#0a0f14] border border-white/10 focus:border-[#3b82f6]/40 rounded-sm outline-none text-white font-bold text-sm py-1 px-2"
+                         className="w-14 text-center bg-[#0a0f14] border border-white/10 focus:border-[#3b82f6]/40 rounded-sm outline-none text-white font-bold text-sm py-1.5 px-1 tabular-nums"
                        />
                        <span className="text-white/20 font-bold text-sm">%</span>
                      </div>
-                     <span className="text-white text-2xl tracking-tight font-bold w-16 text-right">{macro.g}g</span>
+                     <span className="text-white text-lg tracking-tight font-bold shrink-0 w-16 text-right tabular-nums">{macro.g}g</span>
                    </div>
                    <div
                     className="w-full h-2 bg-[#070C14]/80 rounded-full overflow-hidden relative border border-white/5"
@@ -618,6 +724,17 @@ export default function PanelClinico({
                  </div>
                ))}
             </div>
+
+            {/* Total indicator */}
+            {(() => {
+              const total = macrosPct.carbos + macrosPct.proteinas + macrosPct.grasas;
+              return (
+                <div className={`flex items-center justify-between px-3 py-2 rounded-sm border text-[10px] font-bold uppercase tracking-widest transition-all duration-75 ${total === 100 ? 'border-emerald-500/20 text-emerald-500/40' : 'border-red-500/30 text-red-400/60'}`}>
+                  <span>Total</span>
+                  <span>{total}%{total !== 100 ? ` (faltan ${100 - total}%)` : ' ✓'}</span>
+                </div>
+              );
+            })()}
 
           </div>
         </section>

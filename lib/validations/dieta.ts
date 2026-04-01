@@ -9,6 +9,7 @@ export const itemComidaSchema = z.object({
   grasas: z.number().nonnegative(),
   carbos: z.number().nonnegative(),
   origen: z.string().optional(),
+  cantidadCasera: z.string().optional(),
 });
 
 export const comidaSchema = z.object({
@@ -31,6 +32,8 @@ export const dietaSchema = z.object({
     c: z.number().min(0).max(100),
   }),
   fechaInicio: z.string().datetime().optional(),
+  tablaManual: z.array(z.object({ alimento: z.string(), cantidad: z.string() })).optional(),
+  recomendaciones: z.array(z.string()).optional(),
 });
 
 export type DietaInput = z.infer<typeof dietaSchema>;

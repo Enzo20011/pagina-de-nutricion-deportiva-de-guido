@@ -43,10 +43,21 @@ export default function BasePacientes() {
    const [patientToEdit, setPatientToEdit] = useState<Paciente | null>(null);
    const [clinicalHistory, setClinicalHistory] = useState<any[]>([]);
    const [historyLoading, setHistoryLoading] = useState(false);
+   const [localSearch, setLocalSearch] = useState(searchQuery);
+
+   // Debounce search query to avoid spamming the API
+   useEffect(() => {
+     const timer = setTimeout(() => {
+       setSearchQuery(localSearch);
+       setPage(1);
+     }, 400);
+     return () => clearTimeout(timer);
+   }, [localSearch, setSearchQuery, setPage]);
+ 
 
    const searchParams = useSearchParams();
-   const action = searchParams.get('action');
-   const queryId = searchParams.get('id');
+   const action = searchParams?.get('action');
+   const queryId = searchParams?.get('id');
 
    useEffect(() => {
      if (action === 'new') {
@@ -59,6 +70,7 @@ export default function BasePacientes() {
 
    // Fetch clinical history on selection
    useEffect(() => {
+     setClinicalHistory([]); // PROCESO DE ESTABILIZACIÓN V6
      if (selectedId) {
         setHistoryLoading(true);
         fetch(`/api/pacientes/${selectedId}/historial`)
@@ -190,8 +202,8 @@ export default function BasePacientes() {
                             <input
                                type="text"
                                placeholder="BUSCAR PACIENTE..."
-                               value={searchQuery}
-                               onChange={e => { setPage(1); setSearchQuery(e.target.value); }}
+                               value={localSearch}
+                               onChange={e => setLocalSearch(e.target.value)}
                                className="w-full bg-[#0a0f14]/60 pl-16 pr-8 py-6 rounded-sm outline-none border border-white/5 focus:border-[#3b82f6]/30 transition-all font-bold uppercase tracking-[0.2em] text-base md:text-[10px] text-white placeholder:text-white/5"
                                aria-label="Buscar paciente por nombre o apellido"
                             />
@@ -278,7 +290,7 @@ export default function BasePacientes() {
                                    </div>
                                 </button>
                                 <button
-                                  className="absolute top-6 right-8 z-20 text-white/5 hover:text-red-500 p-2 rounded-xl transition-all hover:bg-red-500/5 focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                                  className="absolute top-2 right-2 z-20 text-white/40 hover:text-red-500 p-2 rounded-xl transition-all hover:bg-red-500/5 focus:outline-none focus:ring-2 focus:ring-red-500/50"
                                    disabled={deleting === p.id}
                                    onClick={(e) => handleSoftDelete(p.id, `${p.nombre} ${p.apellido}`, e)}
                                   aria-label={`Archivar paciente ${p.nombre} ${p.apellido}`}
@@ -408,7 +420,7 @@ export default function BasePacientes() {
                   </div>
 
                   {/* Professional Modules */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                  <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 items-start">
                     {/* HISTORIAL */}
                     <div className="lg:col-span-7 bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl space-y-12 relative overflow-hidden group">
                       <header className="flex items-center justify-between relative z-10">
@@ -416,7 +428,7 @@ export default function BasePacientes() {
                           <ClipboardList className="w-6 h-6 text-[#3b82f6]" /> REGISTROS
                         </h3>
                       </header>
-                      <div className="space-y-4 relative z-10">
+                      <div className="space-y-4 relative z-10 max-h-[350px] overflow-y-auto pr-4 custom-scrollbar">
                         {historyLoading ? (
                           <div className="py-10 flex justify-center"><Loader /></div>
                         ) : clinicalHistory.length === 0 ? (
@@ -452,7 +464,7 @@ export default function BasePacientes() {
                     </div>
 
                     {/* CONTACTO */}
-                    <div className="lg:col-span-5 bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl space-y-12 flex flex-col justify-between">
+                    <div className="lg:col-span-12 xl:col-span-5 bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl space-y-12 flex flex-col self-start">
                       <h3 className="text-xl font-bold text-white uppercase tracking-tight flex items-center gap-5">CONTACTO</h3>
                       <div className="p-8 bg-[#0a0f14] rounded-sm border border-white/5 flex flex-col items-center text-center space-y-8 relative overflow-hidden group">
                         <div className="w-20 h-20 bg-[#3b82f6] text-white rounded-full flex items-center justify-center shadow-xl">

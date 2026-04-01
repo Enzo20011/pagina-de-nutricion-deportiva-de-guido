@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  TrendingUp, 
-  DollarSign, 
-  PieChart, 
-  ArrowUpRight, 
-  Plus, 
+import dynamic from 'next/dynamic';
+import {
+  TrendingUp,
+  DollarSign,
+  PieChart,
+  ArrowUpRight,
+  Plus,
   Search,
   Filter,
   Download,
@@ -17,7 +18,8 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
-import ModalRegistroPago from '../../../../components/ModalRegistroPago';
+
+const ModalRegistroPago = dynamic(() => import('../../../../components/ModalRegistroPago'), { ssr: false });
 
 export default function FinanzasPage() {
   const [stats, setStats] = useState<any>(null);

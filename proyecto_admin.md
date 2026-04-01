@@ -86,6 +86,28 @@ Este documento registra la evolución, arquitectura y funcionalidades del portal
 
 ---
 
+
+---
+
+## 🚀 Avances recientes no documentados
+
+- **Persistencia avanzada de macros y calorías en anamnesis:**
+   Ahora se guardan y restauran automáticamente los valores de offset calórico y porcentajes de macros (carbohidratos, proteínas, grasas) en la ficha clínica de cada paciente. Esto permite que los cálculos y ajustes personalizados se mantengan entre sesiones y recargas.
+
+- **Mejoras de responsividad y accesibilidad:**
+   Se ajustaron paddings, tamaños de fuente y disposición de grids en los paneles clínicos y antropométricos para una mejor experiencia en dispositivos móviles y pantallas pequeñas.
+
+- **Carga dinámica de componentes pesados:**
+   Componentes como modales y papelera de pacientes ahora se cargan dinámicamente para mejorar el rendimiento inicial del dashboard.
+
+- **Transiciones animadas entre páginas del admin:**
+   Se agregó un componente de transición animada para mejorar la experiencia visual al navegar entre secciones internas del panel.
+
+- **Notas clínicas en PDF de consulta:**
+   Las notas clínicas ahora se incluyen en la exportación PDF de la consulta, mostrando título, fecha y contenido de cada nota registrada.
+
+---
+
 > [!IMPORTANT]
 > Este panel es de acceso restringido mediante NextAuth.
 > Para la gestión de datos maestros de alimentos nacionales, consultar la [Guía de Inyección ARGENFOODS](./guia_inyeccion_argenfoods.md).

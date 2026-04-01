@@ -13,8 +13,14 @@ import {
   Menu,
   X,
   Sun,
-  Moon
+  Moon,
+  Plus,
+  Loader2
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
+
+const TIMES = ["09:00","10:00","11:00","15:00","16:00","17:00","18:00"];
 import { signOut } from 'next-auth/react';
 import Toast from './Toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,9 +34,37 @@ const MENU_ITEMS = [
 
 export default function AdminNavbar() {
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState(true);
   const [toast, setToast] = useState<{msg: string, type: 'success'|'error'|'info'}|null>(null);
+  const [showTurnoModal, setShowTurnoModal] = useState(false);
+  const [turnoForm, setTurnoForm] = useState({ nombre: '', email: '', telefono: '', fecha: format(new Date(), 'yyyy-MM-dd'), hora: '09:00' });
+  const [turnoSaving, setTurnoSaving] = useState(false);
+  const [turnoError, setTurnoError] = useState<string | null>(null);
+
+  const handleTurnoCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTurnoSaving(true);
+    setTurnoError(null);
+    try {
+      const res = await fetch('/api/appointments/admin-create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(turnoForm),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al crear turno');
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      setShowTurnoModal(false);
+      setTurnoForm({ nombre: '', email: '', telefono: '', fecha: format(new Date(), 'yyyy-MM-dd'), hora: '09:00' });
+      setToast({ msg: 'Turno agendado y sincronizado con Google Calendar', type: 'success' });
+    } catch (err: any) {
+      setTurnoError(err.message);
+    } finally {
+      setTurnoSaving(false);
+    }
+  };
 
   React.useEffect(() => {
     const stored = localStorage.getItem('theme');
@@ -114,6 +148,13 @@ export default function AdminNavbar() {
         <div className="hidden md:flex items-center gap-4">
           <button
             type="button"
+            onClick={() => setShowTurnoModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white rounded-sm text-[9px] font-black uppercase tracking-widest transition-all shadow-md"
+          >
+            <Plus className="w-3.5 h-3.5" /> Nuevo Turno
+          </button>
+          <button
+            type="button"
             onClick={toggleTheme}
             aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
             className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-white/15 rounded-sm border border-white/10 transition-all outline-none"
@@ -190,6 +231,13 @@ export default function AdminNavbar() {
               <div className="mt-auto pt-10 border-t border-white/5 space-y-4">
                 <button
                   type="button"
+                  onClick={() => { setShowTurnoModal(true); toggleMobileMenu(); }}
+                  className="w-full flex items-center justify-center gap-3 p-4 bg-[#3b82f6] hover:bg-[#2563eb] rounded-sm transition-all text-xs font-black uppercase tracking-widest text-white"
+                >
+                  <Plus className="w-4 h-4" /> Nuevo Turno
+                </button>
+                <button
+                  type="button"
                   onClick={toggleTheme}
                   aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
                   className="w-full flex items-center justify-center gap-3 p-4 bg-white/5 border border-white/10 rounded-sm hover:bg-white/15 transition-all text-xs font-bold uppercase tracking-widest text-white/70 hover:text-white"
@@ -210,6 +258,79 @@ export default function AdminNavbar() {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Nuevo Turno */}
+      <AnimatePresence>
+        {showTurnoModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowTurnoModal(false)}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="relative w-full max-w-md bg-[#0e1419] border border-[#1f262e] rounded-sm shadow-2xl p-8 space-y-8"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#3b82f6] mb-1">Admin</p>
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight">Nuevo Turno</h3>
+                </div>
+                <button type="button" aria-label="Cerrar" onClick={() => setShowTurnoModal(false)}
+                  className="w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/5 rounded-sm text-white/40 hover:text-white transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleTurnoCreate} className="space-y-4">
+                {[
+                  { label: 'Nombre y Apellido *', key: 'nombre', type: 'text', required: true },
+                  { label: 'Email', key: 'email', type: 'email', required: false },
+                  { label: 'Teléfono / WhatsApp', key: 'telefono', type: 'tel', required: false },
+                ].map(field => (
+                  <div key={field.key} className="space-y-1">
+                    <label htmlFor={`nav-turno-${field.key}`} className="text-[9px] font-bold uppercase tracking-widest text-white/30">{field.label}</label>
+                    <input
+                      id={`nav-turno-${field.key}`}
+                      type={field.type}
+                      required={field.required}
+                      value={turnoForm[field.key as keyof typeof turnoForm]}
+                      onChange={e => setTurnoForm({ ...turnoForm, [field.key]: e.target.value })}
+                      className="w-full px-4 py-3 bg-[#141a20] border border-white/5 focus:border-[#3b82f6]/40 rounded-sm outline-none text-white font-bold text-sm uppercase tracking-wide"
+                    />
+                  </div>
+                ))}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label htmlFor="nav-turno-fecha" className="text-[9px] font-bold uppercase tracking-widest text-white/30">Fecha *</label>
+                    <input id="nav-turno-fecha" type="date" required value={turnoForm.fecha}
+                      onChange={e => setTurnoForm({ ...turnoForm, fecha: e.target.value })}
+                      className="w-full px-4 py-3 bg-[#141a20] border border-white/5 focus:border-[#3b82f6]/40 rounded-sm outline-none text-white font-bold text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="nav-turno-hora" className="text-[9px] font-bold uppercase tracking-widest text-white/30">Horario *</label>
+                    <select id="nav-turno-hora" required value={turnoForm.hora}
+                      onChange={e => setTurnoForm({ ...turnoForm, hora: e.target.value })}
+                      className="w-full px-4 py-3 bg-[#141a20] border border-white/5 focus:border-[#3b82f6]/40 rounded-sm outline-none text-white font-bold text-sm">
+                      {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {turnoError && <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest">{turnoError}</p>}
+
+                <button type="submit" disabled={turnoSaving}
+                  className="w-full py-4 bg-[#3b82f6] hover:bg-[#2563eb] disabled:opacity-50 text-white font-black text-[10px] uppercase tracking-[0.3em] rounded-sm transition-colors flex items-center justify-center gap-2">
+                  {turnoSaving ? <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</> : 'Agendar y Sincronizar'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 

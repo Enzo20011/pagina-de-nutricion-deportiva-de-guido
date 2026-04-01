@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Send, MessageSquare, MapPin } from 'lucide-react';
+import { WHATSAPP_NUMBER, PHONE_DISPLAY } from '@/lib/constants';
 
 export default function ContactoSection() {
   const [nombre, setNombre] = useState('');
@@ -10,8 +11,9 @@ export default function ContactoSection() {
   const [mensaje, setMensaje] = useState('');
 
   const handleWhatsAppSend = () => {
+    if (!nombre.trim() || !mensaje.trim()) return;
     const text = `Hola Guido! Mi nombre es ${nombre}. Mi objetivo es: ${objetivo}. %0A%0A${mensaje}`;
-    const url = `https://wa.me/543764152484?text=${text}`;
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`;
     window.open(url, '_blank');
   };
 
@@ -49,27 +51,45 @@ export default function ContactoSection() {
 
             <div className="space-y-8">
               {[
-                { icon: MessageSquare, label: "WhatsApp Directo", val: "+54 376 415-2484", href: "https://wa.me/543764152484" },
-                { icon: MapPin, label: "Ubicación Clínica", val: "Posadas, Misiones, Arg.", href: "#" },
-              ].map((item, i) => (
-                <motion.a
-                  key={i}
-                  href={item.href}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.2 + i * 0.1 }}
-                  className="flex items-center gap-6 group hover:translate-x-2 transition-transform duration-500"
-                >
-                  <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/5 transition-all duration-500 group-hover:bg-[#3b82f6] group-hover:border-[#3b82f6] group-hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-                    <item.icon className="w-5 h-5 text-[#a7abb2] group-hover:text-white transition-colors" />
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#a7abb2]/40 mb-1">{item.label}</p>
-                    <p className="text-sm font-bold text-white group-hover:text-[#3b82f6] transition-colors">{item.val}</p>
-                  </div>
-                </motion.a>
-              ))}
+                { icon: MessageSquare, label: "WhatsApp Directo", val: PHONE_DISPLAY, href: `https://wa.me/${WHATSAPP_NUMBER}` },
+                { icon: MapPin, label: "Ubicación Clínica", val: "Posadas, Misiones, Arg.", href: null },
+              ].map((item, i) => {
+                const inner = (
+                  <>
+                    <div className="w-12 h-12 bg-white/5 rounded-sm flex items-center justify-center border border-white/5 transition-all duration-500 group-hover:bg-[#3b82f6] group-hover:border-[#3b82f6] group-hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                      <item.icon className="w-5 h-5 text-[#a7abb2] group-hover:text-white transition-colors" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#a7abb2]/40 mb-1">{item.label}</p>
+                      <p className="text-sm font-bold text-white group-hover:text-[#3b82f6] transition-colors">{item.val}</p>
+                    </div>
+                  </>
+                );
+                return item.href ? (
+                  <motion.a
+                    key={i}
+                    href={item.href}
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 + i * 0.1 }}
+                    className="flex items-center gap-6 group hover:translate-x-2 transition-transform duration-500"
+                  >
+                    {inner}
+                  </motion.a>
+                ) : (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 + i * 0.1 }}
+                    className="flex items-center gap-6 group"
+                  >
+                    {inner}
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
 
@@ -78,7 +98,7 @@ export default function ContactoSection() {
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="bg-white/[0.03] border border-white/5 p-8 md:p-12 rounded-[2.5rem] backdrop-blur-3xl shadow-3xl relative overflow-hidden"
+            className="bg-white/[0.03] border border-white/5 p-8 md:p-12 rounded-sm backdrop-blur-3xl shadow-3xl relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 blur-3xl rounded-full" />
             
@@ -91,7 +111,7 @@ export default function ContactoSection() {
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   placeholder="Guido O." 
-                  className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-4 text-white text-sm focus:outline-none focus:border-[#3b82f6] transition-all placeholder:text-white/10" 
+                  className="w-full bg-white/5 border border-white/5 rounded-sm px-6 py-4 text-white text-sm focus:outline-none focus:border-[#3b82f6] transition-all placeholder:text-white/10" 
                   required
                 />
               </div>
@@ -102,7 +122,7 @@ export default function ContactoSection() {
                   id="contacto-objetivo"
                   value={objetivo}
                   onChange={(e) => setObjetivo(e.target.value)}
-                  className="w-full bg-white/5 border border-white/5 rounded-2xl px-8 py-4 text-white text-sm focus:outline-none focus:border-[#3b82f6] transition-all appearance-none cursor-pointer"
+                  className="w-full bg-white/5 border border-white/5 rounded-sm px-8 py-4 text-white text-sm focus:outline-none focus:border-[#3b82f6] transition-all appearance-none cursor-pointer"
                 >
                   <option className="bg-[#0a0f14]">Nutrición Deportiva</option>
                   <option className="bg-[#0a0f14]">Descenso de Grasa</option>
@@ -119,14 +139,15 @@ export default function ContactoSection() {
                   value={mensaje}
                   onChange={(e) => setMensaje(e.target.value)}
                   placeholder="Cuéntame más sobre tu meta..."
-                  className="w-full bg-white/5 border border-white/5 rounded-2xl px-8 py-4 text-white text-sm focus:outline-none focus:border-[#3b82f6] transition-all placeholder:text-white/10 resize-none"
+                  required
+                  className="w-full bg-white/5 border border-white/5 rounded-sm px-8 py-4 text-white text-sm focus:outline-none focus:border-[#3b82f6] transition-all placeholder:text-white/10 resize-none"
                 />
               </div>
 
               <motion.button
                 whileHover={{ scale: 1.02, boxShadow: "0 0 40px rgba(59,130,246,0.3)" }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full py-5 bg-gradient-to-r from-[#3b82f6] to-[#2563eb] rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] text-white flex items-center justify-center gap-3 shadow-xl transition-all"
+                className="w-full py-5 bg-gradient-to-r from-[#3b82f6] to-[#2563eb] rounded-sm text-[11px] font-black uppercase tracking-[0.3em] text-white flex items-center justify-center gap-3 shadow-xl transition-all"
                 type="submit"
               >
                 ENVIAR A WHATSAPP_ <Send className="w-4 h-4" />

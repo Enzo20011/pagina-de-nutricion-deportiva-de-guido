@@ -15,7 +15,8 @@
       "Bash(taskkill /PID 7376 /F)",
       "Bash(taskkill /PID 29012 /F)",
       "Bash(powershell -Command \"Stop-Process -Name ''node'' -Force -ErrorAction SilentlyContinue\")",
-      "Bash(tasklist /fi \"PID eq 25868\" /v)"
+      "Bash(tasklist /fi \"PID eq 25868\" /v)",
+      "Bash(npx prisma:*)"
     ]
   }
 }
