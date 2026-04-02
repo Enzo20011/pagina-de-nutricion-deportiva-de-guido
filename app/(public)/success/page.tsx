@@ -6,9 +6,6 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 
 function SuccessContent() {
-  const params = useSearchParams();
-  const reservaId = params.get('reserva');
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-white px-6 text-center gap-8">
       <div className="flex flex-col items-center gap-4">
@@ -16,12 +13,6 @@ function SuccessContent() {
           <CheckCircle className="w-10 h-10 text-green-400" />
         </div>
         <h1 className="text-3xl font-black uppercase tracking-tight">¡Turno Confirmado!</h1>
-        <p className="text-white/50 text-sm max-w-sm">
-          Tu pago fue procesado y tu turno quedó reservado. Te enviamos un email con los detalles.
-        </p>
-        {reservaId && (
-          <p className="text-white/20 text-xs font-mono">Ref: {reservaId}</p>
-        )}
       </div>
       <Link
         href="/"

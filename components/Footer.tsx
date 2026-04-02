@@ -1,4 +1,4 @@
-import { Instagram, Phone, MapPin, ArrowUpRight } from "lucide-react";
+import { Instagram, Phone, MapPin, ArrowUpRight, Mail } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -90,6 +90,10 @@ export default function Footer({ onBookingClick = () => {} }: FooterProps) {
             <div className="flex items-center gap-4">
               <Phone className="w-4 h-4 text-[#a7abb2] flex-shrink-0" />
               <p className="font-body text-xs text-[#a7abb2]">{PHONE_DISPLAY}</p>
+            </div>
+            <div className="flex items-center gap-4 group">
+              <Mail className="w-4 h-4 text-[#a7abb2] flex-shrink-0 group-hover:text-[#3b82f6] transition-colors" />
+              <a href="mailto:lic.guidooperuk@gmail.com" className="font-body text-xs text-[#a7abb2] hover:text-[#3b82f6] transition-colors">lic.guidooperuk@gmail.com</a>
             </div>
           </div>
         </div>

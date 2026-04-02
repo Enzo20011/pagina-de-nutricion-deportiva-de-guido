@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, MessageSquare, MapPin } from 'lucide-react';
+import { Send, MessageSquare, MapPin, Mail } from 'lucide-react';
 import { WHATSAPP_NUMBER, PHONE_DISPLAY } from '@/lib/constants';
 
 export default function ContactoSection() {
@@ -52,6 +52,7 @@ export default function ContactoSection() {
             <div className="space-y-8">
               {[
                 { icon: MessageSquare, label: "WhatsApp Directo", val: PHONE_DISPLAY, href: `https://wa.me/${WHATSAPP_NUMBER}` },
+                { icon: Mail, label: "Email Profesional", val: "lic.guidooperuk@gmail.com", href: "mailto:lic.guidooperuk@gmail.com" },
                 { icon: MapPin, label: "Ubicación Clínica", val: "Posadas, Misiones, Arg.", href: null },
               ].map((item, i) => {
                 const inner = (

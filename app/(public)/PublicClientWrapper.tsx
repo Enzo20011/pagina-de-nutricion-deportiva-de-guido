@@ -80,7 +80,7 @@ function PublicLayoutContent({ children }: { children: React.ReactNode }) {
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
           >
-            <div className="px-4 pb-6 pt-3 bg-gradient-top">
+            <div className={`px-4 pb-6 pt-12 bg-gradient-to-t to-transparent ${isDark ? 'from-[#0a0f14] via-[#0a0f14]/90' : 'from-[#f4f6fa] via-[#f4f6fa]/90'}`}>
               <button
                 onClick={openTurnero}
                 className="w-full py-4 bg-[#3b82f6] hover:bg-[#2563eb] active:scale-[0.98] text-white font-black text-[11px] tracking-[0.3em] uppercase rounded-sm shadow-[0_0_40px_rgba(59,130,246,0.35)] transition-colors"

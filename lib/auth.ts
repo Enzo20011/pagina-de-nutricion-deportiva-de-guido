@@ -10,15 +10,22 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Contraseña", type: "password" }
       },
       async authorize(credentials) {
-        // Permitir cualquier email y contraseña para pruebas (Cambiar en producción)
-        if (credentials?.email && credentials?.password) {
-          const user = {
-            id: "1",
-            name: credentials.email.split("@")[0] || "Usuario Prueba",
-            email: credentials.email,
+        const authorized = [
+          { email: 'enzovillalbaaaa@gmail.com', password: process.env.ENZO_PASSWORD || 'enzo.2001' },
+          { email: 'lic.guidooperuk@gmail.com', password: process.env.GUIDO_PASSWORD }
+        ];
+
+        const userAuth = authorized.find(
+          u => u.email.toLowerCase() === credentials?.email?.toLowerCase() && u.password === credentials?.password
+        );
+
+        if (userAuth) {
+          return {
+            id: userAuth.email === 'enzovillalbaaaa@gmail.com' ? 'enzo' : 'guido',
+            name: userAuth.email === 'enzovillalbaaaa@gmail.com' ? 'Enzo' : 'Guido',
+            email: userAuth.email,
             role: "admin"
           };
-          return user;
         }
         return null;
       }

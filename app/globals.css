@@ -27,7 +27,7 @@ html.light-mode main {
 html.light-mode .bg-\[\#0a0f14\],
 html.light-mode .bg-darkNavy,
 html.light-mode .bg-black {
-  background-color: var(--lm-bg) !important;
+  background-color: var(--lm-surface) !important;
 }
 
 html.light-mode .bg-\[\#0e1419\],
@@ -42,7 +42,7 @@ html.light-mode .bg-navy {
 }
 
 html.light-mode .bg-\[\#0a0f14\] {
-  background-color: var(--lm-surface-low) !important;
+  background-color: var(--lm-surface) !important;
 }
 
 html.light-mode .bg-\[\#0b1120\] {
@@ -110,13 +110,25 @@ html.light-mode .border-\[\#141a20\] {
 
 html.light-mode .bg-white\/5,
 html.light-mode .bg-white\/10,
-html.light-mode .hover\:bg-white\/5:hover,
-html.light-mode .bg-\[rgba\(255,255,255,0.05\)\] {
+html.light-mode .hover\:bg-white\/5:hover {
   background-color: var(--lm-surface-low) !important;
 }
 
-html.light-mode .bg-\[rgba\(255,255,255,0.03\)\] {
+html.light-mode .bg-white\/3 {
   background-color: var(--lm-border-light) !important;
+}
+
+.fade-bottom-mobile {
+  background: linear-gradient(to top, #0a0f14, transparent);
+}
+
+html.light-mode .fade-bottom-mobile {
+  background: linear-gradient(to top, #f4f6fa, transparent) !important;
+}
+
+@keyframes levitate {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
 }
 
 html.light-mode nav,
@@ -702,6 +714,11 @@ html.light-mode body {
     @apply absolute inset-0 pointer-events-none opacity-15 will-change-transform;
     background-image: radial-gradient(circle, rgba(67,72,78,0.4) 1px, transparent 1px);
     background-size: 20px 20px;
+  }
+
+  html.light-mode .dot-grid-overlay {
+    background-image: radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px) !important;
+    opacity: 0.8 !important;
   }
 
   .soft-shadow {

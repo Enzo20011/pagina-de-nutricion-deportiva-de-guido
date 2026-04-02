@@ -40,15 +40,15 @@ export default function LandingPage() {
   const { openTurnero } = useTurnero();
 
   return (
-    <div className="bg-[#0a0f14]">
+    <div className="bg-transparent">
       {/* HERO */}
       <HeroSection onBookingClick={openTurnero} />
 
       <SectionDivider />
 
       {/* SERVICIOS */}
-      <div className="px-5 sm:px-8 pt-10">
-        <div className="max-w-[1200px] mx-auto">
+      <div className="px-0 sm:px-8 pt-10">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-0">
           <SectionLabel number="01" label="Servicios" />
         </div>
       </div>
@@ -62,10 +62,10 @@ export default function LandingPage() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="bg-[#0a0f14] py-8 px-5 sm:px-8 relative overflow-hidden will-change-transform"
+        className="bg-[#0a0f14] py-8 px-0 sm:px-8 relative overflow-hidden will-change-transform"
       >
         <div className="dot-grid-overlay opacity-10" />
-        <div className="max-w-[1200px] mx-auto relative z-10 flex flex-col items-center">
+        <div className="max-w-[1200px] mx-auto relative z-10 flex flex-col items-center px-5 sm:px-0">
           <SectionLabel number="02" label="Herramientas" />
           <div className="max-w-2xl w-full text-center mb-6">
             <motion.h2
@@ -109,9 +109,9 @@ export default function LandingPage() {
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="will-change-opacity px-5 sm:px-8 pt-4"
+        className="will-change-opacity px-0 sm:px-8 pt-4"
       >
-        <div className="max-w-[1200px] mx-auto">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-0">
           <SectionLabel number="03" label="Testimonios" />
         </div>
         <Testimonios />
@@ -125,9 +125,9 @@ export default function LandingPage() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.4 }}
-        className="will-change-transform px-5 sm:px-8 pt-4"
+        className="will-change-transform px-0 sm:px-8 pt-4"
       >
-        <div className="max-w-[1200px] mx-auto">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-0">
           <SectionLabel number="04" label="Respaldo Científico" />
         </div>
         <ScientificAvales />
@@ -136,10 +136,10 @@ export default function LandingPage() {
       <SectionDivider />
 
       {/* FINAL CTA */}
-      <section className="bg-[#0e1419] py-20 px-5 sm:px-8 border-t border-white/5 relative overflow-hidden">
+      <section className="bg-[#0e1419] py-20 px-0 sm:px-8 border-t border-white/5 relative overflow-hidden transition-colors duration-500">
         <div className="absolute inset-0 pointer-events-none opacity-50"
           style={{ background: "radial-gradient(ellipse at center, rgba(59,130,246,0.04) 0%, transparent 70%)" }} />
-        <div className="max-w-[1200px] mx-auto text-center relative z-10">
+        <div className="max-w-[1200px] mx-auto text-center relative z-10 px-5 sm:px-0">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}

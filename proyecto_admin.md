@@ -10,9 +10,9 @@ Este documento registra la evolución, arquitectura y funcionalidades del portal
 - **Base de Datos:** PostgreSQL serverless en **Neon** via **Prisma ORM** (migrado desde MongoDB).
 - **Estado Global:** `Zustand` (`useConsultaStore`) para persistencia de sesión clínica en el cliente.
 - **Sincronización:** `TanStack React Query` para comunicación eficiente con la base de datos.
-- **Autenticación:** `NextAuth.js` con `CredentialsProvider` + middleware de protección en edge.
-- **Pagos:** MercadoPago (checkout pro) integrado con webhook de confirmación.
-- **Calendario:** Google Calendar API con autenticación JWT para sincronización de turnos.
+- **Autenticación:** `NextAuth.js` con lista blanca restrictiva (Enzo/Guido) y contraseñas individuales en `.env`.
+- **Pagos:** Registro manual por el administrador (Pasarela de pagos deshabilitada para reservas directas).
+- **Calendario:** Google Calendar API con sincronización automática de reservas confirmadas.
 
 ---
 
@@ -62,8 +62,8 @@ Este documento registra la evolución, arquitectura y funcionalidades del portal
 
 - [x] **Progress Bar:** `ProgressBarProvider` con `next-nprogress-bar` en todas las navegaciones.
 - [x] **Skeleton Loaders:** `DashboardSkeleton` y `Loader` para estados de carga.
-- [x] **Responsive:** Layout adaptado para mobile en todos los paneles de consulta y dashboard.
-- [x] **Cleanup:** Eliminados componentes legacy obsoletos (`CalculadoraClinica`, `EnergyCalculator`, `PanelAnamnesis`, `TurneroModerno`, `TurneroNativo`, `PublicPortal`).
+- [x] **Responsive Dual-View:** Layout inteligente para el Plan Alimentario. En Desktop las tablas son fijas y apiladas; en Móvil se usan modales a pantalla completa.
+- [x] **Cleanup:** Eliminados componentes legacy y la integración de Mercado Pago en el flujo administrativo.
 
 ---
 
@@ -80,9 +80,8 @@ Este documento registra la evolución, arquitectura y funcionalidades del portal
 | `/api/biometria` | GET/POST | Medidas antropométricas |
 | `/api/alimentos` | GET | Búsqueda híbrida de alimentos |
 | `/api/appointments/lock` | POST | Bloqueo temporal de slot |
-| `/api/appointments/reserve` | POST | Confirmación de reserva |
-| `/api/checkout` | POST | Creación de preferencia MercadoPago |
-| `/api/checkout/callback` | POST | Webhook de confirmación de pago |
+| `/api/appointments/reserve` | POST | Confirmación de reserva directa (Status: confirmada) |
+| `/api/appointments/cleanup` | GET | Limpieza automática de turnos pasados |
 
 ---
 
@@ -105,6 +104,31 @@ Este documento registra la evolución, arquitectura y funcionalidades del portal
 
 - **Notas clínicas en PDF de consulta:**
    Las notas clínicas ahora se incluyen en la exportación PDF de la consulta, mostrando título, fecha y contenido de cada nota registrada.
+
+---
+
+## 🛠️ Estabilización y Automatización (v7)
+
+### Gestión de Datos Biométricos
+- **Ownership Protocol (v4):** Implementación de la propiedad `isActive` en paneles para prevenir bucles infinitos de actualización cruzada entre Anamnesis y Antropometría.
+- **Sincronización Silenciosa (v5):** Hidratación interna de formularios en segundo plano para evitar que datos viejos sobrescriban cambios recientes al cambiar de pestaña.
+- **Aislamiento de Pacientes (v6):** Protocolo de limpieza forzada (`reset`) al cambiar de ID de paciente en el dashboard, eliminando cualquier rastro de datos de la sesión anterior.
+- **Persistencia Robusta (v7):** Prioridad de carga desde la sesión local de `Zustand` sobre la base de datos para evitar pérdida de información (específicamente en perímetros y pliegues) durante recargas de página.
+
+### Agenda y Turnos
+- **Automatización de Limpieza:** Nuevo endpoint `/api/appointments/cleanup` que se dispara al entrar a la agenda.
+- **Regla de 2 Horas:** Los turnos se procesan automáticamente 2 horas después de su inicio.
+- **Archivado Histórico:** Los turnos pasados no se borran de la base de datos; cambian su estado a `completada` para mantener el historial clínico.
+- **Limpieza de Google Calendar:** Los eventos pasados se eliminan automáticamente de la cuenta de Google del profesional para mantener el calendario externo despejado.
+
+### UX y Seguridad (v8)
+- **Seguridad Restringida:** Implementación de lista blanca en `lib/auth.ts`. Solo Enzo y Guido pueden entrar con sus respectivas credenciales.
+- **Responsive Dual (Plan Alimentario):**
+    - **Desktop**: Tablas y Recomendaciones visibles 24/7 de forma apilada.
+    - **Móvil**: Botones táctiles que abren un entorno de edición a pantalla completa.
+- **Textareas Inteligentes:** Mejorados los inputs de nutrición para soportar textos largos con scroll y auto-ajuste, evitando colisiones con el botón de eliminar.
+- **Búsqueda Optimizada:** Implementación de *debouncing* en el filtrado de pacientes para mejorar el rendimiento.
+- **Maquetación fija:** El panel de contacto en la base de pacientes ahora tiene scroll interno, evitando que se desplace verticalmente con historiales largos.
 
 ---
 

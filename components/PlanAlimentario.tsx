@@ -19,7 +19,9 @@ import {
   Save, 
   Download, 
   Info,
-  ChevronDown
+  ChevronDown,
+  X,
+  Maximize2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -96,6 +98,8 @@ export default function PlanAlimentario({
   const [activeMealId, setActiveMealId] = useState<string | null>(null);
   const [filterSource, setFilterSource] = useState<'ALL' | 'USDA' | 'ARGENFOODS'>('ALL');
   const [numComidas, setNumComidas] = useState<number>(4);
+  const [isTablaOpen, setIsTablaOpen] = useState(false);
+  const [isRecOpen, setIsRecOpen] = useState(false);
 
   // 1. Fetch initial data
   const { data: serverData } = useQuery({
@@ -265,7 +269,6 @@ export default function PlanAlimentario({
     queryFn: async () => {
       if (debouncedSearch.length < 2) return { data: [] };
       
-      // Llamada única al endpoint híbrido del servidor
       const res = await fetch(`/api/alimentos?q=${debouncedSearch}&categoria=${filterSource}`);
       const data = await res.json();
       return { data: data.data || [] };
@@ -374,7 +377,6 @@ export default function PlanAlimentario({
                  <button
                    onClick={() => numComidas < 9 && handleNumComidasChange(numComidas + 1)}
                    disabled={numComidas >= 9}
-                   aria-label="Aumentar número de ingestas"
                    className="w-10 h-10 rounded-sm hover:bg-white/5 transition-all duration-75 flex items-center justify-center text-white/20 hover:text-white disabled:opacity-0"
                  >
                    <Plus className="w-4 h-4" />
@@ -450,9 +452,6 @@ export default function PlanAlimentario({
                onClick={() => setActiveMealId(meal.id)}
                role="button"
                tabIndex={0}
-               aria-label={`Seleccionar ingesta: ${meal.nombre}`}
-               aria-current={activeMealId === meal.id}
-               onKeyDown={e => e.key === 'Enter' && setActiveMealId(meal.id)}
                className={clsx(
                  "bg-[#0e1419] rounded-sm border transition-all duration-1000 cursor-pointer overflow-hidden group relative outline-none focus-within:ring-2 focus-within:ring-[#3b82f6]/50",
                  activeMealId === meal.id 
@@ -509,7 +508,6 @@ export default function PlanAlimentario({
                                        const newGrams = +e.target.value;
                                        setMeals(meals.map(m => m.id === meal.id ? { ...m, items: m.items.map(i => i.id === item.id ? { ...i, gramos: newGrams } : i) } : m));
                                     }}
-                                    aria-label={`Cantidad en gramos para ${item.nombre}`}
                                     className="w-16 bg-[#0a0f14] border border-white/5 text-[10px] font-bold text-white outline-none focus:border-[#3b82f6]/30 p-1.5 rounded-sm text-center transition-all duration-75"
                                   />
                                  <span className="text-[9px] font-bold text-white/10 uppercase tracking-widest">G</span>
@@ -523,7 +521,6 @@ export default function PlanAlimentario({
                            </div>
                             <button 
                               onClick={(e) => { e.stopPropagation(); removeFood(meal.id, item.id); }}
-                              aria-label={`Eliminar ${item.nombre} de ${meal.nombre}`}
                               className="p-3 bg-white/5 text-white/10 hover:bg-red-500/20 hover:text-red-400 rounded-sm transition-all duration-75 border border-white/5"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -541,125 +538,259 @@ export default function PlanAlimentario({
            ))}
         </div>
 
-        {/* TABLA DEL PACIENTE SECTION (Restored) */}
-        <div className="bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl space-y-8 mt-12">
-          <div className="flex items-center gap-4 text-white/20 px-2">
-             <Sparkles className="w-4 h-4 text-[#3b82f6]" />
-             <span className="text-[10px] font-bold uppercase tracking-[0.4em]">PLAN ALIMENTARIO — TABLA DEL PACIENTE</span>
-          </div>
+        {/* VISTA MÓVIL: BOTONES DE APERTURA DE MODAL */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10 sm:my-24 xl:hidden">
+          <button 
+            type="button"
+            onClick={() => setIsTablaOpen(true)}
+            className="bg-[#0e1419] p-6 rounded-sm border border-white/5 shadow-2xl flex items-center justify-between group hover:border-[#3b82f6]/30 transition-all outline-none"
+          >
+            <div className="flex items-center gap-4 text-white/20 group-hover:text-white/40 transition-colors">
+               <Sparkles className="w-5 h-5 text-[#3b82f6]" />
+               <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] sm:tracking-[0.5em] text-left">ESTRATEGIA — TABLA</span>
+            </div>
+            <Maximize2 className="w-5 h-5 text-white/20 group-hover:text-[#3b82f6] transition-colors" />
+          </button>
 
-          <div className="border border-white/5 rounded-sm overflow-hidden bg-[#0a0f14]/40">
-             <div className="grid grid-cols-2 bg-[#0a0f14]/80 border-b border-white/5 p-4">
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 px-2">ALIMENTO</div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 px-2">CANTIDAD</div>
-             </div>
-             {tablaManual.map((row, i) => (
-                <div key={i} className="grid grid-cols-2 border-b border-white/5 group hover:bg-white/5 transition-colors">
-                   <input 
-                      autoFocus={i === tablaManual.length - 1 && row.alimento === ''}
-                      className="bg-transparent p-5 outline-none text-sm text-white font-bold placeholder:text-white/5 border-r border-white/5 font-sans"
-                      placeholder="Ej: Pollo / Carne"
-                      value={row.alimento} 
-                      onChange={e => {
-                        const newTabla = [...tablaManual];
-                        newTabla[i].alimento = e.target.value;
-                        setTablaManual(newTabla);
-                      }}
-                   />
-                   <div className="flex items-center gap-2 pr-4">
-                      <input 
-                         className="flex-1 bg-transparent p-5 outline-none text-sm text-white font-bold placeholder:text-white/10 font-sans"
-                         placeholder="Ej: 200g / 1 porción"
-                         value={row.cantidad} 
-                         onChange={e => {
-                            const newTabla = [...tablaManual];
-                            newTabla[i].cantidad = e.target.value;
-                            setTablaManual(newTabla);
-                         }}
-                      />
-                      <button 
-                        onClick={() => setTablaManual(tablaManual.filter((_, idx) => idx !== i))}
-                        className="text-white/10 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all p-3"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+          <button 
+            type="button"
+            onClick={() => setIsRecOpen(true)}
+            className="bg-[#0e1419] p-6 rounded-sm border border-white/5 shadow-2xl flex items-center justify-between group hover:border-[#3b82f6]/30 transition-all outline-none"
+          >
+            <div className="flex items-center gap-4 text-white/20 group-hover:text-white/40 transition-colors">
+               <Sparkles className="w-5 h-5 text-[#3b82f6]" />
+               <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] sm:tracking-[0.5em] text-left">RECOMENDACIONES</span>
+            </div>
+            <Maximize2 className="w-5 h-5 text-white/20 group-hover:text-[#3b82f6] transition-colors" />
+          </button>
+        </div>
+
+        {/* VISTA DESKTOP (PC): TABLAS SIEMPRE VISIBLES Y APILADAS */}
+        <div className="hidden xl:block space-y-16 my-24">
+           {/* TABLA MANUAL DESKTOP */}
+           <div className="bg-[#0e1419] p-12 rounded-sm border border-white/5 shadow-2xl relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-1 h-full bg-[#3b82f6] opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="flex items-center gap-4 text-white/40 mb-10">
+                 <Sparkles className="w-5 h-5 text-[#3b82f6]" />
+                 <span className="text-[11px] font-bold uppercase tracking-[0.5em]">TABLA DEL PACIENTE</span>
+              </div>
+              
+              <div className="border border-white/5 rounded-sm overflow-hidden bg-[#0a0f14]/40 shadow-inner">
+                 <div className="grid grid-cols-2 bg-[#0a0f14]/80 border-b border-white/10 py-6 px-8">
+                    <div className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/30 px-2">ALIMENTO</div>
+                    <div className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/30 px-2">CANTIDAD</div>
+                 </div>
+                 {tablaManual.map((row, i) => (
+                    <div key={i} className={clsx("grid grid-cols-2 border-b border-white/5 group/row hover:bg-white/5 transition-colors", i % 2 === 0 ? "bg-transparent" : "bg-white/[0.02]")}>
+                       <textarea 
+                          className="bg-transparent py-8 px-10 outline-none text-[15px] leading-relaxed text-white font-bold placeholder:text-white/10 border-r border-white/5 font-sans transition-all focus:bg-[#3b82f6]/5 w-full resize-none min-h-[80px]"
+                          placeholder="Ej: Pollo"
+                          value={row.alimento} 
+                          rows={2}
+                          onChange={e => { const newTabla = [...tablaManual]; newTabla[i].alimento = e.target.value; setTablaManual(newTabla); }}
+                       />
+                       <div className="flex items-start w-full relative h-full">
+                          <textarea 
+                             className="flex-1 bg-transparent py-8 pl-10 pr-16 outline-none text-[15px] leading-relaxed text-white font-bold placeholder:text-white/10 font-sans focus:bg-[#3b82f6]/5 w-full resize-none h-full min-h-[80px]"
+                             placeholder="Ej: 200g"
+                             value={row.cantidad} 
+                             rows={2}
+                             onChange={e => { const newTabla = [...tablaManual]; newTabla[i].cantidad = e.target.value; setTablaManual(newTabla); }}
+                          />
+                          <button 
+                            onClick={() => setTablaManual(tablaManual.filter((_, idx) => idx !== i))}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-red-500 opacity-0 group-hover/row:opacity-100 transition-all p-4 hover:bg-red-500/10 rounded-sm"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                       </div>
+                    </div>
+                 ))}
+                 <button 
+                    onClick={() => setTablaManual([...tablaManual, { alimento: '', cantidad: '' }])}
+                    className="w-full p-10 text-[11px] font-bold uppercase tracking-[0.3em] text-white/20 hover:text-[#3b82f6] hover:bg-[#3b82f6]/5 transition-all flex items-center justify-center gap-4 border-t border-white/5"
+                 >
+                    <Plus className="w-5 h-5" /> AGREGAR FILA
+                 </button>
+              </div>
+           </div>
+
+           {/* RECOMENDACIONES DESKTOP */}
+           <div className="bg-[#0e1419] p-12 rounded-sm border border-white/5 shadow-2xl relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-1 h-full bg-[#3b82f6] opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="flex items-center gap-4 text-white/40 mb-10">
+                 <Sparkles className="w-5 h-5 text-[#3b82f6]" />
+                 <span className="text-[11px] font-bold uppercase tracking-[0.5em]">RECOMENDACIONES</span>
+              </div>
+
+              <div className="space-y-6">
+                {recomendaciones.map((rec, i) => {
+                   const upperRec = rec.toUpperCase();
+                   const hasNota = upperRec.indexOf('NOTA:') !== -1;
+
+                   return (
+                     <div key={i} className="flex items-center gap-6 group/rec relative">
+                        <div className={clsx(
+                          "w-2 h-2 rounded-full shrink-0 transition-all ml-2",
+                          hasNota ? "bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)] scale-125" : "bg-[#3b82f6]/40 group-hover/rec:bg-[#3b82f6] shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                        )} />
+                        <div className="flex-1 relative min-h-[60px] flex items-stretch w-full overflow-hidden bg-[#0a0f14]/60 border border-white/5 group-hover/rec:border-[#3b82f6]/20 rounded-sm">
+                           <textarea 
+                              className="w-full h-full min-h-[60px] py-4 pl-6 pr-16 bg-transparent border-none outline-none text-[15px] font-bold text-white font-sans resize-none leading-relaxed"
+                              placeholder="Escribir recomendación..."
+                              value={rec}
+                              rows={2}
+                              onChange={e => {
+                                 const newRecs = [...recomendaciones];
+                                 newRecs[i] = e.target.value;
+                                 setRecomendaciones(newRecs);
+                              }}
+                           />
+                           <button 
+                              onClick={() => setRecomendaciones(recomendaciones.filter((_, idx) => idx !== i))}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/20 hover:text-red-500 p-2 transition-all hover:bg-red-500/10 rounded-sm shrink-0 opacity-0 group-hover/rec:opacity-100"
+                           >
+                              <Trash2 className="w-5 h-5" />
+                           </button>
+                        </div>
+                     </div>
+                   );
+                })}
+                <button 
+                  onClick={() => setRecomendaciones([...recomendaciones, ''])}
+                  className="flex items-center gap-6 px-10 py-6 text-[11px] font-bold uppercase tracking-[0.3em] text-white/20 hover:text-white hover:bg-[#3b82f6]/5 transition-all w-full border border-white/5 border-dashed hover:border-[#3b82f6]/30 justify-center rounded-sm"
+                >
+                  <Plus className="w-5 h-5" /> AÑADIR RECOMENDACIÓN
+                </button>
+              </div>
+           </div>
+        </div>
+
+        {/* --- MODALES FLOTANTES --- */}
+        <AnimatePresence>
+          {isTablaOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-10 bg-[#0a0f14]/90 backdrop-blur-md"
+            >
+              <div className="bg-[#0e1419] w-full max-w-4xl max-h-full rounded-sm border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden relative">
+                <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#0a0f14]/50 shrink-0">
+                   <div className="flex items-center gap-4 text-white/40">
+                      <Sparkles className="w-5 h-5 text-[#3b82f6]" />
+                      <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.5em]">TABLA DEL PACIENTE</span>
                    </div>
+                   <button onClick={() => setIsTablaOpen(false)} className="p-2 text-white/40 hover:text-red-500 transition-colors rounded-sm hover:bg-white/5">
+                     <X className="w-5 h-5" />
+                   </button>
                 </div>
-             ))}
-             <button 
-                onClick={() => setTablaManual([...tablaManual, { alimento: '', cantidad: '' }])}
-                className="w-full p-8 text-[10px] font-bold uppercase tracking-[0.2em] text-white/20 hover:text-[#3b82f6] hover:bg-[#3b82f6]/5 transition-all flex items-center justify-center gap-4"
-             >
-                <Plus className="w-4 h-4" /> AGREGAR FILA
-             </button>
-          </div>
-        </div>
+                <div className="p-4 sm:p-10 overflow-y-auto w-full max-h-full">
+                  <div className="border border-white/5 rounded-sm overflow-hidden bg-[#0a0f14]/40 shadow-inner">
+                     <div className="grid grid-cols-2 bg-[#0a0f14]/80 border-b border-white/10 py-4 sm:py-6 px-4 sm:px-8">
+                        <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-white/30 px-1 sm:px-2">ALIMENTO</div>
+                        <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-white/30 px-1 sm:px-2">CANTIDAD</div>
+                     </div>
+                     {tablaManual.map((row, i) => (
+                        <div key={i} className={clsx("grid grid-cols-2 border-b border-white/5 group/row hover:bg-white/5 transition-colors", i % 2 === 0 ? "bg-transparent" : "bg-white/[0.02]")}>
+                           <textarea 
+                              className="bg-transparent py-4 sm:py-8 px-4 sm:px-10 outline-none text-[13px] sm:text-[15px] sm:leading-relaxed text-white font-bold placeholder:text-white/10 border-r border-white/5 font-sans transition-all focus:bg-[#3b82f6]/5 w-full resize-none min-h-[80px]"
+                              placeholder="Ej: Pollo"
+                              value={row.alimento} 
+                              rows={2}
+                              onChange={e => { const newTabla = [...tablaManual]; newTabla[i].alimento = e.target.value; setTablaManual(newTabla); }}
+                           />
+                           <div className="flex items-start w-full relative h-full">
+                              <textarea 
+                                 className="flex-1 bg-transparent py-4 sm:py-8 pl-4 sm:pl-10 pr-14 sm:pr-16 outline-none text-[13px] sm:text-[15px] sm:leading-relaxed text-white font-bold placeholder:text-white/10 font-sans focus:bg-[#3b82f6]/5 w-full resize-none h-full min-h-[80px]"
+                                 placeholder="Ej: 200g"
+                                 value={row.cantidad} 
+                                 rows={2}
+                                 onChange={e => { const newTabla = [...tablaManual]; newTabla[i].cantidad = e.target.value; setTablaManual(newTabla); }}
+                              />
+                              <button 
+                                onClick={() => setTablaManual(tablaManual.filter((_, idx) => idx !== i))}
+                                className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-red-500 opacity-100 sm:opacity-0 group-hover/row:opacity-100 transition-all p-2 hover:bg-red-500/10 rounded-sm"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                           </div>
+                        </div>
+                     ))}
+                     <button 
+                        onClick={() => setTablaManual([...tablaManual, { alimento: '', cantidad: '' }])}
+                        className="w-full p-6 sm:p-10 text-[11px] font-bold uppercase tracking-[0.3em] text-white/20 hover:text-[#3b82f6] hover:bg-[#3b82f6]/5 transition-all flex items-center justify-center gap-4 border-t border-white/5"
+                     >
+                        <Plus className="w-5 h-5" /> AGREGAR FILA
+                     </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
-        {/* RECOMENDACIONES SECTION (Restored) */}
-        <div className="bg-[#0e1419] p-8 rounded-sm border border-white/5 shadow-xl space-y-8 mt-12 mb-12">
-           <div className="flex items-center gap-4 text-white/20 px-2">
-             <Sparkles className="w-4 h-4 text-[#3b82f6]" />
-             <span className="text-[10px] font-bold uppercase tracking-[0.4em]">RECOMENDACIONES PARA EL PACIENTE</span>
-           </div>
-
-           <div className="space-y-4">
-              {recomendaciones.map((rec, i) => {
-                 const upperRec = rec.toUpperCase();
-                 const notaIndex = upperRec.indexOf('NOTA:');
-                 const hasNota = notaIndex !== -1;
-                 
-                 // UI Granular Highlight logic
-                 const part1 = hasNota ? rec.substring(0, notaIndex) : rec;
-                 const part2 = hasNota ? rec.substring(notaIndex) : '';
-
-                 return (
-                   <div key={i} className="flex items-center gap-6 group">
-                      <div className={clsx(
-                        "w-2 h-2 rounded-full shrink-0 transition-all",
-                        hasNota ? "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] scale-125" : "bg-[#3b82f6]/40 group-hover:bg-[#3b82f6] shadow-[0_0_10px_rgba(59,130,246,0.3)]"
-                      )} />
-                      <div className="flex-1 relative min-h-[56px] flex items-center">
-                         {/* Visual Representation Layer */}
-                         <div className={clsx(
-                           "absolute inset-0 p-5 rounded-sm border pointer-events-none text-sm font-bold font-sans flex items-center transition-all",
-                           hasNota 
-                             ? "bg-red-500/5 border-red-500/30 shadow-[inset_0_0_20px_rgba(239,68,68,0.05)]" 
-                             : "bg-[#0a0f14]/60 border-white/5"
-                         )}>
-                            <span className="text-white whitespace-pre">{part1}</span>
-                            <span className="text-red-400 whitespace-pre">{part2}</span>
-                            {rec === '' && <span className="text-white/5">Escribir recomendación...</span>}
-                         </div>
-
-                         {/* Real Input Layer (Transparent) */}
-                         <input 
-                            className="flex-1 w-full p-5 bg-transparent border-none outline-none text-sm font-bold text-transparent caret-white font-sans relative z-10"
-                            placeholder="Escribir recomendación..."
-                            value={rec}
-                            onChange={e => {
-                               const newRecs = [...recomendaciones];
-                               newRecs[i] = e.target.value;
-                               setRecomendaciones(newRecs);
-                            }}
-                         />
-                      </div>
-                      <button 
-                         onClick={() => setRecomendaciones(recomendaciones.filter((_, idx) => idx !== i))}
-                         className="text-white/10 hover:text-red-500 p-3 opacity-20 group-hover:opacity-100 transition-all"
-                      >
-                         <Trash2 className="w-4 h-4" />
-                      </button>
+          {isRecOpen && (
+            <motion.div 
+               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+               className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-10 bg-[#0a0f14]/90 backdrop-blur-md"
+            >
+              <div className="bg-[#0e1419] w-full max-w-4xl max-h-full rounded-sm border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden relative">
+                <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#0a0f14]/50 shrink-0">
+                   <div className="flex items-center gap-4 text-white/40">
+                      <Sparkles className="w-5 h-5 text-[#3b82f6]" />
+                      <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.5em]">RECOMENDACIONES</span>
                    </div>
-                 );
-              })}
-              <button 
-                onClick={() => setRecomendaciones([...recomendaciones, ''])}
-                className="flex items-center gap-4 px-8 py-6 text-[10px] font-bold uppercase tracking-[0.2em] text-white/20 hover:text-white hover:bg-white/5 transition-all rounded-sm"
-              >
-                <Plus className="w-4 h-4" /> AGREGAR RECOMENDACIÓN
-              </button>
-           </div>
-        </div>
+                   <button onClick={() => setIsRecOpen(false)} className="p-2 text-white/40 hover:text-red-500 transition-colors rounded-sm hover:bg-white/5">
+                     <X className="w-5 h-5" />
+                   </button>
+                </div>
+                
+                <div className="p-4 sm:p-10 overflow-y-auto w-full max-h-full space-y-6">
+                  {recomendaciones.map((rec, i) => {
+                     const upperRec = rec.toUpperCase();
+                     const notaIndex = upperRec.indexOf('NOTA:');
+                     const hasNota = notaIndex !== -1;
+                     const part1 = hasNota ? rec.substring(0, notaIndex) : rec;
+                     const part2 = hasNota ? rec.substring(notaIndex) : '';
+
+                     return (
+                       <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 group/rec relative">
+                          <div className={clsx(
+                            "w-2 h-2 rounded-full shrink-0 transition-all ml-2",
+                            hasNota ? "bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.6)] scale-125" : "bg-[#3b82f6]/40 group-hover/rec:bg-[#3b82f6] shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                          )} />
+                          <div className="flex-1 relative min-h-[60px] flex items-stretch w-full overflow-hidden bg-[#0a0f14]/60 border border-white/5 group-hover/rec:border-[#3b82f6]/20 rounded-sm">
+                             {/* FAKE TEXT INPUT AREA PARA NOTAS Y SALTO DE LINEA */}
+                             <textarea 
+                                className="w-full h-full min-h-[60px] py-4 pl-6 pr-16 bg-transparent border-none outline-none text-[13px] sm:text-[15px] font-bold text-white font-sans resize-none leading-relaxed"
+                                placeholder="Escribir recomendación..."
+                                value={rec}
+                                rows={2}
+                                onChange={e => {
+                                   const newRecs = [...recomendaciones];
+                                   newRecs[i] = e.target.value;
+                                   setRecomendaciones(newRecs);
+                                }}
+                             />
+                             <button 
+                                onClick={() => setRecomendaciones(recomendaciones.filter((_, idx) => idx !== i))}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/20 hover:text-red-500 p-2 transition-all hover:bg-red-500/10 rounded-sm shrink-0 opacity-100 sm:opacity-0 group-hover/rec:opacity-100"
+                             >
+                                <Trash2 className="w-5 h-5" />
+                             </button>
+                          </div>
+                       </div>
+                     );
+                  })}
+                  <button 
+                    onClick={() => setRecomendaciones([...recomendaciones, ''])}
+                    className="flex items-center gap-6 px-10 py-6 text-[11px] font-bold uppercase tracking-[0.3em] text-white/20 hover:text-white hover:bg-[#3b82f6]/5 transition-all w-full border border-white/5 border-dashed hover:border-[#3b82f6]/30 justify-center rounded-sm"
+                  >
+                    <Plus className="w-5 h-5" /> AÑADIR RECOMENDACIÓN
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* RIGHT SECTION: STRATEGIC MACRO CONSOLE */}
@@ -686,7 +817,6 @@ export default function PlanAlimentario({
                        aria-valuenow={Math.round((totals.kcal / targetKcal) * 100)}
                        aria-valuemin={0}
                        aria-valuemax={100}
-                       aria-label={`Cumplimiento calórico: ${Math.round((totals.kcal / targetKcal) * 100)}%`}
                      >
                        <motion.div 
                          initial={{ width: 0 }}

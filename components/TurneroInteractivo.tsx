@@ -136,32 +136,7 @@ export default function TurneroInteractivo() {
 
       const { reservaId } = await reserveResp.json();
 
-      const resp = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.nombre,
-          email: formData.email,
-          date: selectedDate,
-          reservaId,
-          monto: 5000
-        })
-      });
-
-      if (!resp.ok) {
-        const errorData = await resp.json();
-        throw new Error(errorData.error || 'Error en la pasarela de pago');
-      }
-
-      const data = await resp.json();
-
-      // DEV: simular pago aprobado sin pasar por MP
-      if (process.env.NODE_ENV === 'development') {
-        window.location.href = `/api/checkout/callback?status=success&reserva_id=${reservaId}&preference_id=${data.prefId}`;
-        return;
-      }
-
-      window.location.href = data.url;
+      window.location.href = `/success?booking=confirmed&reserva=${reservaId}`;
     } catch (err: any) {
       console.error('Booking Error:', err);
       alert(err.message || 'Ocurrió un error al procesar tu reserva.');
@@ -411,14 +386,6 @@ export default function TurneroInteractivo() {
                       <p className="heading-sm !text-lg !text-white uppercase">{formData.nombre}</p>
                    </div>
                 </div>
-
-                <div className="bg-[#3b82f6]/5 border border-[#3b82f6]/20 p-6 rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10 shadow-[0_0_40px_rgba(59,130,246,0.05)]">
-                  <div className="space-y-1 min-w-0">
-                    <p className="eyebrow !text-[#3b82f6] !text-[8px]">SEÑA</p>
-                    <p className="body-text !text-[10px] !text-[#3b82f6]/40 uppercase tracking-widest">Pago para confirmar el compromiso</p>
-                  </div>
-                  <p className="stat-val !text-3xl text-white italic tracking-tighter shrink-0">$5.000</p>
-                </div>
               </div>
 
               <div className="flex gap-4">
@@ -430,7 +397,7 @@ export default function TurneroInteractivo() {
                   disabled={loading}
                   className="flex-[2] py-5 bg-[#3b82f6] text-white font-bold rounded-sm transition-all shadow-[0_0_60px_rgba(59,130,246,0.1)] hover:bg-[#2563eb] eyebrow !text-[10px] flex items-center justify-center gap-4 group"
                 >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "RESERVAR Y PAGAR"}
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "CONFIRMAR MI TURNO"}
                 </button>
               </div>
             </motion.div>

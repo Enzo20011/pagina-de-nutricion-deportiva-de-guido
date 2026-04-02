@@ -54,11 +54,11 @@ export default function HeroSection({ onBookingClick = () => {} }: HeroSectionPr
   const resetButtonMouse = () => { x.set(0); y.set(0); };
 
   return (
-    <section className="relative bg-[#0a0f14] pt-24 pb-0 px-5 sm:px-8 overflow-hidden">
+    <section className="relative pt-24 pb-0 px-0 sm:px-8 overflow-hidden">
       <div className="dot-grid-overlay opacity-5" />
 
-      <div className="max-w-[1200px] mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-        <div className="flex flex-col items-center text-center">
+      <div className="max-w-[1240px] mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center px-0">
+        <div className="flex flex-col items-center text-center px-5 sm:px-0">
           {/* Editorial top label */}
           <motion.div
             initial={{ opacity: 0, y: -8 }}
@@ -142,12 +142,12 @@ export default function HeroSection({ onBookingClick = () => {} }: HeroSectionPr
 
         </div>
 
-        {/* NUTRITION PHOTO */}
+        {/* NUTRITION PHOTO - Seccionada para Edge-to-Edge en Mobile */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="relative mt-8 lg:mt-0 group"
+          className="relative mt-12 lg:mt-0 group w-full px-0"
           onMouseMove={(e) => {
             if (window.innerWidth < 1024) return;
             const rect = e.currentTarget.getBoundingClientRect();
@@ -169,7 +169,7 @@ export default function HeroSection({ onBookingClick = () => {} }: HeroSectionPr
           }}
         >
           <div
-            className="relative w-full max-w-[300px] sm:max-w-[380px] md:max-w-[480px] mx-auto aspect-square rounded-sm overflow-hidden border border-[#1f262e] transition-all duration-700 group-hover:border-[#3b82f6]/30 shadow-2xl group-hover:shadow-[0_0_50px_rgba(59,130,246,0.15)]"
+            className="relative w-full max-w-[260px] sm:max-w-[380px] md:max-w-[480px] mx-auto aspect-square rounded-sm overflow-hidden border-4 sm:border border-white/10 sm:border-kl-outline-var transition-all duration-700 group-hover:border-[#3b82f6]/30 shadow-2xl shadow-black/20 sm:shadow-2xl sm:shadow-black group-hover:shadow-[0_0_50px_rgba(59,130,246,0.15)] bg-transparent animate-[levitate_6s_ease-in-out_infinite]"
             style={{ transform: isDesktop ? "translateZ(50px)" : "none" }}
           >
               <Image
@@ -182,9 +182,6 @@ export default function HeroSection({ onBookingClick = () => {} }: HeroSectionPr
                 sizes="(max-width: 640px) 90vw, (max-width: 768px) 60vw, (max-width: 1200px) 50vw, 600px"
              />
           </div>
-          {/* Gradient fade al fondo en mobile para fluir a la siguiente sección */}
-          <div className="absolute -bottom-1 left-0 right-0 h-24 lg:hidden pointer-events-none"
-            style={{ background: 'linear-gradient(to top, #0a0f14, transparent)' }} />
         </motion.div>
       </div>
 
